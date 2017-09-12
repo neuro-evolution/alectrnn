@@ -35,6 +35,11 @@ class PlayerAgent {
      */
     virtual bool HasTerminated();
 
+    /*
+     * Configures the agent using search parameters
+     */
+    virtual void Configure(double *parameters)=0;
+
   protected:
     virtual Action Act()=0;
     void EndGame();

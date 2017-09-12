@@ -22,9 +22,13 @@ class NeuralNetwork {
     void setNeuronGain(std::size_t neuron, double gain);
     void setNeuronTau(std::size_t neuron, double tau);
     void setSensorState(std::size_t sensor, double state);
+    void Reset();
+    double getNeuronState(std::size_t neuron) const;
+    double getNeuronOutput(std::size_t neuron) const;
 
   private:
     double step_size_;
+    double epsilon_;
     std::size_t num_neurons_;
     std::vector<double> sensor_states_;
     std::vector<double> neuron_states_;

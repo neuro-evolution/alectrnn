@@ -7,22 +7,34 @@
 #include <ale_interface.hpp>
 #include "player_agent.h"
 #include "../common/network_generator.h"
+#include "../common/nervous_system.h"
 
 namespace alectrnn {
 
 class CtrnnAgent : public PlayerAgent {
   public:
-    CtrnnAgent(ALEInterface* ale, double* weights, std::size_t);
+    CtrnnAgent(ALEInterface* ale, std::size_t num_neurons,
+        std::size_t num_sensor_neurons, std::size_t input_screen_width,
+        std::size_t input_screen_height, bool use_color, double step_size);
     ~CtrnnAgent();
+    void Configure(double *parameters);
 
   protected:
     Action Act();
 
   private:
+    ctrnn::NeuralNetwork* agent_neural_system_;
     std::vector<std::vector<ctrnn::InEdge> > node_sensors_;
     std::vector<std::vector<ctrnn::InEdge> > node_neighbors_;
-    std::vector<std::uint8_t> full_gray_screen_;
-    std::vector<std::uint8_t> downsized_gray_screen_;
+    std::vector<std::uint8_t> full_screen_;
+    std::vector<std::uint8_t> downsized_screen_;
+    std::size_t num_neurons_;
+    std::size_t num_sensor_neurons_;
+    std::size_t num_sensors_;
+    std::size_t input_screen_width_;
+    std::size_t input_screen_height_;
+    bool use_color_;
+    bool is_configured_;
 };
 
 }

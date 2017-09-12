@@ -87,7 +87,7 @@ void Controller::ApplyActions(Action& action) {
       break;
     default:
       // Pass action to emulator!
-      ale_->environment->oneStepAct(action, PLAYER_B_NOOP);
+      ale_->environment->minimalAct(action, PLAYER_B_NOOP);
       break;
   }
 }

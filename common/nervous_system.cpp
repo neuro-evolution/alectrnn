@@ -1,6 +1,7 @@
 #include <vector>
 #include <cstddef>
 #include <cmath>
+#include <stdexcept>
 #include "nervous_system.h"
 #include "network_generator.h"
 
@@ -16,6 +17,7 @@ NeuralNetwork::NeuralNetwork(const std::vector<std::vector<InEdge>>& neuron_neig
     : neuron_neighbors_(neuron_neighbors), neuron_sensors_(neuron_sensors) {
 
   step_size_ = step_size;
+  epsilon_ = 0.000000001; // small value to add to tau so it is > 0
   num_neurons_ = neuron_neighbors.size();
   sensor_states_.resize(num_sensors);
   neuron_states_.resize(neuron_neighbors.size());
@@ -68,11 +70,39 @@ void NeuralNetwork::setNeuronGain(std::size_t neuron, double gain) {
 }
 
 void NeuralNetwork::setNeuronTau(std::size_t neuron, double tau) {
-  neuron_rtaus_[neuron] = 1. / tau;
+  if (tau < 0) {
+    throw std::invalid_argument( "received negative time constant" );
+  }
+  else {
+    neuron_rtaus_[neuron] = 1. / (tau + epsilon_);
+  }
 }
 
 void NeuralNetwork::setSensorState(std::size_t sensor, double state) {
   sensor_states_[sensor] = state;
+}
+
+void NeuralNetwork::Reset() {
+  for (auto iter_states = sensor_states_.begin();
+      iter_states != sensor_states_.end(); ++iter_states) {
+    *iter_states = 0.0;
+  }
+  for (auto iter_states = neuron_states_.begin();
+      iter_states != sensor_states_.end(); ++iter_states) {
+    *iter_states = 0.0;
+  }
+  for (auto iter_outputs = neuron_outputs_.begin();
+      iter_outputs != neuron_outputs_.end(); ++iter_outputs) {
+    *iter_outputs = 0.0;
+  }
+}
+
+double NeuralNetwork::getNeuronState(std::size_t neuron) const {
+  return neuron_states_[neuron];
+}
+
+double NeuralNetwork::getNeuronOutput(std::size_t neuron) const {
+  return neuron_outputs_[neuron];
 }
 
 }

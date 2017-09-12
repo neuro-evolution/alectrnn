@@ -13,4 +13,23 @@
 # Actual main would just import alectrnn setup dictionary or something
 # and run alectrnn.
 
-# Still have no idea how too..... get this to compile on git with dependencies...
+
+
+
+# Import CMAES
+# Import Agent
+# Import ALE
+# Import Objective
+
+# CMAES Param dict -> pass unpacked keys
+# Make CMAES Object
+# ALE Param dict -> pass upacked keys
+# Make ALE Object
+# Agent Param dict -> pass ALE-obj -> pass unpacked keys
+# Make Agent Object
+# Pass Objective to CMAES-object
+# Pass Objective arguments (ALE-object, Agent-object) to CMAES-object
+# Engage CMAES-object
+
+## NOTE! If CMAES is set to partial centroid mutation, and centroid is 
+## initialized to zero, then we effectively start the network off sparse

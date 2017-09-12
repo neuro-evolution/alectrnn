@@ -10,14 +10,14 @@
 
 #include <Python.h>
 #include <ale_interface.hpp>
-#include <cstddef>
+#include "../agents/player_agent.h"
 
 PyMODINIT_FUNC PyInit_total_cost_objective(void);
 
 namespace alectrnn {
 
 double CalculateTotalCost(ALEInterface *ale, double* parameters,
-    std::size_t num_neurons);
+    PlayerAgent* agent);
 
 }
 

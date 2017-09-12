@@ -21,22 +21,25 @@
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
                                       PyObject *kwargs) {
-  char *keyword_list[] = {"parameters", "ale", "num_neurons", NULL};
+  char *keyword_list[] = {"parameters", "ale", "agent", NULL};
 
   PyArrayObject* py_parameter_array;
   PyObject* ale_capsule;
-  std::size_t num_neurons;
+  PyObject* agent_capsule;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!Oi", keyword_list,
-      &PyArray_Type, &py_parameter_array, &ale_capsule, &num_neurons)){
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!OO", keyword_list,
+      &PyArray_Type, &py_parameter_array, &ale_capsule, &agent_capsule)){
     return NULL;
   }
 
-  ALEInterface* ale = (ALEInterface *)PyCapsule_GetPointer(ale_capsule,
+  ALEInterface* ale = (ALEInterface*)PyCapsule_GetPointer(ale_capsule,
       "ale_generator.ale");
+  alectrnn::PlayerAgent* player_agent =
+      (alectrnn::PlayerAgent*)PyCapsule_GetPointer(agent_capsule,
+          "agent_generator.agent");
   double* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
   double total_cost(alectrnn::CalculateTotalCost(ale, cparameter_array,
-                                                 num_neurons));
+      player_agent));
 
   return Py_BuildValue("d", total_cost);
 }
@@ -63,16 +66,14 @@ PyMODINIT_FUNC PyInit_total_reward_objective(void) {
 namespace alectrnn {
 
 double CalculateTotalCost(ALEInterface *ale, double* parameters,
-    std::size_t num_neurons) {
+    PlayerAgent* agent) {
 
-  PlayerAgent* agent = new CtrnnAgent(ale, parameters, num_neurons);
+  agent->Configure(parameters);
   Controller* game_controller = new Controller(ale, agent);
   game_controller->Run();
   double total_cost(-(double)game_controller->getCumulativeScore());
 
-  delete agent;
   delete game_controller;
-
   return total_cost;
 }
 

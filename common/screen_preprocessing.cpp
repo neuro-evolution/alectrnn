@@ -21,8 +21,8 @@ std::uint8_t GrayscaleAverage(std::uint8_t grayscale_value1,
 
 void ResizeGrayScreen(std::size_t src_width, std::size_t src_height,
                       std::size_t tar_width, std::size_t tar_height,
-                      const std::vector<unsigned char>& src_screen,
-                      std::vector<unsigned char>& tar_screen) {
+                      const std::vector<std::uint8_t>& src_screen,
+                      std::vector<std::uint8_t>& tar_screen) {
   tar_screen.resize(tar_width * tar_height);
   double height_ratio = src_height / (double) tar_height;
   double width_ratio = src_width / (double) tar_width;

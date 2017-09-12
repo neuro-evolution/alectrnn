@@ -34,7 +34,7 @@ Action PlayerAgent::AgentStep() {
 
 Action PlayerAgent::EpisodeStart() {
   episode_frame_number_ = 0;
-  Action agent_action(act());
+  Action agent_action(Act());
   frame_number_++;
   episode_frame_number_++;
   return agent_action;
