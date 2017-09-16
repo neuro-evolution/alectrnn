@@ -1,3 +1,13 @@
+/*
+ * nervous_system.cpp
+ *
+ *  Created on: Sep 2, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * A class used to define a CTRNN neural network.
+ *
+ */
+
 #include <vector>
 #include <cstddef>
 #include <cmath>

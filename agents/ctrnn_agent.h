@@ -1,3 +1,15 @@
+/*
+ * ctrnn_agent.h
+ *  Created on: Sep 1, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * The CTRNN agent class is a specific PlayerAgent that creates a neural
+ * network and returns actions based on the provided visual stimuli from
+ * the ALE environment. This agent only needs to be created once, it has
+ * a Configure function that can take parameters to reconfigure the
+ * neural network weights.
+ */
+
 #ifndef ALECTRNN_CTRNN_AGENT_H_
 #define ALECTRNN_CTRNN_AGENT_H_
 

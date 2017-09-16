@@ -1,3 +1,15 @@
+/*
+ * network_generator.h
+ *
+ *  Created on: Sep 2, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * Defines a couple functions that can be used to generate all-to-all networks.
+ * New functions may be added in the future to create more specific structures.
+ * The InEdge struct is used as the basic block for NeuralNetworks.
+ *
+ */
+
 #ifndef ALECTRNN_COMMON_NETWORK_GENERATOR_H_
 #define ALECTRNN_COMMON_NETWORK_GENERATOR_H_
 

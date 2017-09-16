@@ -1,3 +1,17 @@
+/*
+ * screen_preprocessing.h
+ *
+ *  Created on: Sep 2, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * A utility function for use by the Agents to resize the ALE atari game
+ * screen. ResizeGrayScreen currently just downsamples the image, but
+ * GrayscaleAverage can be added easily to smooth it if need.
+ *
+ * (to-do: add color resizing function)
+ *
+ */
+
 #ifndef ALECTRNN_COMMON_SCREEN_PREPROCESSING_H_
 #define ALECTRNN_COMMON_SCREEN_PREPROCESSING_H_
 

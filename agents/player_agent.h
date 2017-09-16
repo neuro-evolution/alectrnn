@@ -1,6 +1,15 @@
 /*
- * A simplified version of googles Xitari Player agent class
- * Abstract class for agents
+ * player_agent.h
+ *  Created on: Sep 1, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * The PlayerAgent is an abstract class use to define the basic functionality
+ * of an agent for the ALE atari games. It is used by the Controller to play
+ * the games. Derived classes MUST define an Act() function that returns
+ * an ALE action.
+ *
+ * This is a simplified and slightly modified version of the google Xitari
+ * PlayerAgent class.
  */
 
 #ifndef ALECTRNN_AGENTS_PLAYER_AGENT_H_

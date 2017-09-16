@@ -6,7 +6,8 @@
  *
  * ALE or Arcade-Learning-Environment wrapper for Python.
  * It generates a new environment and returns the pointer to the environment
- * in a Python Capsule for use in other functions.
+ * in a Python Capsule for use in almost every other class. ALE is passed to
+ * both the agent and controller classes for access to the ALE environment.
  *
  */
 

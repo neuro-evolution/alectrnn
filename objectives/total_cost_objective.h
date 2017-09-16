@@ -2,7 +2,13 @@
  * total_reward_objective.h
  *
  *  Created on: Sep 2, 2017
- *      Author: nathaniel
+ *      Author: Nathaniel Rodriguez
+ *
+ * A Python extension module that creates a callable function from python for
+ * use by optimization algorithms. It requires a parameter argument,
+ * as well as a handler (python capsule) to the ALE environment, and
+ * a handler to an agent.
+
  */
 
 #ifndef ALECTRNN_OBJECTIVES_TOTAL_COST_OBJECTIVE_H_

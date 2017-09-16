@@ -1,10 +1,16 @@
-// take ref greyscale sized vector, take ref downsized vector, take ale object
-// greyscale sized vector 210x160 = 33600
-// downsized vector 84x84 = 7056
-// call ale's screen using greyscale vector
-// make algorithm that will cut (or avg see #define AVERAGE(a, b)   (PIXEL)( ((a) + (b)) >> 1 ))
-// the proper pixels
-// void (row order first (160) where row is height, col is width (210))
+/*
+ * screen_preprocessing.cpp
+ *
+ *  Created on: Sep 2, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * A utility function for use by the Agents to resize the ALE atari game
+ * screen. ResizeGrayScreen currently just downsamples the image, but
+ * GrayscaleAverage can be added easily to smooth it if need.
+ *
+ * (to-do: add color resizing function)
+ *
+ */
 
 #include <cstdint>
 #include <cstddef>

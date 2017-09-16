@@ -1,3 +1,17 @@
+/*
+ * player_agent.cpp
+ *  Created on: Sep 1, 2017
+ *      Author: Nathaniel Rodriguez
+ *
+ * The PlayerAgent is an abstract class use to define the basic functionality
+ * of an agent for the ALE atari games. It is used by the Controller to play
+ * the games. Derived classes MUST define an Act() function that returns
+ * an ALE action.
+ *
+ * This is a simplified and slightly modified version of the google Xitari
+ * PlayerAgent class.
+ */
+
 #include "player_agent.h"
 #include <ale_interface.hpp>
 
