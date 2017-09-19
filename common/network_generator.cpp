@@ -16,12 +16,9 @@
 
 namespace ctrnn {
 
-struct InEdge {
-  InEdge(int source_node, double source_weight) 
-      : source(source_node), weight(source_weight) {}
-  int source;
-  double weight;
-};
+InEdge::InEdge(int source_node, double source_weight)
+  : source(source_node), weight(source_weight) {
+}
 
 // Creates a vector for all the in coming edges in an all-to-all network
 std::vector< std::vector<InEdge> > All2AllNetwork(std::size_t num_nodes,

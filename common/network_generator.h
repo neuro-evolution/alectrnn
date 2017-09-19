@@ -18,7 +18,12 @@
 
 namespace ctrnn {
 
-struct InEdge;
+struct InEdge {
+  InEdge(int source_node, double source_weight);
+  int source;
+  double weight;
+};
+
 std::vector< std::vector<InEdge> > All2AllNetwork(std::size_t num_nodes,
     const double *weights);
 std::vector< std::vector<InEdge> > All2AllNetwork(std::size_t num_nodes,

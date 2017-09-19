@@ -1,5 +1,6 @@
 # Compiled python modules.
 *.pyc
+*.so
 
 # Setuptools distribution folder.
 /dist/
@@ -19,3 +20,4 @@
 # remove misc folders
 /alelib/
 /.settings/
+/build/

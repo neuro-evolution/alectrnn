@@ -20,9 +20,7 @@
 #include "total_cost_objective.h"
 #include "../controllers/controller.h"
 #include "../agents/player_agent.h"
-#include "../agents/ctrnn_agent.h"
 #include "../common/utilities.h"
-#include "../common/screen_preprocessing.h"
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
                                       PyObject *kwargs) {
