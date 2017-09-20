@@ -62,7 +62,7 @@ static struct PyModuleDef TotalCostModule = {
   TotalCostMethods
 };
 
-PyMODINIT_FUNC PyInit_total_reward_objective(void) {
+PyMODINIT_FUNC PyInit_total_cost_objective(void) {
   return PyModule_Create(&TotalCostModule);
 }
 
