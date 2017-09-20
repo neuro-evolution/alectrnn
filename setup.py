@@ -1,4 +1,5 @@
 from setuptools import setup, Extension, Command
+import setuptools.command.develop
 import setuptools.command.build_ext
 import setuptools.command.install
 import distutils.command.build
@@ -13,6 +14,14 @@ def run_ale_install_script():
         sys.exit("Failed to build ALE dependencies")
 
 class build_ale(Command):
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
     def run(self):
         run_ale_install_script()
 
@@ -25,6 +34,11 @@ class build(distutils.command.build.build):
     sub_commands = [
         ('build_ale', lambda self: True),
         ] + distutils.command.build.build.sub_commands
+
+class develop(setuptools.command.develop.develop):
+    def run(self):
+        self.run_command('build_ale')
+        setuptools.command.develop.develop.run(self)
 
 class build_ext(setuptools.command.build_ext.build_ext):
     """build_ext command for use when numpy headers are needed."""
@@ -48,7 +62,7 @@ for key, value in cfg_vars.items():
         cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
 
 # Compiler settings
-extra_compile_args = ['-std=c++14']
+extra_compile_args = ['-std=c++14', '-Wno-write-strings']
 
 # Includes
 include_dirs = []
@@ -57,17 +71,6 @@ ale_install_path = cwd + "/alelib"
 include_dirs += [
     cwd,
     ale_install_path + '/include/ale',
-    # ale_install_path + '/include/ale/common',
-    # ale_install_path + '/include/ale/controllers',
-    # ale_install_path + '/include/ale/emucore',
-    # ale_install_path + '/include/ale/emucore/m6502',
-    # ale_install_path + '/include/ale/emucore/m6502/src',
-    # ale_install_path + '/include/ale/emucore/m6502/src/bspf/src',
-    # ale_install_path + '/include/ale/environment',
-    # ale_install_path + '/include/ale/external/TinyMT',
-    # ale_install_path + '/include/ale/games',
-    # ale_install_path + '/include/ale/games/supported',
-    # ale_install_path + '/include/ale/os_dependent',
     cwd + '/agents',
     cwd + '/common',
     cwd + '/controllers',
@@ -81,12 +84,12 @@ library_dirs.append(lib_path)
 ALE_LIB = os.path.join(lib_path, "libale.so")
 ALEC_LIB = os.path.join(lib_path, "libale_c.so")
 main_link_args = [ALE_LIB, ALEC_LIB]
-main_libraries = ['libale', 'libale_c']
-extra_link_args = []
+main_libraries = ['ale', 'ale_c']
+extra_link_args = ['-Wl,--verbose']
 
 # Sources
 ale_sources = [
-    "common/ale_generator.cpp"    
+    "common/ale_generator.cpp"
 ]
 agent_sources = [
     "agents/agent_generator.cpp",
@@ -113,7 +116,7 @@ ale_module = Extension('ale_generator',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../lib'])
+                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
 
 agent_module = Extension('agent_generator',
                     language = "c++14",
@@ -123,7 +126,7 @@ agent_module = Extension('agent_generator',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../lib'])
+                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
 
 objective_module = Extension('total_cost_objective',
                     language = "c++14",
@@ -133,13 +136,14 @@ objective_module = Extension('total_cost_objective',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../lib'])
+                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
 
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
       cmdclass = {'build_ext': build_ext, 'install': install,
-                  'build_ale': build_ale, 'build_py':build_py},
+                  'build_ale': build_ale, 'build': build,
+                  'develop': develop},
       description='A wrapper for a ctrnn implementation of ALE',
       url='https://github.com/neuro-evolution/alectrnn.git',
       install_requires=[

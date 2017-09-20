@@ -19,8 +19,8 @@ namespace alectrnn {
 
 PlayerAgent::PlayerAgent(ALEInterface* ale) : ale_(ale),
     frame_number_(0), episode_frame_number_(0), episode_number_(0),
-    available_actions_(ale->romSettings->getMinimalActionSet()),
     has_terminated_(false) {
+  available_actions_ = ale->getMinimalActionSet();
   max_num_frames_ = ale_->getInt("max_num_frames");
   max_num_episodes_ = ale_->getInt("max_num_episodes");
   max_num_frames_per_episode_ = ale_->getInt("max_num_frames_per_episode");

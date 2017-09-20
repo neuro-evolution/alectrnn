@@ -37,7 +37,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
    * the pointer, else the ALE will be lost.
    */
 
-  char *rom;
+  char *rom;//see if switching to string fixes warning
   int seed;
   double repeat_action_probability(0.0);
   bool display_screen(false);

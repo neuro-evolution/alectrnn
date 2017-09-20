@@ -33,18 +33,18 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
   // Reserve space for input screens
   if (!use_color_) {
     num_sensors_ = input_screen_width_ * input_screen_height_;
-    std::vector<std::uint8_t> full_screen_.resize(
+    full_screen_.resize(
         ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
-    std::vector<std::uint8_t> downsized_screen_.resize(num_sensors_);
+    downsized_screen_.resize(num_sensors_);
   }
   else {
     //r,g,b + luminance
-    num_sensors_ = input_screen_width_ * input_screen_height_ * 4
-    std::vector<std::uint8_t> full_screen_.resize(
+    num_sensors_ = input_screen_width_ * input_screen_height_ * 4;
+    full_screen_.resize(
         ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth() * 4);
-    std::vector<std::uint8_t> downsized_screen_.resize(num_sensors_);
+    downsized_screen_.resize(num_sensors_);
   }
 
   node_sensors_ = ctrnn::FullSensorNetwork(num_sensors_, num_sensor_neurons_);

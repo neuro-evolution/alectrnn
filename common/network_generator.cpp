@@ -16,6 +16,11 @@
 
 namespace ctrnn {
 
+InEdge::InEdge() {
+  source = -1;
+  weight = 0;
+}
+
 InEdge::InEdge(int source_node, double source_weight)
   : source(source_node), weight(source_weight) {
 }

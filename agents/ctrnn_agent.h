@@ -42,9 +42,9 @@ class CtrnnAgent : public PlayerAgent {
     std::vector<std::uint8_t> downsized_screen_;
     std::size_t num_neurons_;
     std::size_t num_sensor_neurons_;
-    std::size_t num_sensors_;
     std::size_t input_screen_width_;
     std::size_t input_screen_height_;
+    std::size_t num_sensors_;
     bool use_color_;
     bool is_configured_;
 };

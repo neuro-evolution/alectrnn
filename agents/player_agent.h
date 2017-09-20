@@ -61,7 +61,7 @@ class PlayerAgent {
     int frame_number_;
     int episode_frame_number_;
     int episode_number_;
-    ActionVect& available_actions_;
+    ActionVect available_actions_;
     bool has_terminated_;
 };
 

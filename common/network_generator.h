@@ -19,6 +19,7 @@
 namespace ctrnn {
 
 struct InEdge {
+  InEdge();
   InEdge(int source_node, double source_weight);
   int source;
   double weight;
