@@ -106,6 +106,11 @@ objective_sources = [
     "controllers/controller.cpp"
 ]
 
+# ROMS
+# rom_dir = "roms/"
+# roms = [ ("roms", rom_dir + item_name) for item_name in os.listdir(rom_dir) 
+#         if os.path.isfile(rom_dir + item_name) and (".bin" in item_name) ]
+
 PACKAGE_NAME = 'alectrnn'
 
 ale_module = Extension('ale_generator',
@@ -152,4 +157,6 @@ setup(name=PACKAGE_NAME,
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
       ext_modules=[ale_module, agent_module, objective_module],
+      # package_dir={PACKAGE_NAME: '.'},
+      # package_data={PACKAGE_NAME: ['roms/*bin']},
       include_package_data=True)
