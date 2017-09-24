@@ -1,8 +1,0 @@
-
-Name: ale
-Description: The Arcade Learning Environment (ALE) - a platform for AI research.
-URL: http://www.arcadelearningenvironment.org/
-Version: 0.5
-Requires:
-Libs: -L/home/nathaniel/Downloads/alelib/lib -lale
-Cflags: -I/home/nathaniel/Downloads/alelib/include
