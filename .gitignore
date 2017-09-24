@@ -18,6 +18,6 @@
 /*__pycache__
 
 # remove misc folders
-/alelib/
+/alectrnn/alelib/
 /.settings/
-/build/
+/alectrnn/build/
