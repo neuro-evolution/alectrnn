@@ -9,7 +9,7 @@ import os
 
 def run_ale_install_script():
     # If we need to give compiler options this is where we could pass to script
-    build_libs_cmd = ['bash', 'ale_install.sh']
+    build_libs_cmd = ['bash', 'alectrnn/ale_install.sh']
     if subprocess.call(build_libs_cmd) != 0:
         sys.exit("Failed to build ALE dependencies")
 
@@ -67,18 +67,18 @@ extra_compile_args = ['-std=c++14', '-Wno-write-strings']
 # Includes
 include_dirs = []
 cwd = os.path.dirname(os.path.abspath(__file__))
-ale_install_path = cwd + "/alelib"
+ale_install_path = cwd + "/alectrnn/alelib"
 include_dirs += [
     cwd,
     ale_install_path + '/include/ale',
-    cwd + '/agents',
-    cwd + '/common',
-    cwd + '/controllers',
-    cwd + '/objectives'
+    cwd + '/alectrnn/agents',
+    cwd + '/alectrnn/common',
+    cwd + '/alectrnn/controllers',
+    cwd + '/alectrnn/objectives'
 ]
 
 # Libraries
-lib_path = os.path.join(cwd, "alelib", "lib")
+lib_path = os.path.join(cwd, "alectrnn","alelib", "lib")
 library_dirs = []
 library_dirs.append(lib_path)
 ALE_LIB = os.path.join(lib_path, "libale.so")
@@ -89,27 +89,22 @@ extra_link_args = ['-Wl,--verbose']
 
 # Sources
 ale_sources = [
-    "common/ale_generator.cpp"
+    "alectrnn/common/ale_generator.cpp"
 ]
 agent_sources = [
-    "agents/agent_generator.cpp",
-    "agents/player_agent.cpp",
-    "agents/ctrnn_agent.cpp",
-    "common/network_generator.cpp",
-    "common/nervous_system.cpp",
-    "common/screen_preprocessing.cpp"
+    "alectrnn/agents/agent_generator.cpp",
+    "alectrnn/agents/player_agent.cpp",
+    "alectrnn/agents/ctrnn_agent.cpp",
+    "alectrnn/common/network_generator.cpp",
+    "alectrnn/common/nervous_system.cpp",
+    "alectrnn/common/screen_preprocessing.cpp"
 ]
 objective_sources = [
-    "objectives/total_cost_objective.cpp",
-    "common/utilities.cpp",
-    "agents/player_agent.cpp",
-    "controllers/controller.cpp"
+    "alectrnn/objectives/total_cost_objective.cpp",
+    "alectrnn/common/utilities.cpp",
+    "alectrnn/agents/player_agent.cpp",
+    "alectrnn/controllers/controller.cpp"
 ]
-
-# ROMS
-# rom_dir = "roms/"
-# roms = [ ("roms", rom_dir + item_name) for item_name in os.listdir(rom_dir) 
-#         if os.path.isfile(rom_dir + item_name) and (".bin" in item_name) ]
 
 PACKAGE_NAME = 'alectrnn'
 
@@ -121,7 +116,7 @@ ale_module = Extension('ale_generator',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
 agent_module = Extension('agent_generator',
                     language = "c++14",
@@ -131,7 +126,7 @@ agent_module = Extension('agent_generator',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
 objective_module = Extension('total_cost_objective',
                     language = "c++14",
@@ -141,14 +136,16 @@ objective_module = Extension('total_cost_objective',
                     include_dirs=include_dirs,
                     library_dirs=library_dirs,
                     extra_link_args=extra_link_args + main_link_args
-                        + ['-Wl,-rpath,$ORIGIN/../alelib/lib'])
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
-      cmdclass = {'build_ext': build_ext, 'install': install,
+      cmdclass = {'build_ext': build_ext, 
+                  'install': install,
                   'build_ale': build_ale, 'build': build,
-                  'develop': develop},
+                  'develop': develop
+                  },
       description='A wrapper for a ctrnn implementation of ALE',
       url='https://github.com/neuro-evolution/alectrnn.git',
       install_requires=[
@@ -157,6 +154,18 @@ setup(name=PACKAGE_NAME,
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
       ext_modules=[ale_module, agent_module, objective_module],
-      # package_dir={PACKAGE_NAME: '.'},
-      # package_data={PACKAGE_NAME: ['roms/*bin']},
-      include_package_data=True)
+      package_data={PACKAGE_NAME: [
+        'roms/*.bin', 
+        'alelib/bin/ale',
+        'alelib/lib/*.so', 
+        'alelib/include/ale/*.h*',
+        'alelib/include/ale/common/*.h*',
+        'alelib/include/ale/controllers/*.h*',
+        'alelib/include/ale/emucore/*.h*',
+        'alelib/include/ale/emucore/m6502/src/*.h*',
+        'alelib/include/ale/emucore/m6502/src/bspf/src/*.h*',
+        'alelib/include/ale/environment/*.h*',
+        'alelib/include/ale/external/TinyMT/*.h*',
+        'alelib/include/ale/games/*.h*',
+        'alelib/include/ale/games/supported/*.h*',
+        'alelib/include/ale/os_dependent/*.h*']})
