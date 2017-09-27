@@ -14,6 +14,7 @@
 #include <Python.h>
 #include "ale_generator.h"
 #include <ale_interface.hpp>
+#include <iostream>
 
 static void DeleteALE(PyObject *ale_capsule) {
   delete (ALEInterface *)PyCapsule_GetPointer(ale_capsule, "ale_generator.ale");
@@ -35,6 +36,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
    * WARNING: This pointer isn't const because it has to be cast to void in
    * order to feed it to the Python Capsule. Make sure no down-stream redirects
    * the pointer, else the ALE will be lost.
+   *
    */
 
   char *rom;
@@ -52,10 +54,11 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
       &rom, &seed, &repeat_action_probability, &display_screen, &sound,
       &color_avg, &frame_skip, &max_num_frames, &max_num_episodes,
       &max_num_frames_per_episode)){
+    std::cout << "Error parsing ALE arguments" << std::endl;
     return NULL;
   }
 
-  ALEInterface * ale = new ALEInterface(); //static?
+  ALEInterface* ale = new ALEInterface();
   ale->setInt("random_seed", seed);
   ale->setFloat("repeat_action_probability", repeat_action_probability);
   ale->setBool("display_screen", display_screen);
@@ -67,9 +70,9 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   ale->setInt("max_num_frames_per_episode", max_num_frames_per_episode);
   ale->loadROM(rom);
 
-  PyObject* ale_capsule;
-  ale_capsule = PyCapsule_New((void *) ale, "ale_generator.ale", DeleteALE);
-  return Py_BuildValue("O", ale_capsule);
+  PyObject* ale_capsule = PyCapsule_New(static_cast<void*>(ale),
+                              "ale_generator.ale", DeleteALE);
+  return ale_capsule;
 }
 
 static PyMethodDef ALEMethods[] = {

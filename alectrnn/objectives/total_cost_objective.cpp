@@ -35,11 +35,12 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
     return NULL;
   }
 
-  ALEInterface* ale = (ALEInterface*)PyCapsule_GetPointer(ale_capsule,
-      "ale_generator.ale");
+  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
+      ale_capsule,
+      "ale_generator.ale"));
   alectrnn::PlayerAgent* player_agent =
-      (alectrnn::PlayerAgent*)PyCapsule_GetPointer(agent_capsule,
-          "agent_generator.agent");
+      static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
+          "agent_generator.agent"));
   double* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
   double total_cost(alectrnn::CalculateTotalCost(ale, cparameter_array,
       player_agent));

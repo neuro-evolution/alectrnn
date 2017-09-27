@@ -12,6 +12,11 @@
  * needs to be added for each new agent. The destructor provided is generic to
  * the PlayerAgent class and can be used by any of the agents for destruction.
  *
+ * Ideally we need a wrapper class that contains the PlayerAgent object and
+ * the python capsule. This way we can us PyIncref on the capsule upon
+ * Wrapper creation and PyDecref upon destruction, that way if the ALE
+ * name is gone in Python, the reference won't vanish and ALE won't get
+ * removed.
  */
 
 #include <Python.h>
@@ -21,13 +26,14 @@
 #include "player_agent.h"
 // Add includes to agents you wish to add below:
 #include "ctrnn_agent.h"
-
+#include <iostream>
 /*
  * DeleteAgent can be shared among the agents as a destructor
  */
 static void DeleteAgent(PyObject *agent_capsule) {
   delete (alectrnn::PlayerAgent *)PyCapsule_GetPointer(
         agent_capsule, "agent_generator.agent");
+  ///would need to call Pydecf on ale_capsule... but capsule isn't here.... :(
 }
 
 /*
@@ -40,39 +46,50 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
                           "use_color", "step_size", NULL};
 
   PyObject* ale_capsule;
-  std::size_t num_neurons;
-  std::size_t num_sensor_neurons;
-  std::size_t input_screen_width;
-  std::size_t input_screen_height;
+  int num_neurons;
+  int num_sensor_neurons;
+  int input_screen_width;
+  int input_screen_height;
   bool use_color;
   double step_size;
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oiiiipd", keyword_list,
       &ale_capsule, &num_neurons, &num_sensor_neurons,
       &input_screen_width, &input_screen_height, &use_color, &step_size)){
+    std::cout << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
 
-  ALEInterface* ale = (ALEInterface*)PyCapsule_GetPointer(ale_capsule,
-      "ale_generator.ale");
+  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
+  {
+    std::cout << "Invalid pointer to ALE returned from capsule,"
+        "or is not a capsule." << std::endl;
+    return NULL;
+  }
+  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
+      ale_capsule,
+      "ale_generator.ale"));
 
-  alectrnn::PlayerAgent *agent = new alectrnn::CtrnnAgent(ale, num_neurons,
-      num_sensor_neurons, input_screen_width, input_screen_height,
+  alectrnn::PlayerAgent *agent = new alectrnn::CtrnnAgent(ale,
+      static_cast<std::size_t>(num_neurons),
+      static_cast<std::size_t>(num_sensor_neurons),
+      static_cast<std::size_t>(input_screen_width),
+      static_cast<std::size_t>(input_screen_height),
       use_color, step_size);
 
-  PyObject* agent_capsule;
-  agent_capsule = PyCapsule_New((void *) ale, "agent_generator.agent",
+  PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
+                                "agent_generator.agent",
                                 DeleteAgent);
-  return Py_BuildValue("O", agent_capsule);
+  return agent_capsule;
 }
 
 /*
  * Add new agents in additional lines below:
  */
 static PyMethodDef AgentMethods[] = {
-  { "CreatCtrnnAgent", (PyCFunction) CreateCtrnnAgent,
-      METH_VARARGS | METH_KEYWORDS,
-      "Returns a handle to a CtrnnAgent"},
+  { "CreateCtrnnAgent", (PyCFunction) CreateCtrnnAgent,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a CtrnnAgent"},
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };
@@ -88,6 +105,3 @@ static struct PyModuleDef AgentModule = {
 PyMODINIT_FUNC PyInit_agent_generator(void) {
   return PyModule_Create(&AgentModule);
 }
-
-
-
