@@ -12,28 +12,28 @@
  * needs to be added for each new agent. The destructor provided is generic to
  * the PlayerAgent class and can be used by any of the agents for destruction.
  *
- * Ideally we need a wrapper class that contains the PlayerAgent object and
- * the python capsule. This way we can us PyIncref on the capsule upon
- * Wrapper creation and PyDecref upon destruction, that way if the ALE
- * name is gone in Python, the reference won't vanish and ALE won't get
- * removed.
+ * Ideally we want a wrapper PlayerAgent class that holds the ale capsule so
+ * that on creation it increments the reference to the ale capsule and
+ * decrements it on destruction.
+ * Py_DECREF(ale_capsule);
+ * Py_XINCREF(ale_capsule); // Increment the reference count to the PyCapsule
  */
 
 #include <Python.h>
 #include <ale_interface.hpp>
 #include <cstddef>
+#include <iostream>
 #include "agent_generator.h"
 #include "player_agent.h"
 // Add includes to agents you wish to add below:
 #include "ctrnn_agent.h"
-#include <iostream>
+
 /*
  * DeleteAgent can be shared among the agents as a destructor
  */
 static void DeleteAgent(PyObject *agent_capsule) {
   delete (alectrnn::PlayerAgent *)PyCapsule_GetPointer(
         agent_capsule, "agent_generator.agent");
-  ///would need to call Pydecf on ale_capsule... but capsule isn't here.... :(
 }
 
 /*

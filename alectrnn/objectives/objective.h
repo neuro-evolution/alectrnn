@@ -1,5 +1,5 @@
 /*
- * total_reward_objective.h
+ * objective.h
  *
  *  Created on: Sep 2, 2017
  *      Author: Nathaniel Rodriguez
@@ -11,14 +11,14 @@
 
  */
 
-#ifndef ALECTRNN_OBJECTIVES_TOTAL_COST_OBJECTIVE_H_
-#define ALECTRNN_OBJECTIVES_TOTAL_COST_OBJECTIVE_H_
+#ifndef ALECTRNN_OBJECTIVES_OBJECTIVE_H_
+#define ALECTRNN_OBJECTIVES_OBJECTIVE_H_
 
 #include <Python.h>
 #include <ale_interface.hpp>
 #include "../agents/player_agent.h"
 
-PyMODINIT_FUNC PyInit_total_cost_objective(void);
+PyMODINIT_FUNC PyInit_objective(void);
 
 namespace alectrnn {
 
@@ -27,4 +27,4 @@ double CalculateTotalCost(ALEInterface *ale, double* parameters,
 
 }
 
-#endif /* OBJECTIVES_TOTAL_COST_OBJECTIVE_H_ */
+#endif /* OBJECTIVES_OBJECTIVE_H_ */

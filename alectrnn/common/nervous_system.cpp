@@ -21,7 +21,8 @@ double sigmoid(double x) {
   return 1 / (1 + std::exp(-x));
 }
 
-NeuralNetwork::NeuralNetwork(const std::vector<std::vector<InEdge>>& neuron_neighbors,
+NeuralNetwork::NeuralNetwork(
+              const std::vector<std::vector<InEdge>>& neuron_neighbors,
               const std::vector<std::vector<InEdge>>& neuron_sensors,
               std::size_t num_sensors, double step_size)
     : neuron_neighbors_(neuron_neighbors), neuron_sensors_(neuron_sensors) {
@@ -80,7 +81,7 @@ void NeuralNetwork::setNeuronGain(std::size_t neuron, double gain) {
 }
 
 void NeuralNetwork::setNeuronTau(std::size_t neuron, double tau) {
-  if (tau < 0) {
+  if (tau < 0.0) {
     throw std::invalid_argument( "received negative time constant" );
   }
   else {

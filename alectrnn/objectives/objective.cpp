@@ -13,11 +13,13 @@
 
 #include <Python.h>
 #include <vector>
+#include <memory>
 #include <cstdint>
 #include <cstddef>
 #include <ale_interface.hpp>
+#include <iostream>
 #include "arrayobject.h"
-#include "total_cost_objective.h"
+#include "objective.h"
 #include "../controllers/controller.h"
 #include "../agents/player_agent.h"
 #include "../common/utilities.h"
@@ -31,13 +33,21 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   PyObject* agent_capsule;
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!OO", keyword_list,
-      &PyArray_Type, &py_parameter_array, &ale_capsule, &agent_capsule)){
+      &PyArray_Type, &py_parameter_array, &ale_capsule, &agent_capsule)) {
+    std::cout << "Invalid argument in put into objective!" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale") ||
+      !PyCapsule_IsValid(agent_capsule, "agent_generator.agent"))
+  {
+    std::cout << "Invalid pointer to returned from capsule,"
+        "or is not correct capsule." << std::endl;
     return NULL;
   }
 
   ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
-      ale_capsule,
-      "ale_generator.ale"));
+      ale_capsule, "ale_generator.ale"));
   alectrnn::PlayerAgent* player_agent =
       static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
           "agent_generator.agent"));
@@ -48,23 +58,24 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   return Py_BuildValue("d", total_cost);
 }
 
-static PyMethodDef TotalCostMethods[] = {
+static PyMethodDef ObjectiveMethods[] = {
   { "TotalCostObjective", (PyCFunction) TotalCostObjective,
       METH_VARARGS | METH_KEYWORDS,
       "Objective function that sums game reward"},
+      //Additional objectives here
   { NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef TotalCostModule = {
+static struct PyModuleDef ObjectiveModule = {
   PyModuleDef_HEAD_INIT,
-  "total_cost_objective",
+  "objective",
   "Objective function that sums game reward",
   -1,
-  TotalCostMethods
+  ObjectiveMethods
 };
 
-PyMODINIT_FUNC PyInit_total_cost_objective(void) {
-  return PyModule_Create(&TotalCostModule);
+PyMODINIT_FUNC PyInit_objective(void) {
+  return PyModule_Create(&ObjectiveModule);
 }
 
 namespace alectrnn {
@@ -73,11 +84,11 @@ double CalculateTotalCost(ALEInterface *ale, double* parameters,
     PlayerAgent* agent) {
 
   agent->Configure(parameters);
-  Controller* game_controller = new Controller(ale, agent);
+  std::unique_ptr<Controller> game_controller =
+      std::make_unique<Controller>(ale, agent);
   game_controller->Run();
   double total_cost(-(double)game_controller->getCumulativeScore());
 
-  delete game_controller;
   return total_cost;
 }
 

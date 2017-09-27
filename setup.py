@@ -100,7 +100,7 @@ agent_sources = [
     "alectrnn/common/screen_preprocessing.cpp"
 ]
 objective_sources = [
-    "alectrnn/objectives/total_cost_objective.cpp",
+    "alectrnn/objectives/objective.cpp",
     "alectrnn/common/utilities.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/controllers/controller.cpp"
@@ -128,7 +128,7 @@ agent_module = Extension('agent_generator',
                     extra_link_args=extra_link_args + main_link_args
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
-objective_module = Extension('total_cost_objective',
+objective_module = Extension('objective',
                     language = "c++14",
                     sources=objective_sources,
                     libraries=main_libraries,
