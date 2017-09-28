@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <ale_interface.hpp>
 #include "ctrnn_agent.h"
 #include "player_agent.h"
@@ -49,12 +50,11 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
 
   node_sensors_ = ctrnn::FullSensorNetwork(num_sensors_, num_sensor_neurons_);
   node_neighbors_ = ctrnn::All2AllNetwork(num_neurons_);
-  agent_neural_system_ = new ctrnn::NeuralNetwork(node_neighbors_,
+  agent_neural_system_ = std::make_unique<ctrnn::NeuralNetwork>(node_neighbors_,
       node_sensors_, num_sensors_, step_size);
 }
 
 CtrnnAgent::~CtrnnAgent() {
-  delete agent_neural_system_;
 }
 
 void CtrnnAgent::Configure(double *parameters) {

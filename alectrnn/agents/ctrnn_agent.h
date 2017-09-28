@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <memory>
 #include <ale_interface.hpp>
 #include "player_agent.h"
 #include "../common/network_generator.h"
@@ -35,7 +36,7 @@ class CtrnnAgent : public PlayerAgent {
     Action Act();
 
   private:
-    ctrnn::NeuralNetwork* agent_neural_system_;
+    std::unique_ptr<ctrnn::NeuralNetwork> agent_neural_system_;
     std::vector<std::vector<ctrnn::InEdge> > node_sensors_;
     std::vector<std::vector<ctrnn::InEdge> > node_neighbors_;
     std::vector<std::uint8_t> full_screen_;
