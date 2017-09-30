@@ -37,13 +37,13 @@ void Controller::Run() {
         EpisodeStart(agent_action);
         first_step = false;
       }
-      else
+      else {
         // Poll agents for actions
         EpisodeStep(agent_action);
+      }
 
       // Apply said actions
       ApplyActions(agent_action);
-
       episode_score_ += ale_->romSettings->getReward();
     }
   }

@@ -57,35 +57,40 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
 CtrnnAgent::~CtrnnAgent() {
 }
 
-void CtrnnAgent::Configure(double *parameters) {
+void CtrnnAgent::Configure(const double *parameters) {
   /*
    * Parameters need to be decoded and the nervous system configured
    * Since we will be using cmaes, we will let the parameter bounds be defined
    * there. So we will assume we are getting valid parameters.
    * Note: assumes parameters is a contiguous c-style array
+   *
+   * TO DO: Need a size check, make sure parameters array size == # parameters
    */
 
   // configure bias
-  double *bias_parameters = parameters;
+  const double *bias_parameters = parameters;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
-    agent_neural_system_->setNeuronBias(iii, *bias_parameters);
+    agent_neural_system_->setNeuronBias(iii, bias_parameters[iii]);
   }
+
   // configure tau
-  double *tau_parameters = bias_parameters + num_neurons_;
+  const double *tau_parameters = bias_parameters + num_neurons_;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
-    agent_neural_system_->setNeuronTau(iii, *bias_parameters);
+    agent_neural_system_->setNeuronTau(iii, tau_parameters[iii]);
   }
+
   // configure gain
-  double *gain_parameters = tau_parameters + num_neurons_;
+  const double *gain_parameters = tau_parameters + num_neurons_;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
-    agent_neural_system_->setNeuronGain(iii, *bias_parameters);
+    agent_neural_system_->setNeuronGain(iii, gain_parameters[iii]);
   }
+
   // configure weights
-  double *circuit_parameters = gain_parameters + num_neurons_;
-  double *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
+  const double *circuit_parameters = gain_parameters + num_neurons_;
   ctrnn::FillAll2AllNetwork(node_neighbors_, circuit_parameters);
+  const double *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
   ctrnn::FillFullSensorNetwork(node_sensors_, sensor_parameters);
-  // Reset nervous system
+//  // Reset nervous system
   agent_neural_system_->Reset();
 }
 
@@ -113,7 +118,6 @@ Action CtrnnAgent::Act() {
   }
 
   agent_neural_system_->EulerStep();
-
   // Read values from last X neurons, X==LastNeuronIndex - Action#
   Action prefered_action(PLAYER_A_NOOP);
   double prefered_output(-100000.0);
@@ -129,7 +133,6 @@ Action CtrnnAgent::Act() {
       prefered_action = last_action;
     }
   }
-
   return prefered_action;
 }
 

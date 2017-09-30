@@ -16,7 +16,7 @@
  * that on creation it increments the reference to the ale capsule and
  * decrements it on destruction.
  * Py_DECREF(ale_capsule);
- * Py_XINCREF(ale_capsule); // Increment the reference count to the PyCapsule
+ * Py_XINCREF(ale_capsule);
  */
 
 #include <Python.h>
@@ -41,7 +41,7 @@ static void DeleteAgent(PyObject *agent_capsule) {
  */
 static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
     PyObject *kwargs) {
-  char *keyword_list[] = {"ale", "num_neurons", "num_sensor_neurons",
+  static char *keyword_list[] = {"ale", "num_neurons", "num_sensor_neurons",
                           "input_screen_width", "input_screen_height",
                           "use_color", "step_size", NULL};
 
@@ -50,12 +50,12 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
   int num_sensor_neurons;
   int input_screen_width;
   int input_screen_height;
-  bool use_color;
+  int use_color; //int instead of bool because python api can't deal with bool
   double step_size;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oiiiipd", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oiiiiid", keyword_list,
       &ale_capsule, &num_neurons, &num_sensor_neurons,
-      &input_screen_width, &input_screen_height, &use_color, &step_size)){
+      &input_screen_width, &input_screen_height, &use_color, &step_size)) {
     std::cout << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
@@ -63,23 +63,21 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
   if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
   {
     std::cout << "Invalid pointer to ALE returned from capsule,"
-        "or is not a capsule." << std::endl;
+        " or is not a capsule." << std::endl;
     return NULL;
   }
   ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
-      ale_capsule,
-      "ale_generator.ale"));
+      ale_capsule, "ale_generator.ale"));
 
   alectrnn::PlayerAgent *agent = new alectrnn::CtrnnAgent(ale,
       static_cast<std::size_t>(num_neurons),
       static_cast<std::size_t>(num_sensor_neurons),
       static_cast<std::size_t>(input_screen_width),
       static_cast<std::size_t>(input_screen_height),
-      use_color, step_size);
+      static_cast<bool>(use_color), step_size);
 
   PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
-                                "agent_generator.agent",
-                                DeleteAgent);
+                                "agent_generator.agent", DeleteAgent);
   return agent_capsule;
 }
 

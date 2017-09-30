@@ -26,14 +26,14 @@
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
                                       PyObject *kwargs) {
-  char *keyword_list[] = {"parameters", "ale", "agent", NULL};
+  static char *keyword_list[] = {"parameters", "ale", "agent", NULL};
 
   PyArrayObject* py_parameter_array;
   PyObject* ale_capsule;
   PyObject* agent_capsule;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!OO", keyword_list,
-      &PyArray_Type, &py_parameter_array, &ale_capsule, &agent_capsule)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO", keyword_list,
+      &py_parameter_array, &ale_capsule, &agent_capsule)) {
     std::cout << "Invalid argument in put into objective!" << std::endl;
     return NULL;
   }
@@ -42,7 +42,7 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
       !PyCapsule_IsValid(agent_capsule, "agent_generator.agent"))
   {
     std::cout << "Invalid pointer to returned from capsule,"
-        "or is not correct capsule." << std::endl;
+        " or is not correct capsule." << std::endl;
     return NULL;
   }
 
@@ -51,8 +51,9 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   alectrnn::PlayerAgent* player_agent =
       static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
           "agent_generator.agent"));
+//  int num_elements(static_cast<int>(py_parameter_array->dimensions[0]));
   double* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
-  double total_cost(alectrnn::CalculateTotalCost(ale, cparameter_array,
+  double total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));
 
   return Py_BuildValue("d", total_cost);
@@ -80,7 +81,7 @@ PyMODINIT_FUNC PyInit_objective(void) {
 
 namespace alectrnn {
 
-double CalculateTotalCost(ALEInterface *ale, double* parameters,
+double CalculateTotalCost(const double* parameters, ALEInterface *ale,
     PlayerAgent* agent) {
 
   agent->Configure(parameters);

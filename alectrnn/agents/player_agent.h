@@ -47,7 +47,7 @@ class PlayerAgent {
     /*
      * Configures the agent using search parameters
      */
-    virtual void Configure(double *parameters)=0;
+    virtual void Configure(const double *parameters)=0;
 
   protected:
     virtual Action Act()=0;

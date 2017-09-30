@@ -21,7 +21,7 @@ static void DeleteALE(PyObject *ale_capsule) {
 }
 
 static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
-  char *keyword_list[] = {"rom", "seed",
+  static char *keyword_list[] = {"rom", "seed",
       "repeat_action_probability", "display_screen", "sound", "color_avg",
       "frame_skip", "max_num_frames", "max_num_episodes",
       "max_num_frames_per_episode", NULL};
@@ -42,15 +42,15 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   char *rom;
   int seed;
   double repeat_action_probability(0.0);
-  bool display_screen(false);
-  bool sound(false);
-  bool color_avg(true);
+  int display_screen(0); // int instead of bool because api has problem w/ bool
+  int sound(0); // bool
+  int color_avg(1); // bool
   int frame_skip(1);
   int max_num_frames(0);
   int max_num_episodes(0);
   int max_num_frames_per_episode(0);
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|dpppiiii", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|diiiiiii", keyword_list,
       &rom, &seed, &repeat_action_probability, &display_screen, &sound,
       &color_avg, &frame_skip, &max_num_frames, &max_num_episodes,
       &max_num_frames_per_episode)){
@@ -61,9 +61,9 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   ALEInterface* ale = new ALEInterface();
   ale->setInt("random_seed", seed);
   ale->setFloat("repeat_action_probability", repeat_action_probability);
-  ale->setBool("display_screen", display_screen);
-  ale->setBool("sound", sound);
-  ale->setBool("color_averaging", color_avg);
+  ale->setBool("display_screen", static_cast<bool>(display_screen));
+  ale->setBool("sound", static_cast<bool>(sound));
+  ale->setBool("color_averaging", static_cast<bool>(color_avg));
   ale->setInt("frame_skip", frame_skip);
   ale->setInt("max_num_frames", max_num_frames);
   ale->setInt("max_num_episodes", max_num_episodes);

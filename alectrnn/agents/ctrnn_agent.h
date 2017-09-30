@@ -30,7 +30,7 @@ class CtrnnAgent : public PlayerAgent {
         std::size_t num_sensor_neurons, std::size_t input_screen_width,
         std::size_t input_screen_height, bool use_color, double step_size);
     ~CtrnnAgent();
-    void Configure(double *parameters);
+    void Configure(const double *parameters);
 
   protected:
     Action Act();

@@ -5,9 +5,13 @@
  *      Author: Nathaniel Rodriguez
  *
  * A class used to define a CTRNN neural network.
+ * In Euler updates the first X neurons of the network are used as input
+ * neurons. These correspond with the outer vector of the neuron sensors
+ * (the inner vector being a vector of sensor weights).
  *
  */
 
+#include <limits>
 #include <vector>
 #include <cstddef>
 #include <cmath>
@@ -16,6 +20,26 @@
 #include "network_generator.h"
 
 namespace ctrnn {
+
+bool OverBound(double x) {
+  return (x > std::numeric_limits<double>::max()) ? true : false;
+}
+
+bool UnderBound(double x) {
+  return (x < std::numeric_limits<double>::lowest()) ? true : false;
+}
+
+double BoundState(double x) {
+  /*
+   * Return a value bounded by machine double
+   * If NaN, return largest double (this is the equality check, nan fails
+   * comparison checks).
+   */
+  return OverBound(x)  ?  std::numeric_limits<double>::max() :
+         UnderBound(x) ?  std::numeric_limits<double>::lowest() :
+         (x == x)      ?  x :
+                          std::numeric_limits<double>::max();
+}
 
 double sigmoid(double x) {
   return 1 / (1 + std::exp(-x));
@@ -29,6 +53,7 @@ NeuralNetwork::NeuralNetwork(
 
   step_size_ = step_size;
   epsilon_ = 0.000000001; // small value to add to tau so it is > 0
+  num_sensor_neurons_ = neuron_sensors.size();
   num_neurons_ = neuron_neighbors.size();
   sensor_states_.resize(num_sensors);
   neuron_states_.resize(neuron_neighbors.size());
@@ -52,19 +77,23 @@ void NeuralNetwork::EulerStep() {
       input += iter_neuron_source->weight 
                 * neuron_outputs_[iter_neuron_source->source];
     }
-    for (auto iter_sensor_source = neuron_sensors_[iii].begin();
-          iter_sensor_source != neuron_sensors_[iii].end(); 
-          ++iter_sensor_source) {
-      input += iter_sensor_source->weight 
-                * sensor_states_[iter_sensor_source->source];
+    if (iii < num_sensor_neurons_) {
+      for (auto iter_sensor_source = neuron_sensors_[iii].begin();
+            iter_sensor_source != neuron_sensors_[iii].end();
+            ++iter_sensor_source) {
+        input += iter_sensor_source->weight
+                  * sensor_states_[iter_sensor_source->source];
+      }
     }
     neuron_states_[iii] += step_size_ * neuron_rtaus_[iii] 
                             * (input - neuron_states_[iii]);
+    neuron_states_[iii] = BoundState(neuron_states_[iii]);
   }
   // Update neuron outputs
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     neuron_outputs_[iii] = sigmoid(neuron_gains_[iii] 
                             * (neuron_states_[iii] * neuron_biases_[iii]));
+    neuron_outputs_[iii] = BoundState(neuron_outputs_[iii]);
   }
 }
 
@@ -94,14 +123,17 @@ void NeuralNetwork::setSensorState(std::size_t sensor, double state) {
 }
 
 void NeuralNetwork::Reset() {
+  // Reset the sensor states to 0
   for (auto iter_states = sensor_states_.begin();
       iter_states != sensor_states_.end(); ++iter_states) {
     *iter_states = 0.0;
   }
+  // Reset neurons states to 0
   for (auto iter_states = neuron_states_.begin();
-      iter_states != sensor_states_.end(); ++iter_states) {
+      iter_states != neuron_states_.end(); ++iter_states) {
     *iter_states = 0.0;
   }
+  // Reset neuron outputs to 0
   for (auto iter_outputs = neuron_outputs_.begin();
       iter_outputs != neuron_outputs_.end(); ++iter_outputs) {
     *iter_outputs = 0.0;

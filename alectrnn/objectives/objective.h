@@ -22,7 +22,7 @@ PyMODINIT_FUNC PyInit_objective(void);
 
 namespace alectrnn {
 
-double CalculateTotalCost(ALEInterface *ale, double* parameters,
+double CalculateTotalCost(const double* parameters, ALEInterface *ale,
     PlayerAgent* agent);
 
 }

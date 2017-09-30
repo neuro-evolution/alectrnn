@@ -17,6 +17,9 @@
 
 namespace ctrnn {
 
+bool OverBound(double x);
+bool UnderBound(double x);
+double BoundState(double x);
 double sigmoid(double x);
 
 class NeuralNetwork {
@@ -39,6 +42,7 @@ class NeuralNetwork {
   private:
     double step_size_;
     double epsilon_;
+    std::size_t num_sensor_neurons_;
     std::size_t num_neurons_;
     std::vector<double> sensor_states_;
     std::vector<double> neuron_states_;

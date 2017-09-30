@@ -2,7 +2,7 @@
  * internal_controller.h
  *
  *  Created on: Sep 10, 2017
- *      Author: nathaniel
+ *      Author: Nathaniel Rodriguez
  */
 
 #ifndef ALECTRNN_CONTROLLERS_CONTROLLER_H_
