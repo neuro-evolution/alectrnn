@@ -14,6 +14,9 @@ import sys
 from functools import partial
 
 class ALEHandler:
+    # The roms are located with the library
+    rom_list = [] # TO DO get file locations and adjust init arguments
+    # so that you can use game name or file name
 
     def __init__(self, rom, ale_seed, display_screen, sound, 
                 color_avg, max_num_frames, max_num_episodes,

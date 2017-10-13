@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 #include <memory>
 #include <ale_interface.hpp>
 #include "ctrnn_agent.h"
@@ -52,6 +53,11 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
   node_neighbors_ = ctrnn::All2AllNetwork(num_neurons_);
   agent_neural_system_ = std::make_unique<ctrnn::NeuralNetwork>(node_neighbors_,
       node_sensors_, num_sensors_, step_size);
+
+  if (available_actions_.size() > num_neurons_)
+  {
+    throw std::invalid_argument( "To few neurons for # game outputs." );
+  }
 }
 
 CtrnnAgent::~CtrnnAgent() {
