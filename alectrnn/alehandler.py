@@ -9,22 +9,35 @@ simply by giving the parameter vector."""
 
 import alectrnn.ale_generator
 import alectrnn.agent_generator
-import alectrnn.total_cost_objective
+import alectrnn.objective
 import sys
 from functools import partial
+from pkg_resources import resource_listdir
+from pkg_resources import resource_filename
+
+def generate_rom_dictionary():
+    roms_list = resource_listdir("alectrnn", "roms")
+    rom_path_list = [ resource_filename("alectrnn", "roms/" + rom) 
+                        for rom in roms_list if ".bin" in rom ]
+    rom_name_list = [ rom[:-4] for rom in roms_list if ".bin" in rom ]
+    return { rom_name_list[i] : rom_path_list[i] 
+            for i in range(len(rom_path_list)) }
 
 class ALEHandler:
-    # The roms are located with the library
-    rom_list = [] # TO DO get file locations and adjust init arguments
-    # so that you can use game name or file name
+
+    installed_roms = generate_rom_dictionary()
 
     def __init__(self, rom, ale_seed, display_screen, sound, 
                 color_avg, max_num_frames, max_num_episodes,
                 max_num_frames_per_episode, agent_type, 
-                agent_parameters, objective_type, objective_parameters):
+                objective_type,
+                agent_parameters={},
+                objective_parameters={},
+                rom_file=""):
         """
         ALE parameters:
-          rom - rom filename
+          rom - rom name (specify from list)
+          rom_file - rom filename (specify for using your own roms)
           ale_seed - integer type
           display_screen - boolean type
           sound - boolean type
@@ -50,7 +63,15 @@ class ALEHandler:
 
         """
 
-        self.rom = rom
+        self.rom_path = ""
+        if rom_file != "":
+            self.rom_path = rom_file
+        else:
+            if rom in ALEHandler.installed_roms:
+                self.rom_path = ALEHandler.installed_roms[rom]
+            else:
+                sys.exit("Error: " + rom + " is not installed.")
+
         self.ale_seed = ale_seed
         self.display_screen = display_screen
         self.sound = sound
@@ -64,22 +85,26 @@ class ALEHandler:
         self.objective_parameters = objective_parameters
 
         # Create ALE handle
-        self.ale = ale_generator.CreatALE(rom=self.rom, seed=self.ale_seed,
-            display_screen=self.display_screen, sound=self.sound,
-            color_avg=self.color_avg, max_num_frames=self.max_num_frames,
+        self.ale = alectrnn.ale_generator.CreatALE(
+            rom=self.rom_path, 
+            seed=self.ale_seed, 
+            display_screen=self.display_screen, 
+            sound=self.sound,
+            color_avg=self.color_avg, 
+            max_num_frames=self.max_num_frames,
             max_num_episodes=self.max_num_episodes,
             max_num_frames_per_episode=self.max_num_frames_per_episode)
 
         # Create Agent handle
         if self.agent_type == "ctrnn":
-            self.agent = agent_generator.CreatCtrnnAgent(self.ale, 
+            self.agent = alectrnn.agent_generator.CreateCtrnnAgent(self.ale, 
                                                         **self.agent_parameters)
         else:
             sys.exit("No agent by that name is implemented")
 
         # Create partial objective function
         if self.objective_type == "totalcost":
-            self.objective = partial(total_cost_objective.TotalCostObjective, 
+            self.objective = partial(alectrnn.objective.TotalCostObjective, 
                                     ale=self.ale, agent=self.agent)
 
     def get_ale():
