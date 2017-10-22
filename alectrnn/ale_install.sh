@@ -30,7 +30,27 @@ if [ ! -d "build" ]; then
   mkdir "build"
 fi
 cd "build"
-cmake -DUSE_SDL=OFF -DUSE_RLGLUE=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" ..
+
+SDL_FLAG="OFF"
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in 
+    -s|--with-sdl)
+    SDL_FLAG="ON"
+    ;;
+    *) break
+  esac
+  shift
+done
+
+if [ "$SDL_FLAG" == "OFF" ]; then
+  echo "Installing without SDL..."
+  cmake -DUSE_SDL=OFF -DUSE_RLGLUE=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" ..
+elif [ "$SDL_FLAG" == "ON" ]; then
+  echo "Installing with SDL..."
+  cmake -DUSE_SDL=ON -DUSE_RLGLUE=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" ..
+fi
+
 make
 make install
 cd "../.."

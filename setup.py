@@ -7,37 +7,45 @@ import subprocess
 import sys
 import os
 
-def run_ale_install_script():
-    # If we need to give compiler options this is where we could pass to script
-    build_libs_cmd = ['bash', 'alectrnn/ale_install.sh']
+def run_ale_install_script(with_sdl):
+    """
+    Downloads and installs ALE to installation directory
+    """
+    if with_sdl:
+        build_libs_cmd = ['bash', 'alectrnn/ale_install.sh', '--with-sdl']
+    else:
+        build_libs_cmd = ['bash', 'alectrnn/ale_install.sh']
     if subprocess.call(build_libs_cmd) != 0:
         sys.exit("Failed to build ALE dependencies")
 
-class build_ale(Command):
-    user_options = []
+class install(setuptools.command.install.install):
+    user_options = setuptools.command.install.install.user_options \
+                    + [("with-sdl", None, "Enable SDL in ALE")]
 
     def initialize_options(self):
-        pass
+        setuptools.command.install.install.initialize_options(self)
+        self.with_sdl = None
 
     def finalize_options(self):
-        pass
+        setuptools.command.install.install.finalize_options(self)
 
-    def run(self):
-        run_ale_install_script()
-
-class install(setuptools.command.install.install):
-    def run(self):
-        self.run_command('build_ale')
+    def run(self): 
+        run_ale_install_script(self.with_sdl)
         setuptools.command.install.install.run(self)
 
-class build(distutils.command.build.build):
-    sub_commands = [
-        ('build_ale', lambda self: True),
-        ] + distutils.command.build.build.sub_commands
-
 class develop(setuptools.command.develop.develop):
+    user_options = setuptools.command.develop.develop.user_options \
+                    + [("with-sdl", None, "Enable SDL in ALE")]
+
+    def initialize_options(self):
+        setuptools.command.develop.develop.initialize_options(self)
+        self.with_sdl = None
+
+    def finalize_options(self):
+        setuptools.command.develop.develop.finalize_options(self)
+
     def run(self):
-        self.run_command('build_ale')
+        run_ale_install_script(self.with_sdl)
         setuptools.command.develop.develop.run(self)
 
 class build_ext(setuptools.command.build_ext.build_ext):
@@ -142,7 +150,6 @@ setup(name=PACKAGE_NAME,
       author='Nathaniel Rodriguez',
       cmdclass = {'build_ext': build_ext, 
                   'install': install,
-                  'build_ale': build_ale, 'build': build,
                   'develop': develop
                   },
       description='A wrapper for a ctrnn implementation of ALE',
