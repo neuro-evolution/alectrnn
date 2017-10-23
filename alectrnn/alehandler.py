@@ -107,13 +107,13 @@ class ALEHandler:
             self.objective = partial(alectrnn.objective.TotalCostObjective, 
                                     ale=self.ale, agent=self.agent)
 
-    def get_ale():
+    def get_ale(self):
         return self.ale
 
-    def get_objective():
+    def get_objective(self):
         return self.objective
 
-    def get_agent():
+    def get_agent(self):
         return self.agent
 
 if __name__ == '__main__':

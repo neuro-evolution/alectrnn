@@ -96,7 +96,7 @@ void CtrnnAgent::Configure(const double *parameters) {
   ctrnn::FillAll2AllNetwork(node_neighbors_, circuit_parameters);
   const double *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
   ctrnn::FillFullSensorNetwork(node_sensors_, sensor_parameters);
-//  // Reset nervous system
+  // Reset nervous system
   agent_neural_system_->Reset();
 }
 
