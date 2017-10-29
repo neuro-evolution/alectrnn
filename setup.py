@@ -104,7 +104,8 @@ agent_sources = [
     "alectrnn/agents/ctrnn_agent.cpp",
     "alectrnn/common/network_generator.cpp",
     "alectrnn/common/nervous_system.cpp",
-    "alectrnn/common/screen_preprocessing.cpp"
+    "alectrnn/common/screen_preprocessing.cpp",
+    "alectrnn/common/utilities.cpp"
 ]
 objective_sources = [
     "alectrnn/objectives/objective.cpp",

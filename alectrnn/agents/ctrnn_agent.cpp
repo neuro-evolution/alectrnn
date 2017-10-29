@@ -11,6 +11,7 @@
  *
  */
 
+#include <limits>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -21,6 +22,7 @@
 #include "../common/network_generator.h"
 #include "../common/screen_preprocessing.h"
 #include "../common/nervous_system.h"
+#include "../common/utilities.h"
 
 namespace alectrnn {
 
@@ -38,12 +40,18 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
     full_screen_.resize(
         ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
+    buffer_screen_.resize(
+        ale_->environment->getScreenHeight() *
+        ale_->environment->getScreenWidth());
     downsized_screen_.resize(num_sensors_);
   }
   else {
     //r,g,b + luminance
     num_sensors_ = input_screen_width_ * input_screen_height_ * 4;
     full_screen_.resize(
+        ale_->environment->getScreenHeight() *
+        ale_->environment->getScreenWidth() * 4);
+    buffer_screen_.resize(
         ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth() * 4);
     downsized_screen_.resize(num_sensors_);
@@ -66,8 +74,7 @@ CtrnnAgent::~CtrnnAgent() {
 void CtrnnAgent::Configure(const double *parameters) {
   /*
    * Parameters need to be decoded and the nervous system configured
-   * Since we will be using cmaes, we will let the parameter bounds be defined
-   * there. So we will assume we are getting valid parameters.
+   * We will assume we are getting valid parameters.
    * Note: assumes parameters is a contiguous c-style array
    *
    * TO DO: Need a size check, make sure parameters array size == # parameters
@@ -110,7 +117,8 @@ Action CtrnnAgent::Act() {
                      input_screen_width_,
                      input_screen_height_,
                      full_screen_,
-                     downsized_screen_);
+                     downsized_screen_,
+                     buffer_screen_);
   }
   else {
     /*
@@ -126,9 +134,9 @@ Action CtrnnAgent::Act() {
   agent_neural_system_->EulerStep();
   // Read values from last X neurons, X==LastNeuronIndex - Action#
   Action prefered_action(PLAYER_A_NOOP);
-  double prefered_output(-100000.0);
+  double prefered_output(std::numeric_limits<double>::lowest());
   Action last_action(PLAYER_A_NOOP);
-  double last_output(-100000.0);
+  double last_output(std::numeric_limits<double>::lowest());
   for (std::size_t iii = 0; iii < available_actions_.size(); iii++) {
     last_output = agent_neural_system_->getNeuronOutput(num_neurons_ - 1 -
                                           (std::size_t)available_actions_[iii]);

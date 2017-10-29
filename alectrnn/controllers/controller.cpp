@@ -24,6 +24,7 @@ Controller::~Controller() {
 void Controller::Run() {
   Action agent_action;
   bool first_step = true;
+  ale_->environment->reset();
 
   while (!IsDone()) {
     // Start a new episode: Check for terminal state
@@ -45,6 +46,7 @@ void Controller::Run() {
       // Apply said actions
       ApplyActions(agent_action);
       episode_score_ += ale_->romSettings->getReward();
+      cumulative_score_ += ale_->romSettings->getReward();
     }
   }
 }
@@ -66,7 +68,6 @@ void Controller::EpisodeStep(Action& action) {
 
 void Controller::EpisodeEnd() {
   agent_->EpisodeEnd();
-  cumulative_score_ += episode_score_;
   ale_->environment->reset();
 }
 

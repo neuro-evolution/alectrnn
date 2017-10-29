@@ -39,6 +39,7 @@ class CtrnnAgent : public PlayerAgent {
     std::unique_ptr<ctrnn::NeuralNetwork> agent_neural_system_;
     std::vector<std::vector<ctrnn::InEdge> > node_sensors_;
     std::vector<std::vector<ctrnn::InEdge> > node_neighbors_;
+    std::vector<std::uint8_t> buffer_screen_;
     std::vector<std::uint8_t> full_screen_;
     std::vector<std::uint8_t> downsized_screen_;
     std::size_t num_neurons_;

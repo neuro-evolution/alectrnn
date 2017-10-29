@@ -116,6 +116,14 @@ class ALEHandler:
     def get_agent(self):
         return self.agent
 
+    @classmethod
+    def print_available_roms(cls):
+        print("Available roms:")
+        roms = list(ALEHandler.installed_roms.keys())
+        roms.sort(key=str.lower)
+        for rom in roms:
+            print("\t", rom)
+
 if __name__ == '__main__':
     """
     example
