@@ -14,8 +14,7 @@ PACKAGE_FILE_NAME="master.zip"
 
 # Download and extract
 if [ ! -x "$PACKAGE_FILE_NAME" ]; then
-  wget $ALE_PACKAGE_URL
-  pwd
+  wget -O $PACKAGE_FILE_NAME $ALE_PACKAGE_URL
 fi
 echo "extracting files . . . "
 unzip "$BASE_DIR/master.zip"
