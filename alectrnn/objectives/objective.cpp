@@ -51,7 +51,6 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   alectrnn::PlayerAgent* player_agent =
       static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
           "agent_generator.agent"));
-//  int num_elements(static_cast<int>(py_parameter_array->dimensions[0]));
   double* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
   double total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));

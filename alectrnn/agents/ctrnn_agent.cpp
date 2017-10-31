@@ -22,7 +22,6 @@
 #include "../common/network_generator.h"
 #include "../common/screen_preprocessing.h"
 #include "../common/nervous_system.h"
-#include "../common/utilities.h"
 
 namespace alectrnn {
 
