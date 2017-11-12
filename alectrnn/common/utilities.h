@@ -22,6 +22,7 @@
 namespace alectrnn {
 
 double *PyArrayToCArray(PyArrayObject *py_array);
+float *PyArrayToCArray(PyArrayObject *py_array);
 // cimg_library::CImg<std::uint8_t> ConvertGrayFrameToImg(
 //   const std::vector<std::uint8_t> &frame,
 //   std::size_t frame_width, std::size_t frame_height);

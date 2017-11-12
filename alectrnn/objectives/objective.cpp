@@ -51,8 +51,8 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   alectrnn::PlayerAgent* player_agent =
       static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
           "agent_generator.agent"));
-  double* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
-  double total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
+  float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
+  float total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));
 
   return Py_BuildValue("d", total_cost);
@@ -80,14 +80,14 @@ PyMODINIT_FUNC PyInit_objective(void) {
 
 namespace alectrnn {
 
-double CalculateTotalCost(const double* parameters, ALEInterface *ale,
+float CalculateTotalCost(const float* parameters, ALEInterface *ale,
     PlayerAgent* agent) {
 
   agent->Configure(parameters);
   std::unique_ptr<Controller> game_controller =
       std::make_unique<Controller>(ale, agent);
   game_controller->Run();
-  double total_cost(-(double)game_controller->getCumulativeScore());
+  float total_cost(-(float)game_controller->getCumulativeScore());
 
   return total_cost;
 }

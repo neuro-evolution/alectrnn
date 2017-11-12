@@ -20,23 +20,23 @@ namespace ctrnn {
 
 struct InEdge {
   InEdge();
-  InEdge(int source_node, double source_weight);
+  InEdge(int source_node, float source_weight);
   int source;
-  double weight;
+  float weight;
 };
 
 std::vector< std::vector<InEdge> > All2AllNetwork(std::size_t num_nodes,
-    const double *weights);
+    const float *weights);
 std::vector< std::vector<InEdge> > All2AllNetwork(std::size_t num_nodes,
-    double default_weight=1.0);
+    float default_weight=1.0);
 std::vector< std::vector<InEdge> > FullSensorNetwork(std::size_t num_sensors,
-    std::size_t num_nodes, const double *weights);
+    std::size_t num_nodes, const float *weights);
 std::vector< std::vector<InEdge> > FullSensorNetwork(std::size_t num_sensors,
-    std::size_t num_nodes, double default_weight=1.0);
+    std::size_t num_nodes, float default_weight=1.0);
 void FillFullSensorNetwork(std::vector< std::vector<InEdge> > &network,
-                           const double *weights);
+                           const float *weights);
 void FillAll2AllNetwork(std::vector< std::vector<InEdge> > &network,
-                        const double *weights);
+                        const float *weights);
 }
 
 #endif /* ALECTRNN_COMMON_NETWORK_GENERATOR_H_ */

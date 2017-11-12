@@ -21,38 +21,38 @@
 
 namespace ctrnn {
 
-bool OverBound(double x) {
-  return (x > std::numeric_limits<double>::max()) ? true : false;
+bool OverBound(float x) {
+  return (x > std::numeric_limits<float>::max()) ? true : false;
 }
 
-bool UnderBound(double x) {
-  return (x < std::numeric_limits<double>::lowest()) ? true : false;
+bool UnderBound(float x) {
+  return (x < std::numeric_limits<float>::lowest()) ? true : false;
 }
 
-double BoundState(double x) {
+float BoundState(float x) {
   /*
-   * Return a value bounded by machine double
-   * If NaN, return largest double (this is the equality check, nan fails
+   * Return a value bounded by machine float
+   * If NaN, return largest float (this is the equality check, nan fails
    * comparison checks).
    */
-  return OverBound(x)  ?  std::numeric_limits<double>::max() :
-         UnderBound(x) ?  std::numeric_limits<double>::lowest() :
+  return OverBound(x)  ?  std::numeric_limits<float>::max() :
+         UnderBound(x) ?  std::numeric_limits<float>::lowest() :
          (x == x)      ?  x :
-                          std::numeric_limits<double>::max();
+                          std::numeric_limits<float>::max();
 }
 
-double sigmoid(double x) {
+float sigmoid(float x) {
   return 1 / (1 + std::exp(-x));
 }
 
 NeuralNetwork::NeuralNetwork(
               const std::vector<std::vector<InEdge>>& neuron_neighbors,
               const std::vector<std::vector<InEdge>>& neuron_sensors,
-              std::size_t num_sensors, double step_size)
+              std::size_t num_sensors, float step_size)
     : neuron_neighbors_(neuron_neighbors), neuron_sensors_(neuron_sensors) {
 
   step_size_ = step_size;
-  epsilon_ = 0.000000001; // small value to add to tau so it is > 0
+  epsilon_ = 0.00001; // small value to add to tau so it is > 0
   num_sensor_neurons_ = neuron_sensors.size();
   num_neurons_ = neuron_neighbors.size();
   sensor_states_.resize(num_sensors);
@@ -68,7 +68,7 @@ NeuralNetwork::~NeuralNetwork() {
 
 void NeuralNetwork::EulerStep() {
   // Update neuron states
-  double input(0.0);
+  float input(0.0);
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     input = 0.0;
     for (auto iter_neuron_source = neuron_neighbors_[iii].begin();
@@ -97,19 +97,19 @@ void NeuralNetwork::EulerStep() {
   }
 }
 
-void NeuralNetwork::setNeuronBias(std::size_t neuron, double bias) {
+void NeuralNetwork::setNeuronBias(std::size_t neuron, float bias) {
   neuron_biases_[neuron] = bias;
 }
 
-void NeuralNetwork::setNeuronState(std::size_t neuron, double state) {
+void NeuralNetwork::setNeuronState(std::size_t neuron, float state) {
   neuron_states_[neuron] = state;
 }
 
-void NeuralNetwork::setNeuronGain(std::size_t neuron, double gain) {
+void NeuralNetwork::setNeuronGain(std::size_t neuron, float gain) {
   neuron_gains_[neuron] = gain;
 }
 
-void NeuralNetwork::setNeuronTau(std::size_t neuron, double tau) {
+void NeuralNetwork::setNeuronTau(std::size_t neuron, float tau) {
   if (tau < 0.0) {
     throw std::invalid_argument( "received negative time constant" );
   }
@@ -118,7 +118,7 @@ void NeuralNetwork::setNeuronTau(std::size_t neuron, double tau) {
   }
 }
 
-void NeuralNetwork::setSensorState(std::size_t sensor, double state) {
+void NeuralNetwork::setSensorState(std::size_t sensor, float state) {
   sensor_states_[sensor] = state;
 }
 
@@ -140,11 +140,11 @@ void NeuralNetwork::Reset() {
   }
 }
 
-double NeuralNetwork::getNeuronState(std::size_t neuron) const {
+float NeuralNetwork::getNeuronState(std::size_t neuron) const {
   return neuron_states_[neuron];
 }
 
-double NeuralNetwork::getNeuronOutput(std::size_t neuron) const {
+float NeuralNetwork::getNeuronOutput(std::size_t neuron) const {
   return neuron_outputs_[neuron];
 }
 

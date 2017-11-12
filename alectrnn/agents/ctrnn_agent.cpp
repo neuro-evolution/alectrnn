@@ -28,7 +28,7 @@ namespace alectrnn {
 CtrnnAgent::CtrnnAgent(ALEInterface* ale,
       std::size_t num_neurons, std::size_t num_sensor_neurons,
       std::size_t input_screen_width,
-      std::size_t input_screen_height, bool use_color, double step_size)
+      std::size_t input_screen_height, bool use_color, float step_size)
     : PlayerAgent(ale), num_neurons_(num_neurons),
       num_sensor_neurons_(num_sensor_neurons), use_color_(use_color),
       input_screen_width_(input_screen_width),
@@ -70,7 +70,7 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
 CtrnnAgent::~CtrnnAgent() {
 }
 
-void CtrnnAgent::Configure(const double *parameters) {
+void CtrnnAgent::Configure(const float *parameters) {
   /*
    * Parameters need to be decoded and the nervous system configured
    * We will assume we are getting valid parameters.
@@ -80,27 +80,27 @@ void CtrnnAgent::Configure(const double *parameters) {
    */
 
   // configure bias
-  const double *bias_parameters = parameters;
+  const float *bias_parameters = parameters;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     agent_neural_system_->setNeuronBias(iii, bias_parameters[iii]);
   }
 
   // configure tau
-  const double *tau_parameters = bias_parameters + num_neurons_;
+  const float *tau_parameters = bias_parameters + num_neurons_;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     agent_neural_system_->setNeuronTau(iii, tau_parameters[iii]);
   }
 
   // configure gain
-  const double *gain_parameters = tau_parameters + num_neurons_;
+  const float *gain_parameters = tau_parameters + num_neurons_;
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     agent_neural_system_->setNeuronGain(iii, gain_parameters[iii]);
   }
 
   // configure weights
-  const double *circuit_parameters = gain_parameters + num_neurons_;
+  const float *circuit_parameters = gain_parameters + num_neurons_;
   ctrnn::FillAll2AllNetwork(node_neighbors_, circuit_parameters);
-  const double *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
+  const float *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
   ctrnn::FillFullSensorNetwork(node_sensors_, sensor_parameters);
   // Reset nervous system
   agent_neural_system_->Reset();
@@ -125,17 +125,17 @@ Action CtrnnAgent::Act() {
      */
   }
 
-  // Update sensor state (cast uint8_t into double)
+  // Update sensor state (cast uint8_t into float)
   for (std::size_t iii = 0; iii < num_sensors_; iii++) {
-    agent_neural_system_->setSensorState(iii, (double)downsized_screen_[iii]);
+    agent_neural_system_->setSensorState(iii, (float)downsized_screen_[iii]);
   }
 
   agent_neural_system_->EulerStep();
   // Read values from last X neurons, X==LastNeuronIndex - Action#
   Action prefered_action(PLAYER_A_NOOP);
-  double prefered_output(std::numeric_limits<double>::lowest());
+  float prefered_output(std::numeric_limits<float>::lowest());
   Action last_action(PLAYER_A_NOOP);
-  double last_output(std::numeric_limits<double>::lowest());
+  float last_output(std::numeric_limits<float>::lowest());
   for (std::size_t iii = 0; iii < available_actions_.size(); iii++) {
     last_output = agent_neural_system_->getNeuronOutput(num_neurons_ - 1 -
                                           (std::size_t)available_actions_[iii]);

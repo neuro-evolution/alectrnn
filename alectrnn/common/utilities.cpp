@@ -21,6 +21,10 @@ double *PyArrayToCArray(PyArrayObject *py_array) {
   return (double *) py_array->data;
 }
 
+float *PyArrayToCArray(PyArrayObject *py_array) {
+  return (float *) py_array->data;
+}
+
 // cimg_library::CImg<std::uint8_t> ConvertGrayFrameToImg(
 //     const std::vector<std::uint8_t> &frame,
 //     std::size_t frame_width, std::size_t frame_height) {

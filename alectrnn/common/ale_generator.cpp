@@ -41,7 +41,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   char *rom;
   int seed;
-  double repeat_action_probability(0.0);
+  float repeat_action_probability(0.0);
   int display_screen(0); // int instead of bool because api has problem w/ bool
   int sound(0); // bool
   int color_avg(1); // bool
@@ -50,7 +50,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   int max_num_episodes(0);
   int max_num_frames_per_episode(0);
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|diiiiiii", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiii", keyword_list,
       &rom, &seed, &repeat_action_probability, &display_screen, &sound,
       &color_avg, &frame_skip, &max_num_frames, &max_num_episodes,
       &max_num_frames_per_episode)){

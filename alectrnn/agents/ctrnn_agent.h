@@ -28,9 +28,9 @@ class CtrnnAgent : public PlayerAgent {
   public:
     CtrnnAgent(ALEInterface* ale, std::size_t num_neurons,
         std::size_t num_sensor_neurons, std::size_t input_screen_width,
-        std::size_t input_screen_height, bool use_color, double step_size);
+        std::size_t input_screen_height, bool use_color, float step_size);
     ~CtrnnAgent();
-    void Configure(const double *parameters);
+    void Configure(const float *parameters);
 
   protected:
     Action Act();

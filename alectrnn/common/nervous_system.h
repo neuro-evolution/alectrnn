@@ -17,39 +17,39 @@
 
 namespace ctrnn {
 
-bool OverBound(double x);
-bool UnderBound(double x);
-double BoundState(double x);
-double sigmoid(double x);
+bool OverBound(float x);
+bool UnderBound(float x);
+float BoundState(float x);
+float sigmoid(float x);
 
 class NeuralNetwork {
   public:
     NeuralNetwork(const std::vector<std::vector<InEdge>>& neuron_neighbors,
         const std::vector<std::vector<InEdge>>& neuron_sensors, 
-        std::size_t num_sensors, double step_size);
+        std::size_t num_sensors, float step_size);
     ~NeuralNetwork();
 
     void EulerStep();
-    void setNeuronBias(std::size_t neuron, double bias);
-    void setNeuronState(std::size_t neuron, double state);
-    void setNeuronGain(std::size_t neuron, double gain);
-    void setNeuronTau(std::size_t neuron, double tau);
-    void setSensorState(std::size_t sensor, double state);
+    void setNeuronBias(std::size_t neuron, float bias);
+    void setNeuronState(std::size_t neuron, float state);
+    void setNeuronGain(std::size_t neuron, float gain);
+    void setNeuronTau(std::size_t neuron, float tau);
+    void setSensorState(std::size_t sensor, float state);
     void Reset();
-    double getNeuronState(std::size_t neuron) const;
-    double getNeuronOutput(std::size_t neuron) const;
+    float getNeuronState(std::size_t neuron) const;
+    float getNeuronOutput(std::size_t neuron) const;
 
   private:
-    double step_size_;
-    double epsilon_;
+    float step_size_;
+    float epsilon_;
     std::size_t num_sensor_neurons_;
     std::size_t num_neurons_;
-    std::vector<double> sensor_states_;
-    std::vector<double> neuron_states_;
-    std::vector<double> neuron_outputs_;
-    std::vector<double> neuron_biases_;
-    std::vector<double> neuron_gains_;
-    std::vector<double> neuron_rtaus_;
+    std::vector<float> sensor_states_;
+    std::vector<float> neuron_states_;
+    std::vector<float> neuron_outputs_;
+    std::vector<float> neuron_biases_;
+    std::vector<float> neuron_gains_;
+    std::vector<float> neuron_rtaus_;
     const std::vector<std::vector<InEdge>>& neuron_neighbors_;
     const std::vector<std::vector<InEdge>>& neuron_sensors_;
 };

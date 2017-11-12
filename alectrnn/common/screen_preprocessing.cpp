@@ -19,11 +19,11 @@ void Apply3x3BoxFilterGray(std::vector<std::uint8_t>& src_screen,
 
   //Normalized element of box 3x3 filter. No need to use array since all values
   // are the same.
-  static const double box_filter = 0.33333333333;
+  static const float box_filter = 0.33333;
 
   // Accumulate along Columns
   for (std::size_t row = 0; row < screen_height; row++) {
-    double cumulative_sum = 0.0;
+    float cumulative_sum = 0.0;
     // Initiate rolling sum (boundary condition uses screen edge values)
     cumulative_sum += 2 * box_filter * src_screen[row * screen_width] \
                     + box_filter * src_screen[row * screen_width + 1];
@@ -51,7 +51,7 @@ void Apply3x3BoxFilterGray(std::vector<std::uint8_t>& src_screen,
 
   // Accumulate along Rows
   for (std::size_t col = 0; col < screen_width; col++) {
-    double cumulative_sum = 0.0;
+    float cumulative_sum = 0.0;
     // Initiate rolling sum (boundary condition uses screen edge values)
     cumulative_sum += 2 * box_filter * buffer_screen[col] \
                     + box_filter * buffer_screen[1 * screen_width + col];
@@ -83,8 +83,8 @@ void SubsampleGrayScreen(std::size_t src_width, std::size_t src_height,
                          const std::vector<std::uint8_t>& src_screen,
                          std::vector<std::uint8_t>& tar_screen) {
   tar_screen.resize(tar_width * tar_height);
-  double height_ratio = src_height / (double) tar_height;
-  double width_ratio = src_width / (double) tar_width;
+  float height_ratio = src_height / (float) tar_height;
+  float width_ratio = src_width / (float) tar_width;
   for (std::size_t iii = 0; iii < tar_height; iii++) {
     for (std::size_t jjj = 0; jjj < tar_width; jjj++) {
       tar_screen[iii * tar_width + jjj] = 
