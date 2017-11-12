@@ -17,10 +17,6 @@
 
 namespace alectrnn {
 
-double *PyArrayToCArray(PyArrayObject *py_array) {
-  return (double *) py_array->data;
-}
-
 float *PyArrayToCArray(PyArrayObject *py_array) {
   return (float *) py_array->data;
 }
