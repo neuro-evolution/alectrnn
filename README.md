@@ -13,3 +13,5 @@ ALE supports a visual interface via SDL. If you want to install using the visual
 ```
 pip install --install-option="--with-sdl" git+https://github.com/neuro-evolution/alectrnn.git
 ```
+
+This library is based on float (single precision values). If using with numpy, make sure to use dtype=float32 instead of the default float64
