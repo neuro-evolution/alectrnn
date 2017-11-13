@@ -12,7 +12,8 @@
 namespace alectrnn {
 
 Controller::Controller(ALEInterface* ale, PlayerAgent* agent) : ale_(ale),
-    agent_(agent), episode_score_(0), episode_number_(0), cumulative_score_(0) {
+    agent_(agent), episode_score_(0), episode_number_(0), 
+    cumulative_score_(0), frame_number_(0) {
   max_num_frames_ = ale_->getInt("max_num_frames");
   max_num_episodes_ = ale_->getInt("max_num_episodes");
   ale_->environment->reset();
@@ -46,6 +47,7 @@ void Controller::Run() {
 
       // Apply said actions
       ApplyActions(agent_action);
+      frame_number_++;
       episode_score_ += ale_->romSettings->getReward();
       cumulative_score_ += ale_->romSettings->getReward();
     }
@@ -98,7 +100,7 @@ bool Controller::IsDone() const {
   return (agent_->HasTerminated() ||
       (max_num_episodes_ > 0 && episode_number_ > max_num_episodes_) ||
       (max_num_frames_ > 0 &&
-          ale_->environment->getFrameNumber() >= max_num_frames_));
+          frame_number_ >= max_num_frames_));
 }
 
 }

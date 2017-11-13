@@ -3,6 +3,9 @@
  *
  *  Created on: Sep 10, 2017
  *      Author: Nathaniel Rodriguez
+ *
+ * Setting max_num_frames = -1 allows agents to keep playing till they fail
+ * Setting max_num_episodes = -1 allows agents to keep playing new games
  */
 
 #ifndef ALECTRNN_CONTROLLERS_CONTROLLER_H_
@@ -33,6 +36,7 @@ class Controller {
     int episode_score_;
     int cumulative_score_;
     int episode_number_;
+    int frame_number_;
     PlayerAgent* agent_;
     ALEInterface* ale_;
 };
