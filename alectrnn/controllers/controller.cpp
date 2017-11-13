@@ -25,6 +25,7 @@ void Controller::Run() {
   Action agent_action;
   bool first_step = true;
   ale_->environment->reset();
+  agent->Reset();
 
   while (!IsDone()) {
     // Start a new episode: Check for terminal state
@@ -84,7 +85,7 @@ void Controller::ApplyActions(Action& action) {
       ale_->environment->save();
       break;
     case SYSTEM_RESET:
-      ale_->environment->reset();
+      ale_->environment->reset(); // i don't think episode gets incremented....
       break;
     default:
       // Pass action to emulator!

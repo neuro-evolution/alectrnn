@@ -102,7 +102,12 @@ void CtrnnAgent::Configure(const float *parameters) {
   ctrnn::FillAll2AllNetwork(node_neighbors_, circuit_parameters);
   const float *sensor_parameters = circuit_parameters + (num_neurons_*num_neurons_);
   ctrnn::FillFullSensorNetwork(node_sensors_, sensor_parameters);
-  // Reset nervous system
+
+  is_configured_ = true;
+}
+
+void Reset() {
+  PlayerAgent::Reset();
   agent_neural_system_->Reset();
 }
 

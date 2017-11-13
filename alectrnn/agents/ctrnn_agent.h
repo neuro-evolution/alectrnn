@@ -31,6 +31,7 @@ class CtrnnAgent : public PlayerAgent {
         std::size_t input_screen_height, bool use_color, float step_size);
     ~CtrnnAgent();
     void Configure(const float *parameters);
+    void Reset();
 
   protected:
     Action Act();

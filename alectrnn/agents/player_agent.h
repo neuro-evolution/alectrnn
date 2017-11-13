@@ -49,6 +49,11 @@ class PlayerAgent {
      */
     virtual void Configure(const float *parameters)=0;
 
+    /*
+     * Resets the agent's internal variables for a new set of episode runs
+     */
+    virtual void Reset();
+
   protected:
     virtual Action Act()=0;
     void EndGame();

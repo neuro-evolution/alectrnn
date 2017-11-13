@@ -65,6 +65,13 @@ bool PlayerAgent::HasTerminated() {
   return has_terminated_;
 }
 
+void PlayerAgent::Reset() {
+  frame_number_ = 0;
+  episode_number_ = 0;
+  has_terminated_ = false;
+  episode_frame_number_ = 0;
+}
+
 void PlayerAgent::EndGame() {
   has_terminated_ = true;
 }
