@@ -25,7 +25,7 @@ void Controller::Run() {
   Action agent_action;
   bool first_step = true;
   ale_->environment->reset();
-  agent->Reset();
+  agent_->Reset();
 
   while (!IsDone()) {
     // Start a new episode: Check for terminal state
