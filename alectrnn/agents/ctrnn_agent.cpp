@@ -106,7 +106,7 @@ void CtrnnAgent::Configure(const float *parameters) {
   is_configured_ = true;
 }
 
-void Reset() {
+void CtrnnAgent::Reset() {
   PlayerAgent::Reset();
   agent_neural_system_->Reset();
 }
