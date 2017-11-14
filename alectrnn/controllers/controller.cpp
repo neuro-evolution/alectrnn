@@ -8,6 +8,7 @@
 #include <ale_interface.hpp>
 #include "../agents/player_agent.h"
 #include "controller.h"
+#include <string>
 
 namespace alectrnn {
 
@@ -50,6 +51,10 @@ void Controller::Run() {
       frame_number_++;
       episode_score_ += ale_->romSettings->getReward();
       cumulative_score_ += ale_->romSettings->getReward();
+    }
+
+    if (ale_->getBool("print_screen")) {
+      ale_->saveScreenPNG(std::to_string(frame_number_) + "_game_frame.png");
     }
   }
 }

@@ -49,11 +49,12 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   int max_num_frames(0);
   int max_num_episodes(0);
   int max_num_frames_per_episode(0);
+  int print_screen(0); // bool
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiii", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiiii", keyword_list,
       &rom, &seed, &repeat_action_probability, &display_screen, &sound,
       &color_avg, &frame_skip, &max_num_frames, &max_num_episodes,
-      &max_num_frames_per_episode)){
+      &max_num_frames_per_episode, &print_screen)){
     std::cout << "Error parsing ALE arguments" << std::endl;
     return NULL;
   }
@@ -63,6 +64,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   ale->setFloat("repeat_action_probability", repeat_action_probability);
   ale->setBool("display_screen", static_cast<bool>(display_screen));
   ale->setBool("sound", static_cast<bool>(sound));
+  ale->setBool("print_screen", static_cast<bool>(print_screen));
   ale->setBool("color_averaging", static_cast<bool>(color_avg));
   ale->setInt("frame_skip", frame_skip);
   ale->setInt("max_num_frames", max_num_frames);
