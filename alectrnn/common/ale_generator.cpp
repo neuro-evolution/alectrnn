@@ -24,7 +24,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"rom", "seed",
       "repeat_action_probability", "display_screen", "sound", "color_avg",
       "frame_skip", "max_num_frames", "max_num_episodes",
-      "max_num_frames_per_episode", NULL};
+      "max_num_frames_per_episode", "print_screen", NULL};
   /*
    * Generates and configures the ALE and returns a Python capsule wrapped
    * around the pointer. This capsule is not usable directly by python,
