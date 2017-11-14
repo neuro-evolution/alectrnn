@@ -29,7 +29,7 @@ class ALEHandler:
 
     def __init__(self, rom, ale_seed, display_screen, sound, 
                 color_avg, max_num_frames, max_num_episodes,
-                max_num_frames_per_episode, agent_type, 
+                max_num_frames_per_episode, print_screen, agent_type, 
                 objective_type,
                 agent_parameters={},
                 objective_parameters={},
@@ -45,6 +45,7 @@ class ALEHandler:
           max_num_frames - integer type
           max_num_episodes - integer type
           max_num_frames_per_episode - integer type
+          print_screen - boolean type
 
         Agent parameters:
           agent_type - "ctrnn"
@@ -79,6 +80,7 @@ class ALEHandler:
         self.max_num_frames = max_num_frames
         self.max_num_episodes = max_num_episodes
         self.max_num_frames_per_episode = max_num_frames_per_episode
+        self.print_screen = print_screen
         self.agent_type = agent_type
         self.agent_parameters = agent_parameters
         self.objective_type = objective_type
@@ -93,7 +95,8 @@ class ALEHandler:
             color_avg=self.color_avg, 
             max_num_frames=self.max_num_frames,
             max_num_episodes=self.max_num_episodes,
-            max_num_frames_per_episode=self.max_num_frames_per_episode)
+            max_num_frames_per_episode=self.max_num_frames_per_episode,
+            print_screen=self.print_screen)
 
         # Create Agent handle
         if self.agent_type == "ctrnn":
