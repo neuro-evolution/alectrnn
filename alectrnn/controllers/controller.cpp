@@ -9,6 +9,8 @@
 #include "../agents/player_agent.h"
 #include "controller.h"
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace alectrnn {
 
@@ -54,7 +56,10 @@ void Controller::Run() {
     }
 
     if (ale_->getBool("print_screen")) {
-      ale_->saveScreenPNG(std::to_string(frame_number_) + "_game_frame.png");
+      std::stringstream ss;
+      ss << std::setw(10) << std::setfill('0') << frame_number_;
+      std::string framename = ss.str();
+      ale_->saveScreenPNG(framename + "_game_frame.png");
     }
   }
 }
