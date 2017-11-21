@@ -27,13 +27,16 @@ class ALEHandler:
 
     installed_roms = generate_rom_dictionary()
 
-    def __init__(self, rom, ale_seed, display_screen, sound, 
+    def __init__(self, rom, ale_seed,
                 color_avg, max_num_frames, max_num_episodes,
-                max_num_frames_per_episode, print_screen, agent_type, 
+                max_num_frames_per_episode, agent_type, 
                 objective_type,
                 agent_parameters={},
                 objective_parameters={},
-                rom_file=""):
+                rom_file="",
+                print_screen=False,
+                display_screen=False,
+                sound=False):
         """
         ALE parameters:
           rom - rom name (specify from list)

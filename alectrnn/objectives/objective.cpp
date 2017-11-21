@@ -55,7 +55,7 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   float total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));
 
-  return Py_BuildValue("d", total_cost);
+  return Py_BuildValue("f", total_cost);
 }
 
 static PyMethodDef ObjectiveMethods[] = {
