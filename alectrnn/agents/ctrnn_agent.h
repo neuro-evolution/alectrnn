@@ -8,6 +8,10 @@
  * the ALE environment. This agent only needs to be created once, it has
  * a Configure function that can take parameters to reconfigure the
  * neural network weights.
+ *
+ * update_rate_ = number of euler steps taken per screen input
+ *                the screen remains still during these updates (default 1)
+ * step_size = the euler step size for integration
  */
 
 #ifndef ALECTRNN_CTRNN_AGENT_H_
@@ -26,6 +30,10 @@ namespace alectrnn {
 
 class CtrnnAgent : public PlayerAgent {
   public:
+    CtrnnAgent(ALEInterface* ale, std::size_t num_neurons,
+        std::size_t num_sensor_neurons, std::size_t input_screen_width,
+        std::size_t input_screen_height, bool use_color, float step_size,
+        std::size_t update_rate);
     CtrnnAgent(ALEInterface* ale, std::size_t num_neurons,
         std::size_t num_sensor_neurons, std::size_t input_screen_width,
         std::size_t input_screen_height, bool use_color, float step_size);
@@ -48,6 +56,7 @@ class CtrnnAgent : public PlayerAgent {
     std::size_t input_screen_width_;
     std::size_t input_screen_height_;
     std::size_t num_sensors_;
+    std::size_t update_rate_;
     bool use_color_;
     bool is_configured_;
 };

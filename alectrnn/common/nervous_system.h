@@ -5,7 +5,9 @@
  *      Author: Nathaniel Rodriguez
  *
  * A class used to define a CTRNN neural network.
- *
+ * num_neurons_ = total number of neurons in network
+ * num_sensor_neurons_ = the number of neurons that will recieve sensor input
+ * number of sensor states determined from input vector
  */
 
 #ifndef ALECTRNN_COMMON_NERVOUS_SYSTEM_H_

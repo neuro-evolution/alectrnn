@@ -28,11 +28,13 @@ namespace alectrnn {
 CtrnnAgent::CtrnnAgent(ALEInterface* ale,
       std::size_t num_neurons, std::size_t num_sensor_neurons,
       std::size_t input_screen_width,
-      std::size_t input_screen_height, bool use_color, float step_size)
+      std::size_t input_screen_height, bool use_color, float step_size,
+      std::size_t update_rate)
     : PlayerAgent(ale), num_neurons_(num_neurons),
       num_sensor_neurons_(num_sensor_neurons), use_color_(use_color),
       input_screen_width_(input_screen_width),
-      input_screen_height_(input_screen_height), is_configured_(false) {
+      input_screen_height_(input_screen_height), is_configured_(false),
+      update_rate_(update_rate) {
   // Reserve space for input screens
   if (!use_color_) {
     num_sensors_ = input_screen_width_ * input_screen_height_;
@@ -65,6 +67,14 @@ CtrnnAgent::CtrnnAgent(ALEInterface* ale,
   {
     throw std::invalid_argument( "To few neurons for # game outputs." );
   }
+}
+
+CtrnnAgent::CtrnnAgent(ALEInterface* ale, std::size_t num_neurons,
+        std::size_t num_sensor_neurons, std::size_t input_screen_width,
+        std::size_t input_screen_height, bool use_color, float step_size) 
+          : CtrnnAgent(ale, num_neurons, num_sensor_neurons, 
+            input_screen_width, input_screen_height, 
+            use_color, step_size, 1) {
 }
 
 CtrnnAgent::~CtrnnAgent() {
@@ -134,8 +144,11 @@ Action CtrnnAgent::Act() {
   for (std::size_t iii = 0; iii < num_sensors_; iii++) {
     agent_neural_system_->setSensorState(iii, (float)downsized_screen_[iii]);
   }
+  // The neural network will be updates update_rate_ times before output is read
+  for (std::size_t iii = 0; iii < update_rate_; iii++) {
+    agent_neural_system_->EulerStep();
+  }
 
-  agent_neural_system_->EulerStep();
   // Read values from last X neurons, X==LastNeuronIndex - Action#
   Action prefered_action(PLAYER_A_NOOP);
   float prefered_output(std::numeric_limits<float>::lowest());

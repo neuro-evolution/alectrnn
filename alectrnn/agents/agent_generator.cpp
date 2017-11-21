@@ -43,7 +43,7 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
     PyObject *kwargs) {
   static char *keyword_list[] = {"ale", "num_neurons", "num_sensor_neurons",
                           "input_screen_width", "input_screen_height",
-                          "use_color", "step_size", NULL};
+                          "use_color", "step_size", "update_rate", NULL};
 
   PyObject* ale_capsule;
   int num_neurons;
@@ -52,6 +52,7 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
   int input_screen_height;
   int use_color; //int instead of bool because python api can't deal with bool
   float step_size;
+  int update_rate;
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oiiiiif", keyword_list,
       &ale_capsule, &num_neurons, &num_sensor_neurons,
@@ -74,7 +75,8 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
       static_cast<std::size_t>(num_sensor_neurons),
       static_cast<std::size_t>(input_screen_width),
       static_cast<std::size_t>(input_screen_height),
-      static_cast<bool>(use_color), step_size);
+      static_cast<bool>(use_color), step_size, 
+      static_cast<std::size_t>(update_rate));
 
   PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
                                 "agent_generator.agent", DeleteAgent);
