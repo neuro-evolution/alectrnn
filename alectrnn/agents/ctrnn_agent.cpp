@@ -22,7 +22,6 @@
 #include "../common/network_generator.h"
 #include "../common/screen_preprocessing.h"
 #include "../common/nervous_system.h"
-#include <iostream> ///test
 
 namespace alectrnn {
 
@@ -146,9 +145,7 @@ Action CtrnnAgent::Act() {
     agent_neural_system_->setSensorState(iii, (float)downsized_screen_[iii]);
   }
   // The neural network will be updates update_rate_ times before output is read
-  std::cout << update_rate_ << std::endl;/////////test
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
-    std::cout << iii << " " << update_rate_ << std::endl;/////////test
     agent_neural_system_->EulerStep();
   }
 
