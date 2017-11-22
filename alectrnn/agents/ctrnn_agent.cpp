@@ -148,7 +148,7 @@ Action CtrnnAgent::Act() {
   // The neural network will be updates update_rate_ times before output is read
   std::cout << update_rate_ << std::endl;/////////test
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
-    std::cout << iii << " " << update_rate_ << endl;
+    std::cout << iii << " " << update_rate_ << std::endl;/////////test
     agent_neural_system_->EulerStep();
   }
 
