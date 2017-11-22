@@ -56,7 +56,8 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oiiiiifi", keyword_list,
       &ale_capsule, &num_neurons, &num_sensor_neurons,
-      &input_screen_width, &input_screen_height, &use_color, &step_size)) {
+      &input_screen_width, &input_screen_height, &use_color, &step_size,
+      &update_rate)) {
     std::cout << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
