@@ -92,7 +92,7 @@ void NeuralNetwork::EulerStep() {
   // Update neuron outputs
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     neuron_outputs_[iii] = sigmoid(neuron_gains_[iii] 
-                            * (neuron_states_[iii] * neuron_biases_[iii]));
+                            * (neuron_states_[iii] + neuron_biases_[iii]));
     neuron_outputs_[iii] = BoundState(neuron_outputs_[iii]);
   }
 }
