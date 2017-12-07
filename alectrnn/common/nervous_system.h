@@ -19,11 +19,6 @@
 
 namespace ctrnn {
 
-bool OverBound(float x);
-bool UnderBound(float x);
-float BoundState(float x);
-float sigmoid(float x);
-
 class NeuralNetwork {
   public:
     NeuralNetwork(const std::vector<std::vector<InEdge>>& neuron_neighbors,

@@ -11,39 +11,14 @@
  *
  */
 
-#include <limits>
 #include <vector>
 #include <cstddef>
-#include <cmath>
 #include <stdexcept>
 #include "nervous_system.h"
 #include "network_generator.h"
+#include "utilities.h"
 
 namespace ctrnn {
-
-bool OverBound(float x) {
-  return (x > std::numeric_limits<float>::max()) ? true : false;
-}
-
-bool UnderBound(float x) {
-  return (x < std::numeric_limits<float>::lowest()) ? true : false;
-}
-
-float BoundState(float x) {
-  /*
-   * Return a value bounded by machine float
-   * If NaN, return largest float (this is the equality check, nan fails
-   * comparison checks).
-   */
-  return OverBound(x)  ?  std::numeric_limits<float>::max() :
-         UnderBound(x) ?  std::numeric_limits<float>::lowest() :
-         (x == x)      ?  x :
-                          std::numeric_limits<float>::max();
-}
-
-float sigmoid(float x) {
-  return 1 / (1 + std::exp(-x));
-}
 
 NeuralNetwork::NeuralNetwork(
               const std::vector<std::vector<InEdge>>& neuron_neighbors,
@@ -87,13 +62,13 @@ void NeuralNetwork::EulerStep() {
     }
     neuron_states_[iii] += step_size_ * neuron_rtaus_[iii] 
                             * (input - neuron_states_[iii]);
-    neuron_states_[iii] = BoundState(neuron_states_[iii]);
+    neuron_states_[iii] = utilities::BoundState(neuron_states_[iii]);
   }
   // Update neuron outputs
   for (std::size_t iii = 0; iii < num_neurons_; iii++) {
     neuron_outputs_[iii] = sigmoid(neuron_gains_[iii] 
                             * (neuron_states_[iii] + neuron_biases_[iii]));
-    neuron_outputs_[iii] = BoundState(neuron_outputs_[iii]);
+    neuron_outputs_[iii] = utilities::BoundState(neuron_outputs_[iii]);
   }
 }
 

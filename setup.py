@@ -108,7 +108,7 @@ agent_sources = [
 ]
 objective_sources = [
     "alectrnn/objectives/objective.cpp",
-    "alectrnn/common/utilities.cpp",
+    "alectrnn/common/capi_tools.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/controllers/controller.cpp"
 ]

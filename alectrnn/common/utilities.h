@@ -1,36 +1,43 @@
 /*
- * utilities.h
- *
- *  Created on: Sep 2, 2017
- *      Author: Nathaniel Rodriguez
- *
- * A utility functions for use by other classes or functions.
- * Uses CImg library for debugging if needed: see http://cimg.eu
+ * General purpose helper functions
  */
 
-#ifndef ALECTRNN_COMMON_UTILITIES_H_
-#define ALECTRNN_COMMON_UTILITIES_H_
+#ifndef NN_UTILITIES_H_
+#define NN_UTILITIES_H_
 
-#include <Python.h>
-#include <cstddef>
-#include <cstdint>
-#include <vector>
-#include <string>
-#include "arrayobject.h"
-// #include "CImg.h"
+#include <limits>
+#include <cmath>
 
-namespace alectrnn {
+namespace utilities {
 
-float *PyArrayToCArray(PyArrayObject *py_array);
-// cimg_library::CImg<std::uint8_t> ConvertGrayFrameToImg(
-//   const std::vector<std::uint8_t> &frame,
-//   std::size_t frame_width, std::size_t frame_height);
-// void SaveGrayFrameToPNG(const std::vector<std::uint8_t> &frame,
-//   std::size_t frame_width, std::size_t frame_height,
-//   const std::string &filename);
-
+template <typename TReal>
+bool OverBound(TReal x) {
+  return (x > std::numeric_limits<TReal>::max()) ? true : false;
 }
 
+template <typename TReal>
+bool UnderBound(TReal x) {
+  return (x < std::numeric_limits<TReal>::lowest()) ? true : false;
+}
 
+template <typename TReal>
+TReal BoundState(TReal x) {
+  /*
+   * Return a value bounded by machine float
+   * If NaN, return largest float (this is the equality check, nan fails
+   * comparison checks).
+   */
+  return OverBound(x)  ?  std::numeric_limits<TReal>::max() :
+         UnderBound(x) ?  std::numeric_limits<TReal>::lowest() :
+         (x == x)      ?  x :
+                          std::numeric_limits<TReal>::max();
+}
 
-#endif /* ALECTRNN_COMMON_UTILITIES_H_ */
+template <typename TReal>
+TReal sigmoid(TReal x) {
+  return 1 / (1 + std::exp(-x));
+}
+
+} // End utilities namespace
+
+#endif /* NN_UTILITIES_H_ */

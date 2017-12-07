@@ -22,7 +22,7 @@
 #include "objective.h"
 #include "../controllers/controller.h"
 #include "../agents/player_agent.h"
-#include "../common/utilities.h"
+#include "../common/capi_tools.h"
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
                                       PyObject *kwargs) {
