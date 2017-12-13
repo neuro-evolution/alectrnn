@@ -1,51 +1,89 @@
 #include <cstddef>
 #include <vector>
 #include <stdexcept>
+#include <initializer_list>
 
 namespace multi_array {
 
-typedef std::size_t Index;
 
 template<typename T, std::size_t NumElem>
 class Array {
   public:
+    typedef std::size_t Index;
+    typedef T* TPointer;
+
     Array() {
       data_ = new T[NumElem];
-    };
+    }
     
-    typedef typename T* Pointer;
-    template<typename Pointer>
-    Array(Pointer array) : Array() {
-      for (std::size_t iii = 0; iii < NumElem; iii++) {
+    template<typename TPointer>
+    Array(const TPointer array) : Array() {
+      for (Index iii = 0; iii < NumElem; iii++) {
         data_[iii] = array[iii];
-      }
-    };
-    
-    template<typename Container<T> >
-    Array(Container<T> list) : Array() {
-      for (std::size_t iii = 0; iii < NumElem; iii++) {
-        data_[iii] = list[iii];
       }
     }
     
+    template<typename Container<T> >
+    Array(const Container<T> &list) : Array() {
+      for (Index iii = 0; iii < NumElem; iii++) {
+        data_[iii] = list[iii];
+      }
+    }
+
+    Array(const std::initializer_list<T> &list) : Array() {
+      for (Index iii = 0; iii < NumElem; iii++) {
+        data_[iii] = list[iii];
+      } 
+    }
+
+    Array(const Array<T,NumElem> &other) : Array() {
+      for (Index iii = 0; iii < NumElem; iii++) {
+        data_[iii] = other[iii];
+      } 
+    }
+
+    Array(Array<T,NumElem> &&other) : data_( other.data_ ) {
+      other.data_ = nullptr;
+    }
+
+    Array<T, NumElem>& operator=(const Array<T, NumElem> &other) {
+      delete[] data_;
+      data_ = new T[NumElem]; 
+      for (Index iii = 0; iii < NumElem; iii++) {
+        data_[iii] = other[iii];
+      }
+      return *this;
+    }
+
+    Array<T, NumElem>& operator=(Array<T, NumElem> &&other) {
+      delete[] data_;
+      data_ = other.data_;
+      other.data_ = nullptr;
+      return *this;
+    }    
+    
     ~Array() {
       delete[] data_;
-    };
+    }
+
+    T* GetData() {
+      return data_;
+    }
 
     const T& operator[](Index index) const {
-      if (index >= NumElem) {
+      if (index >= NumElem || index < 0) {
         throw std::invalid_argument( "index out of Array bounds" );
       }
       return data_[index];
     }
     
     T& operator[](Index index) {
-      if (index >= NumElem) {
+      if (index >= NumElem || index < 0) {
         throw std::invalid_argument( "index out of Array bounds" );
       }
       return data_[index];
     }
-  
+ 
   private:
     T* data_;
 }
