@@ -2,15 +2,18 @@
 #include <vector>
 #include <stdexcept>
 #include <initializer_list>
+#include <algorithm>
+// #include <iterator>
 
 namespace multi_array {
-
 
 template<typename T, std::size_t NumElem>
 class Array {
   public:
     typedef std::size_t Index;
     typedef T* TPointer;
+    typedef T* iterator;
+    typedef const T* const_iterator;
 
     Array() {
       data_ = new T[NumElem];
@@ -23,17 +26,15 @@ class Array {
       }
     }
     
-    template<typename Container<T> >
-    Array(const Container<T> &list) : Array() {
+    template<typename Container>
+    Array(const Container &list) : Array() {
       for (Index iii = 0; iii < NumElem; iii++) {
         data_[iii] = list[iii];
       }
     }
 
     Array(const std::initializer_list<T> &list) : Array() {
-      for (Index iii = 0; iii < NumElem; iii++) {
-        data_[iii] = list[iii];
-      } 
+      std::copy(list.begin(), list.end(), this->begin());
     }
 
     Array(const Array<T,NumElem> &other) : Array() {
@@ -83,27 +84,42 @@ class Array {
       }
       return data_[index];
     }
+
+    iterator begin() {
+      return &data_[0];
+    }
+
+    iterator end() {
+      return &data_[NumElem];
+    }
+
+    const_iterator begin() const {
+      return &data_[0];
+    }
+
+    const_iterator end() const {
+      return &data_[NumElem];
+    }
  
   private:
     T* data_;
-}
+};
 
 template<typename T, std::size_t NumDim>
 class ArrayView {
   
-}
+};
 
 template<typename T>
 class ArrayView {
   
-}
+};
 
 template<typename T, std::size_t NumDim>
 class MultiArray {
   public:
     MultiArray(T* data, std::vector<std::size_t> shape) 
         : data_(data), shape_(shape) {
-      
       for (std::size_t iii = 0; iii < NumDim; iii++) {
         
       }
@@ -114,6 +130,6 @@ class MultiArray {
     T* data_;
     std::vector<std::size_t> shape_;
     std::vector<std::size_t> strides_;
-}
+};
 
 } // End namespace multi_array
