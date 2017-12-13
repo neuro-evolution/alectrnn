@@ -14,9 +14,9 @@
 #include <vector>
 #include <cstddef>
 #include <stdexcept>
-#include "nervous_system.h"
-#include "network_generator.h"
-#include "utilities.h"
+#include "nervous_system.hpp"
+#include "network_generator.hpp"
+#include "utilities.hpp"
 
 namespace ctrnn {
 

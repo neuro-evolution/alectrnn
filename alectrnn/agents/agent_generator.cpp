@@ -23,10 +23,10 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
-#include "agent_generator.h"
-#include "player_agent.h"
+#include "agent_generator.hpp"
+#include "player_agent.hpp"
 // Add includes to agents you wish to add below:
-#include "ctrnn_agent.h"
+#include "ctrnn_agent.hpp"
 
 /*
  * DeleteAgent can be shared among the agents as a destructor

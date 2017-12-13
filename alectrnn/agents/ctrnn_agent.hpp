@@ -22,9 +22,9 @@
 #include <vector>
 #include <memory>
 #include <ale_interface.hpp>
-#include "player_agent.h"
-#include "../common/network_generator.h"
-#include "../common/nervous_system.h"
+#include "player_agent.hpp"
+#include "../common/network_generator.hpp"
+#include "../common/nervous_system.hpp"
 
 namespace alectrnn {
 

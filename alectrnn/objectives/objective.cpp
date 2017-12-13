@@ -19,10 +19,10 @@
 #include <ale_interface.hpp>
 #include <iostream>
 #include "arrayobject.h"
-#include "objective.h"
-#include "../controllers/controller.h"
-#include "../agents/player_agent.h"
-#include "../common/capi_tools.h"
+#include "objective.hpp"
+#include "../controllers/controller.hpp"
+#include "../agents/player_agent.hpp"
+#include "../common/capi_tools.hpp"
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
                                       PyObject *kwargs) {

@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <vector>
 #include <cmath>
-#include "screen_preprocessing.h"
+#include "screen_preprocessing.hpp"
 
 namespace alectrnn {
 

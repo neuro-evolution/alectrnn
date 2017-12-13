@@ -16,7 +16,7 @@
 
 #include <Python.h>
 #include <ale_interface.hpp>
-#include "../agents/player_agent.h"
+#include "../agents/player_agent.hpp"
 
 PyMODINIT_FUNC PyInit_objective(void);
 

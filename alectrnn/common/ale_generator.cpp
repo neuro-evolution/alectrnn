@@ -12,7 +12,7 @@
  */
 
 #include <Python.h>
-#include "ale_generator.h"
+#include "ale_generator.hpp"
 #include <ale_interface.hpp>
 #include <iostream>
 

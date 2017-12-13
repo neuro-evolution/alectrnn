@@ -12,7 +12,7 @@
 
 #include <cstddef>
 #include <vector>
-#include "network_generator.h"
+#include "network_generator.hpp"
 
 namespace ctrnn {
 

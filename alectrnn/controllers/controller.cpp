@@ -6,8 +6,8 @@
  */
 
 #include <ale_interface.hpp>
-#include "../agents/player_agent.h"
-#include "controller.h"
+#include "../agents/player_agent.hpp"
+#include "controller.hpp"
 #include <string>
 #include <sstream>
 #include <iomanip>

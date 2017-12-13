@@ -15,7 +15,7 @@
 
 #include <vector>
 #include <cstddef>
-#include "network_generator.h"
+#include "network_generator.hpp"
 
 namespace ctrnn {
 

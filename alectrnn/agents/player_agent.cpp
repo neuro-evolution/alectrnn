@@ -12,7 +12,7 @@
  * PlayerAgent class.
  */
 
-#include "player_agent.h"
+#include "player_agent.hpp"
 #include <ale_interface.hpp>
 
 namespace alectrnn {

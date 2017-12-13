@@ -17,11 +17,11 @@
 #include <stdexcept>
 #include <memory>
 #include <ale_interface.hpp>
-#include "ctrnn_agent.h"
-#include "player_agent.h"
-#include "../common/network_generator.h"
-#include "../common/screen_preprocessing.h"
-#include "../common/nervous_system.h"
+#include "ctrnn_agent.hpp"
+#include "player_agent.hpp"
+#include "../common/network_generator.hpp"
+#include "../common/screen_preprocessing.hpp"
+#include "../common/nervous_system.hpp"
 
 namespace alectrnn {
 

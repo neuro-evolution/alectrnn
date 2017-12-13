@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 #include "arrayobject.h"
+#include "capi_tools.hpp"
 // #include "CImg.h"
 
 namespace alectrnn {

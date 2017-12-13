@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include "arrayobject.h"
+#include "arrayobject.hpp"
 // #include "CImg.h"
 
 namespace alectrnn {
