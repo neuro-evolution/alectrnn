@@ -1,9 +1,14 @@
+#ifndef MULTI_ARRAY_H_
+#define MULTI_ARRAY_H_
+
 #include <cstddef>
 #include <vector>
 #include <stdexcept>
 #include <initializer_list>
+#include <memory>
+#include <numeric>
+#include <functional>
 #include <algorithm>
-// #include <iterator>
 
 namespace multi_array {
 
@@ -11,21 +16,24 @@ template<typename T, std::size_t NumElem>
 class Array {
   public:
     typedef std::size_t Index;
-    typedef T* TPointer;
+    typedef T* TPtr;
     typedef T* iterator;
     typedef const T* const_iterator;
 
+    // Base constructor that allocates the array, used in most other constructors
     Array() {
       data_ = new T[NumElem];
     }
-    
-    template<typename TPointer>
-    Array(const TPointer array) : Array() {
+
+    template<typename TPtr>
+    Array(const TPtr array) : Array() {
       for (Index iii = 0; iii < NumElem; iii++) {
         data_[iii] = array[iii];
       }
     }
     
+    // Lazy std container support. Breaks if container iterator doesn't return T
+    // TODO: Add some constraint that requires Container iter to have T*
     template< template<typename, typename...> class Container, typename... Args>
     Array(const Container<T, Args...> &list) : Array() {
       std::copy(list.begin(), list.end(), this->begin());
@@ -65,7 +73,7 @@ class Array {
       delete[] data_;
     }
 
-    T* GetData() {
+    TPtr GetData() {
       return data_;
     }
 
@@ -100,12 +108,15 @@ class Array {
     }
  
   private:
-    T* data_;
+    TPtr data_;
 };
 
 template<typename T, std::size_t NumDim>
 class ArrayView {
-  
+  public:
+    typedef std::size_t Index;
+    typedef std::shared_ptr<T> TSharedptr;
+
 };
 
 template<typename T>
@@ -116,18 +127,48 @@ class ArrayView {
 template<typename T, std::size_t NumDim>
 class MultiArray {
   public:
-    MultiArray(T* data, std::vector<std::size_t> shape) 
-        : data_(data), shape_(shape) {
-      for (std::size_t iii = 0; iii < NumDim; iii++) {
-        
-      }
+    typedef std::size_t Index;
+    typedef std::shared_ptr<T> TSharedptr;
+
+    /*
+     * Build 'empty' MultiArray 
+     */ 
+    template< template<typename, typename...> class Container, Args...>
+    MultiArray(const Container<T, Args...> &shape) : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      std::partial_sum(shape_ std::multiplies<>());
+      std::reverse(strides_.begin(), strides_.end());
     }
-    ~MultiArray();
+
+    MultiArray(const std::initializer_list<T> &shape) 
+        : shape_(shape) {
+
+    }
+
+    /*
+     * Build MultiArray with data from pointer -> assumes contiguous
+     * data and correct length
+     */ 
+    template< template<typename, typename...> class Container, Args...>
+    MultiArray(TSharedptr data, const Container<T, Args...> &shape)
+        : data_(data), shape_(shape) {
+
+    }
+
+    MultiArray(TSharedptr data, const std::initializer_list<T> &shape)
+        : data_(data), shape_(shape) {
+
+    }
+
+    ~MultiArray() { };
 
   private:
-    T* data_;
-    std::vector<std::size_t> shape_;
-    std::vector<std::size_t> strides_;
+    TSharedptr data_;
+    Array<T, NumDim> shape_;
+    Array<T, NumDim> strides_;
+    std::size_t size_;
 };
 
 } // End namespace multi_array
+
+#endif /* MULTI_ARRAY_H_ */
