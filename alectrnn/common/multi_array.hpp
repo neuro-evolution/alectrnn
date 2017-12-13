@@ -26,11 +26,9 @@ class Array {
       }
     }
     
-    template<typename Container>
-    Array(const Container &list) : Array() {
-      for (Index iii = 0; iii < NumElem; iii++) {
-        data_[iii] = list[iii];
-      }
+    template< template<typename, typename...> class Container, typename... Args>
+    Array(const Container<T, Args...> &list) : Array() {
+      std::copy(list.begin(), list.end(), this->begin());
     }
 
     Array(const std::initializer_list<T> &list) : Array() {
