@@ -32,8 +32,6 @@ class Array {
       }
     }
     
-    // Lazy std container support. Breaks if container iterator doesn't return T
-    // TODO: Add some constraint that requires Container iter to have T*
     template< template<typename, typename...> class Container, typename... Args>
     Array(const Container<T, Args...> &list) : Array() {
       std::copy(list.begin(), list.end(), this->begin());
@@ -115,18 +113,72 @@ template<typename T, std::size_t NumDim>
 class ArrayView {
   public:
     typedef std::size_t Index;
-    typedef std::shared_ptr<T> TSharedptr;
+    typedef T* TPtr;
+    typedef std::size_t* DimPtr;
 
+    ArrayView(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
+    }
+
+    ~ArrayView() {};
+
+    T& operator(IndexList index)() {
+
+    }
+
+    const T& operator(IndexList index)() const {
+
+    }
+
+    ArrayView<T, NumDim-1>& operator[](Index index) {
+      return ArrayView(base + index * strides_[0], strides_+1);
+    }
+
+    const ArrayView<T, NumDim-1>& operator[](Index index) const {
+      return ArrayView(base + index * strides_[0], strides_+1);
+    }
+
+  private:
+    TPtr base_;
+    DimPtr strides_;
 };
 
 template<typename T>
-class ArrayView {
-  
+class ArrayView<T,1> {
+  public:
+    typedef std::size_t Index;
+    typedef T* TPtr;
+    typedef std::size_t* DimPtr;
+
+    ArrayView(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
+    }
+
+    ~ArrayView() {};
+
+    T& operator(IndexList index)() {
+
+    }
+
+    const T& operator(IndexList index)() const {
+
+    }
+
+    T& operator[](Index index) {
+      return *(base_ + index * strides_[0]);
+    }
+
+    const T& operator[](Index index) const {
+      return *(base_ + index * strides_[0]);
+    }
+
+  private:
+    TPtr base_;
+    DimPtr strides_;
 };
 
 template<typename T, std::size_t NumDim>
 class MultiArray {
   public:
+    typedef T* TPtr;
     typedef std::size_t Index;
     typedef std::shared_ptr<T> TSharedptr;
 
@@ -134,15 +186,17 @@ class MultiArray {
      * Build 'empty' MultiArray 
      */ 
     template< template<typename, typename...> class Container, Args...>
-    MultiArray(const Container<T, Args...> &shape) : shape_(shape) {
+    MultiArray(const Container<Index, Args...> &shape) : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
-      std::partial_sum(shape_ std::multiplies<>());
-      std::reverse(strides_.begin(), strides_.end());
+      data_ = std::shared_ptr<Index>(new Index[size_], std::default_delete<Index[]>());
+      CalculateStrides();
     }
 
-    MultiArray(const std::initializer_list<T> &shape) 
+    MultiArray(const std::initializer_list<Index> &shape) 
         : shape_(shape) {
-
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = std::shared_ptr<Index>(new Index[size_], std::default_delete<Index[]>());
+      CalculateStrides();
     }
 
     /*
@@ -150,22 +204,35 @@ class MultiArray {
      * data and correct length
      */ 
     template< template<typename, typename...> class Container, Args...>
-    MultiArray(TSharedptr data, const Container<T, Args...> &shape)
+    MultiArray(TSharedptr data, const Container<Index, Args...> &shape)
         : data_(data), shape_(shape) {
-
+      CalculateStrides();
     }
 
-    MultiArray(TSharedptr data, const std::initializer_list<T> &shape)
+    MultiArray(TSharedptr data, const std::initializer_list<Index> &shape)
         : data_(data), shape_(shape) {
-
+      CalculateStrides();
     }
 
-    ~MultiArray() { };
+    ~MultiArray() {};
+
+    void CalculateStrides() {
+      std::partial_sum(shape_.begin(), shape_.end(), strides_, std::multiplies<>());
+      Index major(shape_[NumDim-1]);
+      std::for_each(strides_.begin(), strides_.end(), [major](Index num_elem) -> Index {
+        return num_elem / major;
+      });
+      std::reverse(strides_.begin(), strides_.end());
+    }
+
+    TPtr GetData() {
+      return data_.get();
+    }
 
   private:
     TSharedptr data_;
-    Array<T, NumDim> shape_;
-    Array<T, NumDim> strides_;
+    Array<Index, NumDim> shape_;
+    Array<Index, NumDim> strides_;
     std::size_t size_;
 };
 
