@@ -185,7 +185,7 @@ class MultiArray {
     /*
      * Build 'empty' MultiArray 
      */ 
-    template< template<typename, typename...> class Container, Args...>
+    template< template<typename, typename...> class Container, typename... Args>
     MultiArray(const Container<Index, Args...> &shape) : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = std::shared_ptr<Index>(new Index[size_], std::default_delete<Index[]>());
@@ -203,7 +203,7 @@ class MultiArray {
      * Build MultiArray with data from pointer -> assumes contiguous
      * data and correct length
      */ 
-    template< template<typename, typename...> class Container, Args...>
+    template< template<typename, typename...> class Container, typename... Args>
     MultiArray(TSharedptr data, const Container<Index, Args...> &shape)
         : data_(data), shape_(shape) {
       CalculateStrides();
@@ -218,8 +218,8 @@ class MultiArray {
 
     void CalculateStrides() {
       std::partial_sum(shape_.begin(), shape_.end(), strides_, std::multiplies<>());
-      Index major(shape_[NumDim-1]);
-      std::for_each(strides_.begin(), strides_.end(), [major](Index num_elem) -> Index {
+      Index major = Index(shape_[NumDim-1]);
+      std::for_each(strides_.begin(), strides_.end(), [=,major](Index num_elem) -> Index {
         return num_elem / major;
       });
       std::reverse(strides_.begin(), strides_.end());
