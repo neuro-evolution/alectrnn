@@ -12,6 +12,20 @@
 
 namespace multi_array {
 
+// Forward declare
+template<typename T, std::size_t NumElem>
+class Array;
+
+template<typename T>
+class ArrayViewBase;
+
+template<typename T, std::size_t NumDim>
+class ArrayView;
+
+template<typename T, std::size_t NumDim>
+class MultiArray;
+// End Forward declare
+
 template<typename T, std::size_t NumElem>
 class Array {
   public:
@@ -75,6 +89,10 @@ class Array {
       return data_;
     }
 
+    const TPtr data() const {
+      return data_;
+    }
+
     std::size_t size() const {
       return NumElem;
     }
@@ -113,32 +131,38 @@ class Array {
     TPtr data_;
 };
 
-template<typename T, std::size_t NumDim>
-class ArrayView {
+template<typename T>
+class ArrayViewBase {
   public:
     typedef std::size_t Index;
     typedef T* TPtr;
-    typedef std::size_t* DimPtr;
+    typedef const std::size_t* DimPtr;
 
-    ArrayView(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
+    ArrayViewBase(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
     }
 
-    ~ArrayView() {};
+    ~ArrayViewBase() {};
 
-    T& operator(IndexList index)() {
-
+    template< template<typename, typename...> class Container, typename... Args>
+    T& operator()(const Container<T, Args...>& indices) {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return base_[flat_index];
     }
 
-    const T& operator(IndexList index)() const {
-
+    T& operator()(const std::initializer_list<T>& indices) {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return base_[flat_index];
     }
 
-    ArrayView<T, NumDim-1>& operator[](Index index) {
-      return ArrayView(base + index * strides_[0], strides_+1);
+    template< template<typename, typename...> class Container, typename... Args>
+    const T& operator()(const Container<T, Args...>& indices) const {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return base_[flat_index];
     }
 
-    const ArrayView<T, NumDim-1>& operator[](Index index) const {
-      return ArrayView(base + index * strides_[0], strides_+1);
+    const T& operator()(const std::initializer_list<T>& indices) const {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return base_[flat_index];
     }
 
   private:
@@ -146,37 +170,52 @@ class ArrayView {
     DimPtr strides_;
 };
 
-template<typename T>
-class ArrayView<T,1> {
+template<typename T, std::size_t NumDim>
+class ArrayView : private ArrayViewBase<T> {
+    typedef ArrayViewBase<T> super_type;
   public:
-    typedef std::size_t Index;
-    typedef T* TPtr;
-    typedef std::size_t* DimPtr;
+    typedef typename super_type::Index Index;
+    typedef typename super_type::TPtr TPtr;
+    typedef typename super_type::DimPtr DimPtr;
 
-    ArrayView(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
+    ///TODO Fix bloody constructor, needs to set the pointer location according to ArrDims - NumDim
+
+    ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
     }
 
-    ~ArrayView() {};
-
-    T& operator(IndexList indices)() {
-      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides.begin(), 0);
+    template<std::size_t ArrDims>
+    ArrayView(MultiArray<T, ArrDims>& array) 
+        : super_type(array.data(), array.strides().data()) {
     }
 
-    const T& operator(IndexList index)() const {
-
+    ArrayView<T, NumDim-1>& operator[](Index index) {
+      return ArrayView<T, NumDim-1>(ArrayViewBase<T>::base_ + 
+        index * super_type::strides_[0], super_type::strides_+1);
     }
+
+    const ArrayView<T, NumDim-1>& operator[](Index index) const {
+      return ArrayView<T, NumDim-1>(ArrayViewBase<T>::base_ + 
+        index * super_type::strides_[0], super_type::strides_+1);
+    }
+};
+
+template<typename T>
+class ArrayView<T,1> : private ArrayViewBase<T> {
+    typedef ArrayViewBase<T> super_type;
+  public:
+    typedef typename super_type::Index Index;
+    typedef typename super_type::TPtr TPtr;
+    typedef typename super_type::DimPtr DimPtr;
+
+
 
     T& operator[](Index index) {
-      return *(base_ + index * strides_[0]);
+      return *(super_type::base_ + index * super_type::strides_[0]);
     }
 
     const T& operator[](Index index) const {
-      return *(base_ + index * strides_[0]);
+      return *(super_type::base_ + index * super_type::strides_[0]);
     }
-
-  private:
-    TPtr base_;
-    DimPtr strides_;
 };
 
 template<typename T, std::size_t NumDim>
