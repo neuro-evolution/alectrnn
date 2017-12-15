@@ -71,8 +71,12 @@ class Array {
       delete[] data_;
     }
 
-    TPtr GetData() {
+    TPtr data() {
       return data_;
+    }
+
+    std::size_t size() const {
+      return NumElem;
     }
 
     const T& operator[](Index index) const {
@@ -154,8 +158,8 @@ class ArrayView<T,1> {
 
     ~ArrayView() {};
 
-    T& operator(IndexList index)() {
-
+    T& operator(IndexList indices)() {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides.begin(), 0);
     }
 
     const T& operator(IndexList index)() const {
@@ -180,7 +184,6 @@ class MultiArray {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
-    typedef std::shared_ptr<T> TSharedptr;
 
     /*
      * Build 'empty' MultiArray 
@@ -188,49 +191,94 @@ class MultiArray {
     template< template<typename, typename...> class Container, typename... Args>
     MultiArray(const Container<Index, Args...> &shape) : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
-      data_ = std::shared_ptr<Index>(new Index[size_], std::default_delete<Index[]>());
+      data_ = new T[size_];
       CalculateStrides();
     }
 
     MultiArray(const std::initializer_list<Index> &shape) 
         : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
-      data_ = std::shared_ptr<Index>(new Index[size_], std::default_delete<Index[]>());
+      data_ = new T[size_];
       CalculateStrides();
     }
 
     /*
-     * Build MultiArray with data from pointer -> assumes contiguous
-     * data and correct length
-     */ 
-    template< template<typename, typename...> class Container, typename... Args>
-    MultiArray(TSharedptr data, const Container<Index, Args...> &shape)
-        : data_(data), shape_(shape) {
-      CalculateStrides();
+     * Copy (copies data as well)
+     */
+    MultiArray(const MultiArray<T,NumDim> &other) : shape_(other.shape_),
+        strides_(other.strides_), size_(other.size_) {
+      data_ = new T[size_];
+
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = other.data_[iii];
+      }
     }
 
-    MultiArray(TSharedptr data, const std::initializer_list<Index> &shape)
-        : data_(data), shape_(shape) {
-      CalculateStrides();
+    MultiArray(MultiArray<T,NumDim> &&other) : shape_(std::move(other.shape_)),
+        strides_(std::move(other.strides_)), size_(other.size_), 
+        data_(std::move(other.data_)) {
     }
 
-    ~MultiArray() {};
+    ~MultiArray() {
+      delete[] data_;
+    };
 
     void CalculateStrides() {
-      std::partial_sum(shape_.begin(), shape_.end(), strides_, std::multiplies<>());
-      Index major = Index(shape_[NumDim-1]);
-      std::for_each(strides_.begin(), strides_.end(), [=,major](Index num_elem) -> Index {
-        return num_elem / major;
-      });
-      std::reverse(strides_.begin(), strides_.end());
+      for (Index iii = 0; iii < NumDim; iii++) {
+        strides_[iii] = 1;
+        for (Index jjj = iii + 1; jjj < NumDim; jjj++) {
+          strides_[iii] *= shape_[jjj];
+        }
+      }
     }
 
-    TPtr GetData() {
-      return data_.get();
+    TPtr data() {
+      return data_;
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    const Array<Index, NumDim>& shape() const {
+      return shape_;
+    }
+
+    const Array<Index, NumDim>& strides() const {
+      return strides_;
+    }
+
+    T& operator[](Index index) {
+      return data_[index]; 
+    }
+
+    const T& operator[](Index index) const {
+      return data_[index];
+    }
+
+    MultiArray<T,NumDim>& operator=(const MultiArray<T,NumDim>& other) {
+      delete[] data_;
+      shape_ = other.shape_;
+      strides_ = other.strides_;
+      size_ = other.size_;
+
+      data_ = new T[size_];
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = other.data_[iii];
+      }
+    }
+
+    MultiArray<T,NumDim>& operator=(MultiArray<T,NumDim>&& other) {
+      data_ = std::move(other.data_);
+      shape_ = std::move(other.shape_);
+      strides_ = std::move(other.strides_);
+      size_ = other.size_;
+
+      return *this;
     }
 
   private:
-    TSharedptr data_;
+    TPtr data_;
     Array<Index, NumDim> shape_;
     Array<Index, NumDim> strides_;
     std::size_t size_;
