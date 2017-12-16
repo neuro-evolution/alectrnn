@@ -141,6 +141,14 @@ class ArrayViewBase {
     ArrayViewBase(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
     }
 
+    ArrayViewBase(const ArrayViewBase<T>& other) : base_(other.base_), 
+        strides_(other.strides_) {
+    }
+
+    ArrayViewBase(ArrayViewBase<T>&& other) : base_(std::move(other.base_)),
+        strides_(std::move(other.strides_)) {
+    }
+
     ~ArrayViewBase() {};
 
     template< template<typename, typename...> class Container, typename... Args>
@@ -165,49 +173,103 @@ class ArrayViewBase {
       return base_[flat_index];
     }
 
-  private:
+    ArrayViewBase& operator=(const ArrayViewBase& other) {
+      base_ = other.base_;
+      strides_ = other.strides_;
+      return *this;
+    }
+
+    ArrayViewBase& operator=(ArrayViewBase&& other) {
+      base_ = other.base_;
+      other.base_ = nullptr;
+      strides_ = other.strides_;
+      other.strides_ = nullptr;
+      return *this;
+    }
+
+  protected:
     TPtr base_;
     DimPtr strides_;
 };
 
 template<typename T, std::size_t NumDim>
-class ArrayView : private ArrayViewBase<T> {
+class ArrayView : public ArrayViewBase<T> {
     typedef ArrayViewBase<T> super_type;
   public:
     typedef typename super_type::Index Index;
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
-
-    ///TODO Fix bloody constructor, needs to set the pointer location according to ArrDims - NumDim
 
     ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
     }
 
     template<std::size_t ArrDims>
     ArrayView(MultiArray<T, ArrDims>& array) 
-        : super_type(array.data(), array.strides().data()) {
+        : super_type(array.data(), array.strides().data() + ArrDims - NumDim) {
     }
 
-    ArrayView<T, NumDim-1>& operator[](Index index) {
-      return ArrayView<T, NumDim-1>(ArrayViewBase<T>::base_ + 
+    ArrayView(const ArrayView<T, NumDim>& view) : super_type(view) {
+    }
+
+    ArrayView(ArrayView<T, NumDim>&& view) : super_type(std::move(view)) {
+    }
+
+    ~ArrayView() {}
+
+    ArrayView<T, NumDim>& operator=(const ArrayView<T,NumDim>& view) {
+      super_type::operator=(view);
+      return *this;
+    }
+
+    ArrayView<T, NumDim>& operator=(ArrayView<T,NumDim>&& view) {
+      super_type::operator=(std::move(view));
+      return *this;
+    }
+
+    ArrayView<T, NumDim-1> operator[](Index index) {
+      return ArrayView<T, NumDim-1>(super_type::base_ + 
         index * super_type::strides_[0], super_type::strides_+1);
     }
 
-    const ArrayView<T, NumDim-1>& operator[](Index index) const {
-      return ArrayView<T, NumDim-1>(ArrayViewBase<T>::base_ + 
+    const ArrayView<T, NumDim-1> operator[](Index index) const {
+      return ArrayView<T, NumDim-1>(super_type::base_ + 
         index * super_type::strides_[0], super_type::strides_+1);
     }
 };
 
 template<typename T>
-class ArrayView<T,1> : private ArrayViewBase<T> {
+class ArrayView<T,1> : public ArrayViewBase<T> {
     typedef ArrayViewBase<T> super_type;
   public:
     typedef typename super_type::Index Index;
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
 
+    ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
+    }
 
+    template<std::size_t ArrDims>
+    ArrayView(MultiArray<T, ArrDims>& array) 
+        : super_type(array.data(), array.strides().data() + ArrDims - 1) {
+    }
+
+    ArrayView(const ArrayView<T, 1>& view) : super_type(view) {
+    }
+
+    ArrayView(ArrayView<T, 1>&& view) : super_type(std::move(view)) {
+    }
+
+    ~ArrayView() {}
+
+    ArrayView<T, 1>& operator=(const ArrayView<T,1>& view) {
+      super_type::operator=(view);
+      return *this;
+    }
+
+    ArrayView<T, 1>& operator=(ArrayView<T,1>&& view) {
+      super_type::operator=(std::move(view));
+      return *this;
+    }
 
     T& operator[](Index index) {
       return *(super_type::base_ + index * super_type::strides_[0]);
