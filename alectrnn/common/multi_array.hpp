@@ -440,13 +440,21 @@ class ArraySlice {
     std::size_t size() const {
       return size_;
     }
-    
+
     const T& operator[](Index index) {
       return data_[start_ + index * stride_];
     }
 
     T& operator[](Index index) {
       return data_[start_ + index * stride_];
+    }
+
+    T* data() {
+      return data_;
+    }
+
+    void data(T* new_data) {
+      data_ = new_data;
     }
 
   private:
@@ -499,6 +507,14 @@ class Slice {
 
     std::size_t size() const {
       return size_;
+    }
+
+    T* data() {
+      return data_;
+    }
+
+    void data(T* new_data) {
+      data_ = new_data;
     }
 
   private:
