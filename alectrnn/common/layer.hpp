@@ -76,6 +76,9 @@ class Layer {
     LAYER_TYPE layer_type_;
 };
 
+
+// Input layer class
+
 // Conv layer class
 class ConvLayer : public Layer {
 
@@ -86,12 +89,13 @@ class RecurrentLayer : public Layer {
 
 };
 
+// Reservoir layer
+
 // Output layer class
 class MotorLayer : public Layer {
 
 };
 
-// Input layer class???
 
 } // End hybrid namespace
 

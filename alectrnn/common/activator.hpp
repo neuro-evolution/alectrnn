@@ -1,5 +1,5 @@
-#ifndef NN_UPDATE_FUNCTOR_H_
-#define NN_UPDATE_FUNCTOR_H_
+#ifndef NN_ACTIVATION_FUNCTOR_H_
+#define NN_ACTIVATION_FUNCTOR_H_
 
 // We really want to shuttle neuron activation function stuff here...
 // including parameters
@@ -22,4 +22,4 @@ namespace hybrid {
 
 } // End hybrid namespace
 
-#endif /* NN_UPDATE_FUNCTOR_H_ */
+#endif /* NN_ACTIVATION_FUNCTOR_H_ */

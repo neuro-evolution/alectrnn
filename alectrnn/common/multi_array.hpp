@@ -145,8 +145,11 @@ class ArrayViewBase {
         strides_(other.strides_) {
     }
 
-    ArrayViewBase(ArrayViewBase<T>&& other) : base_(std::move(other.base_)),
-        strides_(std::move(other.strides_)) {
+    ArrayViewBase(ArrayViewBase<T>&& other) : {
+      base_ = other.base_;
+      other.base_ = nullptr;
+      strides_ = other.strides_;
+      other.strides_ = nullptr;
     }
 
     ~ArrayViewBase() {};
@@ -203,10 +206,17 @@ class ArrayView : public ArrayViewBase<T> {
     ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
     }
 
-    template<std::size_t ArrDims>
-    ArrayView(MultiArray<T, ArrDims>& array) 
-        : super_type(array.data(), array.strides().data() + ArrDims - NumDim) {
+    template<std::size_t NumDim>
+    ArrayView(MultiArray<T, NumDim>& array) 
+        : super_type(array.data(), array.strides().data()) {
     }
+
+    // TODO: Need to get (ArrDims - NumDim) arguments to determine offset for each dimension that is being sliced around.
+    // Probably implement via a initializer list. Need two information (1) select axis for slice, (2) select row of non-slected axis
+    // template<std::size_t ArrDims>
+    // ArrayView(MultiArray<T, ArrDims>& array) 
+    //     : super_type(array.data(), array.strides().data() + ArrDims - NumDim) {
+    // }
 
     ArrayView(const ArrayView<T, NumDim>& view) : super_type(view) {
     }
@@ -248,10 +258,14 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
     }
 
-    template<std::size_t ArrDims>
-    ArrayView(MultiArray<T, ArrDims>& array) 
-        : super_type(array.data(), array.strides().data() + ArrDims - 1) {
+    ArrayView(MultiArray<T, 1>& array) 
+        : super_type(array.data(), array.strides().data()) {
     }
+
+    // template<std::size_t ArrDims>
+    // ArrayView(MultiArray<T, ArrDims>& array) 
+    //     : super_type(array.data(), array.strides().data() + ArrDims - 1) {
+    // }
 
     ArrayView(const ArrayView<T, 1>& view) : super_type(view) {
     }
@@ -316,8 +330,9 @@ class MultiArray {
     }
 
     MultiArray(MultiArray<T,NumDim> &&other) : shape_(std::move(other.shape_)),
-        strides_(std::move(other.strides_)), size_(other.size_), 
-        data_(std::move(other.data_)) {
+        strides_(std::move(other.strides_)), size_(std::move(other.size_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
     }
 
     ~MultiArray() {
@@ -370,10 +385,11 @@ class MultiArray {
     }
 
     MultiArray<T,NumDim>& operator=(MultiArray<T,NumDim>&& other) {
-      data_ = std::move(other.data_);
+      data_ = other.data_;
+      other.data_ = nullptr;
       shape_ = std::move(other.shape_);
       strides_ = std::move(other.strides_);
-      size_ = other.size_;
+      size_ = std::move(other.size_);
 
       return *this;
     }
@@ -383,6 +399,104 @@ class MultiArray {
     Array<Index, NumDim> shape_;
     Array<Index, NumDim> strides_;
     std::size_t size_;
+};
+
+/*
+ * This is a Size based slice, where the shape of an array is used to specify
+ * the stop point.
+ */
+template<typename T>
+class ArraySlice {
+  public:
+    typedef std::size_t Index;
+
+    ArraySlice(T* data, Index start, Index size, Index stride) : data_(data),
+        start_(start), size_(size), stride_(stride) {
+    }
+
+    ArraySlice(ArraySlice<T>&& other) : start_(std::move(other.start_)),
+        size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    ArraySlice<T>& operator=(ArraySlice<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      start_ = std::move(other.start_);
+      size_ = std::move(other.size_);
+      stride_ = std::move(other.stride_);
+      return *this; 
+    }
+
+    ~ArraySlice() {}
+
+    const T& operator[](Index index) {
+      return data_[start_ + index * stride_];
+    }
+
+    T& operator[](Index index) {
+      return data_[start_ + index * stride_];
+    }
+
+  private:
+    T* data_;
+    Index start_;
+    Index stride_;
+    Index size_;
+};
+
+/*
+ * This is a Stop based slice, where the stopping index is used to specify
+ * the size. More like a Numpy slice.
+ */
+template<typename T>
+class Slice {
+  public:
+    typedef std::size_t Index;
+
+    Slice(T* data, Index start, Index stop, Index stride) : data_(data),
+        start_(start), stop_(stop), stride_(stride) {
+      size_ = (stop_ - start_) / stride_;
+    }
+
+    Slice(Slice<T>&& other) : start_(std::move(other.start_)), 
+        stop_(std::move(other.stop_)), stride_(std::move(other.stride_)),
+        size_(std::move(other.size_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    Slice<T>& operator=(Slice<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      start_ = std::move(other.start_);
+      stop_ = std::move(other.stop_);
+      stride_ = std::move(other.stride_);
+      size_ = std::move(other.size_);
+      return *this; 
+    }
+
+    ~Slice() {}
+
+    const T& operator[](Index index) {
+      return data_[start_ + index * stride_];
+    }
+
+    T& operator[](Index index) {
+      return data_[start_ + index * stride_];
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+  private:
+    T* data_;
+    Index start_;
+    Index stop_;
+    Index stride_;
+    Index size_;
 };
 
 } // End namespace multi_array
