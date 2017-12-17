@@ -11,18 +11,19 @@
 #ifndef NN_HYBRID_NERVOUS_SYSTEM_H_
 #define NN_HYBRID_NERVOUS_SYSTEM_H_
 
-namespace hybrid {
+namespace nervous_system {
 
-class HybridNeuralNetwork {
+#include "nervous_system.hpp"
+
+class HybridNeuralNetwork : public NervousSystem {
   public:
     HybridNeuralNetwork();//TBD
     ~HybridNeuralNetwork();
 
-    void EulerStep();
+    void Step();
     // Set Bias
     // Set Gain
     // Set Tau
-    // Set Sensor State -> prob just reference to external??
 
     void Reset();
     // Get state
@@ -31,7 +32,7 @@ class HybridNeuralNetwork {
     // Something about padding -> goes into update but deteremines whether sizes work
     // need to check if sizes work and send error if not
 
-  private:
+  protected:
     float step_size_;
     float epsilon_;
 

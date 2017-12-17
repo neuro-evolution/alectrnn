@@ -4,98 +4,71 @@
 #include <vector>
 #include <cstddef>
 #include <initializer_list>
+#include "activator.hpp"
+#include "integrator.hpp"
+#include "multi_array.hpp"
 
-namespace hybrid {
+namespace nervous_system {
 
 enum LAYER_TYPE {
   BASE,
   CONV,
   REC,
+  RES, // Difference between REC/RES, is that RES has default weights, not drawn from params
   MOTOR
 };
 
-/* 
- * Abstract Layer class
- * Builds a contiguous array for states
- * Major axis is the first layer_dimension (which also specifies the dim of
- * the layer). Minor axis are all following dimensions.
- */
-
-//////////// Make # dimensions be a type so that I can 
-/////////// do template magic to overload ()
-template <typename TReal>
 class Layer {
   public:
-    // Could take a vector called shape and use accumulate multiply for size
-    Layer(std::initializer_list<std::size_t> dimensions) : layer_type_(BASE) {
-      std::size_t size = 0;
-      for (auto dim : dimensions) {
-        layer_dimensions_.push_back(dim);
-        size *= dim;
-      }
-      neuron_states_.resize(size);
-    }
+    typedef std::size_t Index;
 
+    Layer();
     virtual ~Layer();
 
-    std::size_t size() const {
-      return neuron_states_.size();
-    }
+    /*
+     * Should return the number of dimensions which derives from children's
+     * type.
+     */
+    virtual Index NumDimensions() const;
 
-    std::size_t GetNumDimensions() const {
-      return layer_dimensions_.size();
-    }
-
-    const std::vector<std::size_t>& GetDimensions() const {
-      return layer_dimensions_;
-    }
+    /*
+     * Return a view into the states of the neurons
+     */
+    template<typename T, std::size_t NumDim>
+    virtual ArrayView<T, NumDim>& NeuronView();
 
     LAYER_TYPE GetLayerType() const {
       return layer_type_;
     }
 
-    TReal& operator [](std::size_t index) {
-      return neuron_states_[index];
-    }
-
-    const TReal& operator [](std::size_t index) const {
-      return neuron_states_[index];
-    }
-
-    TReal& at(std::size_t index) {
-      return neuron_states_.at(index);
-    }
-
-    const TReal& at(std::size_t index) const {
-      return neuron_states_.at(index)
-    }
-
-  private:
-    std::vector<TReal> neuron_states_;
-    std::vector<std::size_t> layer_dimensions_;
+  protected:
     LAYER_TYPE layer_type_;
 };
 
+template<typename TReal, std::size_t NumDim>
+class InputLayer : public Layer {
 
-// Input layer class
+};
 
-// Conv layer class
+template<typename TReal, std::size_t NumDim>
 class ConvLayer : public Layer {
 
 };
 
-// RNN layer class
+template<typename TReal, std::size_t NumDim>
 class RecurrentLayer : public Layer {
 
 };
 
-// Reservoir layer
-
-// Output layer class
-class MotorLayer : public Layer {
+template<typename TReal, std::size_t NumDim>
+class ReservoirLayer : public Layer {
 
 };
 
+template<typename TReal, std::size_t NumDim>
+class MotorLayer : public Layer {
+
+};
 
 } // End hybrid namespace
 

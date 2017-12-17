@@ -1,5 +1,5 @@
 /*
- * network_generator.cpp
+ * network_constructor.cpp
  *
  *  Created on: Sep 2, 2017
  *      Author: Nathaniel Rodriguez
@@ -12,7 +12,7 @@
 
 #include <cstddef>
 #include <vector>
-#include "network_generator.hpp"
+#include "network_constructor.hpp"
 
 namespace ctrnn {
 

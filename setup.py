@@ -102,8 +102,8 @@ agent_sources = [
     "alectrnn/agents/agent_generator.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/agents/ctrnn_agent.cpp",
-    "alectrnn/common/network_generator.cpp",
-    "alectrnn/common/nervous_system.cpp",
+    "alectrnn/common/network_constructor.cpp",
+    "alectrnn/common/ctrnn.cpp",
     "alectrnn/common/screen_preprocessing.cpp"
 ]
 objective_sources = [

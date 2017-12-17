@@ -23,8 +23,8 @@
 #include <memory>
 #include <ale_interface.hpp>
 #include "player_agent.hpp"
-#include "../common/network_generator.hpp"
-#include "../common/nervous_system.hpp"
+#include "../common/network_constructor.hpp"
+#include "../common/ctrnn.hpp"
 
 namespace alectrnn {
 

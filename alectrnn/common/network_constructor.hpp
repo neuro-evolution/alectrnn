@@ -1,5 +1,5 @@
 /*
- * network_generator.h
+ * network_constructor.h
  *
  *  Created on: Sep 2, 2017
  *      Author: Nathaniel Rodriguez
@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef ALECTRNN_COMMON_NETWORK_GENERATOR_H_
-#define ALECTRNN_COMMON_NETWORK_GENERATOR_H_
+#ifndef ALECTRNN_COMMON_NETWORK_CONSTRUCTOR_H_
+#define ALECTRNN_COMMON_NETWORK_CONSTRUCTOR_H_
 
 #include <cstddef>
 #include <vector>
@@ -39,4 +39,4 @@ void FillAll2AllNetwork(std::vector< std::vector<InEdge> > &network,
                         const float *weights);
 }
 
-#endif /* ALECTRNN_COMMON_NETWORK_GENERATOR_H_ */
+#endif /* ALECTRNN_COMMON_NETWORK_CONSTRUCTOR_H_ */

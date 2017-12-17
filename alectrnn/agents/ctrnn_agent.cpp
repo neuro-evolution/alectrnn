@@ -19,9 +19,9 @@
 #include <ale_interface.hpp>
 #include "ctrnn_agent.hpp"
 #include "player_agent.hpp"
-#include "../common/network_generator.hpp"
+#include "../common/network_constructor.hpp"
 #include "../common/screen_preprocessing.hpp"
-#include "../common/nervous_system.hpp"
+#include "../common/ctrnn.hpp"
 
 namespace alectrnn {
 

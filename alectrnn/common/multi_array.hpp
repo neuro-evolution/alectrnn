@@ -1,3 +1,8 @@
+/*
+ * Contains a series of classes for creating and accessing items from a 
+ * multi-dimensional array.
+ */
+
 #ifndef MULTI_ARRAY_H_
 #define MULTI_ARRAY_H_
 
@@ -133,7 +138,7 @@ class Array {
       return &data_[NumElem];
     }
  
-  private:
+  protected:
     TPtr data_;
 };
 
@@ -400,7 +405,7 @@ class MultiArray {
       return *this;
     }
 
-  private:
+  protected:
     TPtr data_;
     Array<Index, NumDim> shape_;
     Array<Index, NumDim> strides_;
@@ -441,7 +446,7 @@ class ArraySlice {
       return size_;
     }
 
-    const T& operator[](Index index) {
+    const T& operator[](Index index) const {
       return data_[start_ + index * stride_];
     }
 
@@ -457,7 +462,7 @@ class ArraySlice {
       data_ = new_data;
     }
 
-  private:
+  protected:
     T* data_;
     Index start_;
     Index stride_;
@@ -497,7 +502,7 @@ class Slice {
 
     ~Slice() {}
 
-    const T& operator[](Index index) {
+    const T& operator[](Index index) const {
       return data_[start_ + index * stride_];
     }
 
@@ -517,7 +522,7 @@ class Slice {
       data_ = new_data;
     }
 
-  private:
+  protected:
     T* data_;
     Index start_;
     Index stop_;

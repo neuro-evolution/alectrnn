@@ -1,5 +1,5 @@
-#ifndef NN_ACTIVATION_FUNCTOR_H_
-#define NN_ACTIVATION_FUNCTOR_H_
+#ifndef NN_ACTIVATOR_H_
+#define NN_ACTIVATOR_H_
 
 // We really want to shuttle neuron activation function stuff here...
 // including parameters
@@ -8,18 +8,23 @@
 // need to include buffer for ctrnn update as well
 // layer should only have state
 
-namespace hybrid {
+namespace nervous_system {
+
+enum ACTIVATOR_TYPE {
+  BASE,
+  IDENTITY,
+  CTRNN,
+  SPIKE
+};
 
 // Abstract update_functor
 
-// conv update functor // needs buffer
+// Identity update
 
-// ctrnn update functor //need buffer
+// ctrnn update functor
 
-// output update functor??
-
-// Spiking update functor?? //needs buffer
+// Spiking update functor
 
 } // End hybrid namespace
 
-#endif /* NN_ACTIVATION_FUNCTOR_H_ */
+#endif /* NN_ACTIVATOR_H_ */
