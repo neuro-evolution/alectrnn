@@ -24,6 +24,12 @@ class ArrayView;
 
 template<typename T, std::size_t NumDim>
 class MultiArray;
+
+template<typename T>
+class ArraySlice;
+
+template<typename T>
+class Slice;
 // End Forward declare
 
 template<typename T, std::size_t NumElem>
@@ -431,6 +437,10 @@ class ArraySlice {
 
     ~ArraySlice() {}
 
+    std::size_t size() const {
+      return size_;
+    }
+    
     const T& operator[](Index index) {
       return data_[start_ + index * stride_];
     }
