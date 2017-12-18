@@ -21,27 +21,14 @@ class HybridNeuralNetwork : public NervousSystem {
     ~HybridNeuralNetwork();
 
     void Step();
-    // Set Bias
-    // Set Gain
-    // Set Tau
-
     void Reset();
-    // Get state
-    // Get output
 
     // Something about padding -> goes into update but deteremines whether sizes work
-    // need to check if sizes work and send error if not
+    // need to check if sizes work and send error (or just assert fail?) if not
 
   protected:
-    float step_size_;
-    float epsilon_;
 
-    // Not sure if copy params of just... idk ... might as well....?
-    // std::vector<float> neuron_states_;
-    // std::vector<float> neuron_outputs_;
-    // std::vector<float> neuron_biases_;
-    // std::vector<float> neuron_gains_;
-    // std::vector<float> neuron_rtaus_;
+
 };
 
 } // End hybrid namespace

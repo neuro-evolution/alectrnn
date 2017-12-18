@@ -9,6 +9,19 @@ enum INTEGRATOR_TYPE {
 };
 
 // Abstract integrator
+class Integrator {
+  public:
+    Integrator();
+    virtual ~Integrator();
+    virtual void operator()();
+
+    INTEGRATOR_TYPE GetIntegratorType() const { //might just swap out for some funct call to type
+      return ;//////////not sure if even need
+    }
+
+  protected:
+    INTEGRATOR_TYPE integrator_type_;
+}
 
 // Conv integrator
 

@@ -1,6 +1,24 @@
 /*
  * Contains a series of classes for creating and accessing items from a 
  * multi-dimensional array.
+ * 
+ * The Array class is a simple 1D contiguous array with forward iterator and
+ * index access using [].
+ *
+ * The ArrayView class is a view into some contiguous data, namely a MultiArray.
+ * It owns no data itself, but access the stride and data arrays from the
+ * MultiArray it views. It can use (IndexSequence) to access an element from
+ * the N-dimensional data, or it can used chained [] to access elements.
+ *
+ * The MultiArray class is just a container for a contiguous array, which will
+ * be represented as a multi-dimensional array. It requires a shape to construct
+ *
+ * The ArraySlice class is a 1D slice along an axis of some data. It recieves a
+ * pointer to the data and requires a start, size, and stride to determine which 
+ * elements to access. 
+ *
+ * The Slice class is also a 1D slice, however it uses start/stop/stride to 
+ * deterine which elements to access.
  */
 
 #ifndef MULTI_ARRAY_H_

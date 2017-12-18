@@ -17,11 +17,28 @@ enum ACTIVATOR_TYPE {
   SPIKE
 };
 
-// Abstract update_functor
+class Activator {
+  public:
+    Activator();
+    virtual ~Activator();
+    virtual Stuff operator()();
+
+    ACTIVATOR_TYPE GetActivatorType() const {
+      return activator_type_;
+    }
+
+  protected:
+    ACTIVATOR_TYPE activator_type_;
+};
 
 // Identity update
 
 // ctrnn update functor
+    // Set Bias
+    // Set Gain
+    // Set Tau
+    // float step_size_;
+    // float epsilon_;
 
 // Spiking update functor
 

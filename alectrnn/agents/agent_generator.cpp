@@ -27,6 +27,7 @@
 #include "player_agent.hpp"
 // Add includes to agents you wish to add below:
 #include "ctrnn_agent.hpp"
+#include "hybrid_agent.hpp"
 
 /*
  * DeleteAgent can be shared among the agents as a destructor

@@ -21,18 +21,19 @@ class HyrbidAgent : public PlayerAgent {
     HyrbidAgent(ALEInterface* ale, NervousSystem* neural_net);
     ~HyrbidAgent();
 
-    void Configure(const float *parameters); // consider non-const due to ArraySlice, or some other solution
+    void Configure(const float *parameters);
     void Reset();
 
   protected:
     Action Act();
 
   protected:
+    NervousSystem *neural_net_;
     std::vector<std::uint8_t> buffer_screen_;
     std::vector<std::uint8_t> full_screen_;
     std::vector<std::uint8_t> downsized_screen_;
-    std::size_t input_screen_width_;
-    std::size_t input_screen_height_;
+    std::size_t input_screen_width_; // can get scrn hieght/width from neural net input shape
+    std::size_t input_screen_height_; // can get scrn hieght/width from neural net input shape
     std::size_t update_rate_;
     bool use_color_;
     bool is_configured_;
