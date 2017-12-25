@@ -5,3 +5,5 @@
 
 // Create NN
 // Return NN pointer
+
+// Create additional function that returns the # of parameters needed -> each layer will need a param Count member

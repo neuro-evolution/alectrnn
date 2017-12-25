@@ -25,6 +25,7 @@
 #define MULTI_ARRAY_H_
 
 #include <cstddef>
+#include <cassert>
 #include <vector>
 #include <stdexcept>
 #include <initializer_list>
@@ -53,6 +54,8 @@ class ArraySlice;
 
 template<typename T>
 class Slice;
+
+class Tensor;
 // End Forward declare
 
 template<typename T, std::size_t NumElem>
@@ -235,7 +238,6 @@ class ArrayView : public ArrayViewBase<T> {
     ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
     }
 
-    template<std::size_t NumDim>
     ArrayView(MultiArray<T, NumDim>& array) 
         : super_type(array.data(), array.strides().data()) {
     }
@@ -243,8 +245,8 @@ class ArrayView : public ArrayViewBase<T> {
     // TODO: Need to get (ArrDims - NumDim) arguments to determine offset for each dimension that is being sliced around.
     // Probably implement via a initializer list. Need two information (1) select axis for slice, (2) select row of non-slected axis
     // template<std::size_t ArrDims>
-    // ArrayView(MultiArray<T, ArrDims>& array) 
-    //     : super_type(array.data(), array.strides().data() + ArrDims - NumDim) {
+    // ArrayView(MultiArray<T, ArrDims>& array, Index axis, Index axis_index) 
+    //      {
     // }
 
     ArrayView(const ArrayView<T, NumDim>& view) : super_type(view) {
@@ -291,7 +293,7 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
         : super_type(array.data(), array.strides().data()) {
     }
 
-    // template<std::size_t ArrDims>
+    // template<std::size_t ArrDims> ///////see above
     // ArrayView(MultiArray<T, ArrDims>& array) 
     //     : super_type(array.data(), array.strides().data() + ArrDims - 1) {
     // }
@@ -546,6 +548,139 @@ class Slice {
     Index stop_;
     Index stride_;
     Index size_;
+};
+
+/*
+ * Tensor is a MultiArray with unspecified dimension. An accessor is created
+ * which will check if the casted view dimensions match the tensor dimensions.
+ */
+template<typename T>
+class Tensor {
+  public:
+    typedef T* TPtr;
+    typedef std::size_t Index;
+
+    /*
+     * Build 'empty' Tensor.
+     */
+    template<typename Index, std::size_t NumDim>
+    Tensor(const Array<Index, NumDim> &shape) : shape_(shape), 
+        ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = new T[size_];
+      CalculateStrides();
+    }
+
+    Tensor(const std::vector<Index> &shape) : shape_(shape), 
+        ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = new T[size_];
+      CalculateStrides();
+    }
+
+    Tensor(const std::initializer_list<Index> &shape) 
+        : shape_(shape), ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = new T[size_];
+      CalculateStrides();
+    }
+
+    /*
+     * Copy (copies data as well)
+     */
+    Tensor(const Tensor<T> &other) : shape_(other.shape_),
+        strides_(other.strides_), size_(other.size_), ndims_(other.ndims_) {
+      data_ = new T[size_];
+
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = other.data_[iii];
+      }
+    }
+
+    Tensor(Tensor<T> &&other) : shape_(std::move(other.shape_)),
+        strides_(std::move(other.strides_)), size_(std::move(other.size_)),
+        ndims_(std::move(other.ndims_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    ~Tensor() {
+      delete[] data_;
+    };
+
+    void CalculateStrides() {
+      for (Index iii = 0; iii < ndims_; iii++) {
+        strides_[iii] = 1;
+        for (Index jjj = iii + 1; jjj < ndims_; jjj++) {
+          strides_[iii] *= shape_[jjj];
+        }
+      }
+    }
+
+    TPtr data() {
+      return data_;
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    std::size_t ndimensions() const {
+      return ndims_;
+    }
+
+    const std::vector<Index>& shape() const {
+      return shape_;
+    }
+
+    const std::vector<Index>& strides() const {
+      return strides_;
+    }
+
+    T& operator[](Index index) {
+      return data_[index]; 
+    }
+
+    const T& operator[](Index index) const {
+      return data_[index];
+    }
+
+    Tensor<T>& operator=(const Tensor<T>& other) {
+      delete[] data_;
+      shape_ = other.shape_;
+      strides_ = other.strides_;
+      size_ = other.size_;
+      ndims_ = other.ndims_;
+
+      data_ = new T[size_];
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = other.data_[iii];
+      }
+    }
+
+    Tensor<T>& operator=(Tensor<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      shape_ = std::move(other.shape_);
+      strides_ = std::move(other.strides_);
+      size_ = std::move(other.size_);
+      ndims_ = std::move(other.ndims_);
+
+      return *this;
+    }
+
+    template<std::size_t NumDim>
+    ArrayView<T, NumDim> accessor() {
+      assert(NumDim == ndims_);
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data());
+    }
+
+  protected:
+    TPtr data_;
+    std::vector<Index> shape_;
+    std::vector<Index> strides_;
+    std::size_t size_;
+    std::size_t ndims_;
 };
 
 } // End namespace multi_array

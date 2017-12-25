@@ -8,6 +8,10 @@
 // need to include buffer for ctrnn update as well
 // layer should only have state
 
+#include <vector>
+#include <cstddef>
+#include "multi_array.hpp"
+
 namespace nervous_system {
 
 enum ACTIVATOR_TYPE {
@@ -17,11 +21,14 @@ enum ACTIVATOR_TYPE {
   SPIKE
 };
 
+template<typename TReal>
 class Activator {
   public:
     Activator();
     virtual ~Activator();
-    virtual Stuff operator()();
+    virtual TReal operator()();
+    virtual void Configure(); // Just needs to set base_ in ArraySlice
+    virtual std::size_t GetParameterCount();
 
     ACTIVATOR_TYPE GetActivatorType() const {
       return activator_type_;
@@ -29,18 +36,57 @@ class Activator {
 
   protected:
     ACTIVATOR_TYPE activator_type_;
+    std::vector<multi_array::ArraySlice> parameter_slices_;
+    std::size_t parameter_count_;
 };
 
-// Identity update
+template<typename TReal>
+class IdentityActivator : public Activator<TReal> {
+  public:
+    Identity();
+    ~Identity();
 
-// ctrnn update functor
+    TReal operator()();
+    void Configure();
+    std::size_t GetParameterCount();
+
+  protected:
+
+};
+
+template<typename TReal>
+class Sigmoid : public Activator<TReal> {
+  public:
+    Sigmoid();
+    ~Sigmoid();
+
+    TReal operator()();
+    void Configure();
+    std::size_t GetParameterCount();
+
+  protected:
+
+// ctrnn update functor ///... diff params for each neuron require knowing # of neurons, so layer deal with? 
     // Set Bias
     // Set Gain
     // Set Tau
     // float step_size_;
     // float epsilon_;
+};
 
 // Spiking update functor
+template<typename TReal>
+class Iaf : public Activator<TReal> {
+  public:
+    Iaf();
+    ~Iaf();
+
+    TReal operator()();
+    void Configure();
+    std::size_t GetParameterCount();
+
+  protected:
+};
 
 } // End hybrid namespace
 

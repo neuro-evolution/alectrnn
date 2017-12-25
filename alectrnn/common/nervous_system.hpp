@@ -8,6 +8,7 @@ namespace nervous_system {
 #include <vector>
 #include "layer.hpp"
 
+template<typename TReal>
 class NervousSystem {
   public:
     NervousSystem(); // During construction, don't let user pick input layer, just input dims, always make input layer
@@ -21,7 +22,7 @@ class NervousSystem {
     virtual void SetInput(); // Updates state of input layer (first layer)
 
   protected:
-    std::vector<Layer> network_layers_;
+    std::vector< Layer<TReal> > network_layers_;
 
 };
 
