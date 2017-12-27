@@ -10,7 +10,9 @@
 
 #include <vector>
 #include <cstddef>
+#include <cassert>
 #include "multi_array.hpp"
+#include "utilities.hpp"
 
 namespace nervous_system {
 
@@ -18,17 +20,34 @@ enum ACTIVATOR_TYPE {
   BASE,
   IDENTITY,
   CTRNN,
-  SPIKE
+  IAF
 };
 
 template<typename TReal>
 class Activator {
   public:
-    Activator();
-    virtual ~Activator();
-    virtual TReal operator()();
-    virtual void Configure(); // Just needs to set base_ in ArraySlice
-    virtual std::size_t GetParameterCount();
+    Activator() {
+      activator_type_ = ACTIVATOR_TYPE.BASE;
+      parameter_count_ = 0;
+    }
+    virtual ~Activator()=default;
+
+    /*
+     * This operator must take the host's state and perform the specified
+     * state updates on that state.
+     */
+    virtual void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer)=0;
+
+    /*
+     * When given a set of parameters, it will use them to set the 
+     * Must provide an assert statement that requires # given parameters
+     * to == parameter_count
+     */
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0; // Just needs to set base_ in ConstArraySlice
+    
+    std::size_t GetParameterCount() const {
+      return parameter_count_;
+    }
 
     ACTIVATOR_TYPE GetActivatorType() const {
       return activator_type_;
@@ -36,58 +55,98 @@ class Activator {
 
   protected:
     ACTIVATOR_TYPE activator_type_;
-    std::vector<multi_array::ArraySlice> parameter_slices_;
     std::size_t parameter_count_;
 };
 
 template<typename TReal>
 class IdentityActivator : public Activator<TReal> {
   public:
-    Identity();
-    ~Identity();
+    Identity() {
+      parameter_count_ = 0;
+      activator_type_ = ACTIVATOR_TYPE.IDENTITY;
+    }
 
-    TReal operator()();
-    void Configure();
-    std::size_t GetParameterCount();
+    ~Identity()=default;
 
-  protected:
+    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+      for (Index iii = 0; iii < state.size(); iii++) {
+        state[iii] = input_buffer[iii];
+      }
+    }
 
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    }
 };
 
 template<typename TReal>
-class Sigmoid : public Activator<TReal> {
+class CTRNNActivator : public Activator<TReal> {
   public:
-    Sigmoid();
-    ~Sigmoid();
+    typedef Index std::size_t;
+    CTRNNActivator(std::size_t num_states) : num_states_(num_states) {
+      // for step_size[1], bias[N] and rtau[N]
+      parameter_count_ = 1 + num_states * 2;
+      activator_type_ = ACTIVATOR_TYPE.CTRNN;
+    }
 
-    TReal operator()();
-    void Configure();
-    std::size_t GetParameterCount();
+    ~CTRNNActivator()=default;
+
+    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] += step_size_ * rtaus[iii] * 
+            (-state[iii] + utilities::sigmoid(biases[iii] + input_buffer[iii]));
+      }
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      assert(parameters.size() == parameter_count_);
+      biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+                parameters.start(), num_states, parameters.stride());
+      rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+                parameters.start() + num_states, num_states, 
+                parameters.stride());
+      step_size_ = parameters[parameters.size()-1];
+    }
 
   protected:
-
-// ctrnn update functor ///... diff params for each neuron require knowing # of neurons, so layer deal with? 
-    // Set Bias
-    // Set Gain
-    // Set Tau
-    // float step_size_;
-    // float epsilon_;
+    multi_array::ConstArraySlice<TReal> biases;
+    multi_array::ConstArraySlice<TReal> rtaus;
+    TReal step_size_;
+    std::size_t num_states_;
 };
 
 // Spiking update functor
 template<typename TReal>
-class Iaf : public Activator<TReal> {
+class IafActivator : public Activator<TReal> {
   public:
-    Iaf();
-    ~Iaf();
+    typedef Index std::size_t;
 
-    TReal operator()();
-    void Configure();
-    std::size_t GetParameterCount();
+    IafActivator(std::size_t num_states) : num_states_(num_states) {
+      // for step_size[1], bias[N] and rtau[N]
+      parameter_count_ = 1 + num_states * 2;
+      activator_type_ = ACTIVATOR_TYPE.IAF;
+    }
+
+    ~IafActivator()=default;
+
+    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
+    }
 
   protected:
+    multi_array::ConstArraySlice<TReal> range_;
+    multi_array::ConstArraySlice<TReal> rtaus_;
+    multi_array::ConstArraySlice<TReal> reset_;
+    // Need Peak for value at burst
+    // Need memory vector that holds last time for reset
+    // Need reset time parameter
+    TReal step_size_;
+    std::size_t num_states_;
 };
 
-} // End hybrid namespace
+} // End nervous_system namespace
 
 #endif /* NN_ACTIVATOR_H_ */

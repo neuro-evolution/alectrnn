@@ -7,23 +7,35 @@ namespace nervous_system {
 
 enum INTEGRATOR_TYPE {
   BASE,
-  CONV
+  IDENTITY,
+  CONV,
+  NET,
+  RESERVOIR
 };
 
 // Abstract integrator
+template<typename TReal>
 class Integrator {
   public:
-    Integrator();
+    Integrator() {
+      integrator_type_ = INTEGRATOR_TYPE.BASE;
+      parameter_count_ = 0;
+    }
     virtual ~Integrator();
-    virtual void operator()();
-    virtual void Configure();
+    virtual void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state)=0;
+    virtual void Configure(const multi_array::ArraySlice<TReal>& parameters)=0;
 
-    INTEGRATOR_TYPE GetIntegratorType() const { //might just swap out for some funct call to type
-      return ;//////////not sure if even need
+    std::size_t GetParameterCount() const {
+      return parameter_count_;
+    }
+
+    INTEGRATOR_TYPE GetIntegratorType() const {
+      return integrator_type_;
     }
 
   protected:
     INTEGRATOR_TYPE integrator_type_;
+    std::size_t parameter_count_;
 }
 
 // Identity integrator
@@ -34,12 +46,31 @@ class IdentityIntegrator : public Integrator {
     
 };
 
-// Conv integrator
+// None integrator - does nothing
+class NoneIntegrator : public Integrator {
 
-// Structured integrator
+}
 
+// Conv integrator - uses implicit structure
+class ConvIntegrator : public Integrator {
 
-// Reservoir Integrator ?? Might be responsible for not changing weights?
+  protected:
+  // Put buffers here
+}
+
+// Network integrator -- uses explicit unweighted structure
+class NetIntegrator : public Integrator {
+
+  protected:
+    // Need network w/ structure here
+}
+
+// Reservoir -- uses explicit weighted structure
+class ReservoirIntegrator : public Integrator {
+
+  protected:
+    // Need network w/ structure here
+}
 
 } // End nervous_system namespace
 

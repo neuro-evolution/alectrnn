@@ -55,6 +55,7 @@ class ArraySlice;
 template<typename T>
 class Slice;
 
+template<typename T>
 class Tensor;
 // End Forward declare
 
@@ -177,7 +178,7 @@ class ArrayViewBase {
         strides_(other.strides_) {
     }
 
-    ArrayViewBase(ArrayViewBase<T>&& other) : {
+    ArrayViewBase(ArrayViewBase<T>&& other) {
       base_ = other.base_;
       other.base_ = nullptr;
       strides_ = other.strides_;
@@ -441,7 +442,7 @@ class ArraySlice {
   public:
     typedef std::size_t Index;
 
-    ArraySlice(T* data, Index start, Index size, Index stride) : data_(data),
+    ArraySlice(T* data, Index start, Index size, Index stride=1) : data_(data),
         start_(start), size_(size), stride_(stride) {
     }
 
@@ -478,12 +479,84 @@ class ArraySlice {
       return data_;
     }
 
+    const T* data() const {
+      return data_;
+    }
+
     void data(T* new_data) {
       data_ = new_data;
     }
 
+    Index stride() const {
+      return stride_;
+    }
+
+    Index start() const {
+      return start_;
+    }
+
   protected:
     T* data_;
+    Index start_;
+    Index stride_;
+    Index size_;
+};
+
+/*
+ * Const version of ArraySlice
+ */
+template<typename T>
+class ConstArraySlice {
+  public:
+    typedef std::size_t Index;
+
+    ConstArraySlice(const T* data, Index start, Index size, Index stride=1) : data_(data),
+        start_(start), size_(size), stride_(stride) {
+    }
+
+    ConstArraySlice(ConstArraySlice<T>&& other) : start_(std::move(other.start_)),
+        size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    ConstArraySlice<T>& operator=(ConstArraySlice<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      start_ = std::move(other.start_);
+      size_ = std::move(other.size_);
+      stride_ = std::move(other.stride_);
+      return *this; 
+    }
+
+    ~ConstArraySlice() {}
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    const T& operator[](Index index) const {
+      return data_[start_ + index * stride_];
+    }
+
+    const T* data() const {
+      return data_;
+    }
+
+    void data(const T* new_data) {
+      data_ = new_data;
+    }
+
+    Index stride() const {
+      return stride_;
+    }
+
+    Index start() const {
+      return start_;
+    }
+
+  protected:
+    const T* data_;
     Index start_;
     Index stride_;
     Index size_;
@@ -498,7 +571,7 @@ class Slice {
   public:
     typedef std::size_t Index;
 
-    Slice(T* data, Index start, Index stop, Index stride) : data_(data),
+    Slice(T* data, Index start, Index stop, Index stride=1) : data_(data),
         start_(start), stop_(stop), stride_(stride) {
       size_ = (stop_ - start_) / stride_;
     }
@@ -542,6 +615,18 @@ class Slice {
       data_ = new_data;
     }
 
+    Index stride() const {
+      return stride_;
+    }
+
+    Index start() const {
+      return start_;
+    }
+
+    Index stop() const {
+      return stop_;
+    }
+
   protected:
     T* data_;
     Index start_;
@@ -551,7 +636,75 @@ class Slice {
 };
 
 /*
- * Tensor is a MultiArray with unspecified dimension. An accessor is created
+ * A constant version of slice
+ */
+template<typename T>
+class ConstSlice {
+  public:
+    typedef std::size_t Index;
+
+    ConstSlice(const T* data, Index start, Index stop, Index stride=1) : data_(data),
+        start_(start), stop_(stop), stride_(stride) {
+      size_ = (stop_ - start_) / stride_;
+    }
+
+    ConstSlice(ConstSlice<T>&& other) : start_(std::move(other.start_)), 
+        stop_(std::move(other.stop_)), stride_(std::move(other.stride_)),
+        size_(std::move(other.size_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    ConstSlice<T>& operator=(ConstSlice<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      start_ = std::move(other.start_);
+      stop_ = std::move(other.stop_);
+      stride_ = std::move(other.stride_);
+      size_ = std::move(other.size_);
+      return *this; 
+    }
+
+    ~ConstSlice() {}
+
+    const T& operator[](Index index) const {
+      return data_[start_ + index * stride_];
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    const T* data() const {
+      return data_;
+    }
+
+    void data(T* new_data) {
+      data_ = new_data;
+    }
+
+    Index stride() const {
+      return stride_;
+    }
+
+    Index start() const {
+      return start_;
+    }
+
+    Index stop() const {
+      return stop_;
+    }
+
+  protected:
+    const T* data_;
+    Index start_;
+    Index stop_;
+    Index stride_;
+    Index size_;
+};
+
+/*
+ * Tensor is a MultiArray with untyped dimension. An accessor is created
  * which will check if the casted view dimensions match the tensor dimensions.
  */
 template<typename T>
@@ -568,6 +721,7 @@ class Tensor {
         ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
+      strides_.resize(ndims_);
       CalculateStrides();
     }
 
@@ -575,6 +729,7 @@ class Tensor {
         ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
+      strides_.resize(ndims_);
       CalculateStrides();
     }
 
@@ -582,6 +737,7 @@ class Tensor {
         : shape_(shape), ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
+      strides_.resize(ndims_);
       CalculateStrides();
     }
 
@@ -618,6 +774,10 @@ class Tensor {
     }
 
     TPtr data() {
+      return data_;
+    }
+
+    const TPtr data() const {
       return data_;
     }
 

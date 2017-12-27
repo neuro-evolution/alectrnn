@@ -14,7 +14,7 @@ enum LAYER_TYPE {
   BASE,
   CONV,
   RECURENT,
-  RESERVOIR, // Difference between REC/RES, is that RES has default weights, not drawn from params
+  RESERVOIR,
   MOTOR
 };
 
@@ -29,12 +29,12 @@ class Layer {
     /*
      * Should return the number of dimensions which derives from derived type.
      */
-    virtual Index NumDimensions() const;
+    virtual Index NumDimensions() const=0;
     
     /*
      * Update neuron state. Calls both integrator and activator.
      */
-    virtual void operator()(const Layer<TReal>&);
+    virtual void operator()(const Layer<TReal>&)=0;
 
     /*
      * Passes the needed parameters to the Layer - Should be Slice with 
@@ -49,52 +49,54 @@ class Layer {
       return layer_type_;
     }
 
-    std::size_t GetNumParams() const {
+    std::size_t GetParameterCount() const {
       return parameter_count_;
+    }
+
+    std::size_t NumNeurons() const {
+      return layer_state_.size();
+    }
+
+    template<typename T>
+    void SetNeuronState(Index neuron, T value) {
+      layer_state_[neuron] = static_cast<TReal>(value);
     }
 
   protected:
     LAYER_TYPE layer_type_;
-    Activator* activation_function_;
-    Integrator* integration_function_;
+    multi_array::Tensor<TReal> layer_state_;
+    multi_array::Tensor<TReal> input_buffer_;
+    Integrator& back_integrator_;
+    Integrator& self_integrator_;
+    Activator<TReal>& activation_function_;
     std::size_t parameter_count_;
 };
 
-template<typename TReal, std::size_t NumDim>
+template<typename TReal>
 class InputLayer : public Layer<TReal> {
 
-  protected:
-    MultiArray<TReal, NumDim>* state_;
 };
 
-template<typename TReal, std::size_t NumDim>
+template<typename TReal>
 class ConvLayer : public Layer<TReal> {
 
-  protected:
-    MultiArray<TReal, NumDim>* state_;
 };
 
-template<typename TReal, std::size_t NumDim>
+template<typename TReal>
 class RecurrentLayer : public Layer<TReal> {
 
-  protected:
-    MultiArray<TReal, NumDim>* state_;
 };
 
-template<typename TReal, std::size_t NumDim>
+template<typename TReal>
 class ReservoirLayer : public Layer<TReal> {
 
-  protected:
-    MultiArray<TReal, NumDim>* state_;
 };
 
 template<typename TReal>
 class MotorLayer : public Layer<TReal> {
 
-  protected:
-    MultiArray<TReal, 1>* state_;
 };
 
-} // End hybrid namespace
+} // End nervous_system namespace
 
 #endif /* NN_LAYER_H_ */
