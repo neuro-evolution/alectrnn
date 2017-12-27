@@ -1,16 +1,20 @@
+/*
+ * Current CTRNN activator has independent parameters for each neuron.
+ * Could add a dimension member that specifies the # dim of containing layer
+ * so that the activator will pick uniform parameters for neurons according
+ * to the most minor dimension. This way a Conv layer w/ 64 filters will have
+ * 64 unique params instead of 64xWxH. For single dimensional layers it will
+ * then just be a user choice at the layer level whether to pick the uniform
+ * Activator or independent one.
+ */
+
 #ifndef NN_ACTIVATOR_H_
 #define NN_ACTIVATOR_H_
-
-// We really want to shuttle neuron activation function stuff here...
-// including parameters
-
-// conv will have an output buff automatically
-// need to include buffer for ctrnn update as well
-// layer should only have state
 
 #include <vector>
 #include <cstddef>
 #include <cassert>
+#include <limits>
 #include "multi_array.hpp"
 #include "utilities.hpp"
 
@@ -20,6 +24,7 @@ enum ACTIVATOR_TYPE {
   BASE,
   IDENTITY,
   CTRNN,
+  CONV_CTRNN,
   IAF
 };
 
@@ -45,6 +50,11 @@ class Activator {
      */
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0; // Just needs to set base_ in ConstArraySlice
     
+    /*
+     * Some activators may have internal states, these need to be resetable
+     */
+    virtual void Reset()=0;
+
     std::size_t GetParameterCount() const {
       return parameter_count_;
     }
@@ -76,15 +86,18 @@ class IdentityActivator : public Activator<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
     }
+
+    void Reset() {}
 };
 
 template<typename TReal>
 class CTRNNActivator : public Activator<TReal> {
   public:
     typedef Index std::size_t;
-    CTRNNActivator(std::size_t num_states) : num_states_(num_states) {
-      // for step_size[1], bias[N] and rtau[N]
-      parameter_count_ = 1 + num_states * 2;
+    CTRNNActivator(std::size_t num_states, TReal step_size) : 
+        num_states_(num_states), step_size_(step_size) {
+      // bias[N] and rtau[N]
+      parameter_count_ = num_states * 2;
       activator_type_ = ACTIVATOR_TYPE.CTRNN;
     }
 
@@ -104,8 +117,9 @@ class CTRNNActivator : public Activator<TReal> {
       rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
                 parameters.start() + num_states, num_states, 
                 parameters.stride());
-      step_size_ = parameters[parameters.size()-1];
     }
+
+    void Reset() {};
 
   protected:
     multi_array::ConstArraySlice<TReal> biases;
@@ -114,38 +128,98 @@ class CTRNNActivator : public Activator<TReal> {
     std::size_t num_states_;
 };
 
-// Spiking update functor
-template<typename TReal>
-class IafActivator : public Activator<TReal> {
-  public:
-    typedef Index std::size_t;
+/*
+ * TODO: A uniform version of the CTRNN activator. All neurons in same filter
+ * will share parameters. FIX: can't really use NumDim due to layer not knowing... lol since its a ref to Layer
+ * Maybe fix by calling it Conv3D??? :(
+ */
+// template<typename TReal>
+// class Conv3DCTRNNActivator : public Activator<TReal> {
+//   public:
+//     typedef Index std::size_t;
 
-    IafActivator(std::size_t num_states) : num_states_(num_states) {
-      // for step_size[1], bias[N] and rtau[N]
-      parameter_count_ = 1 + num_states * 2;
-      activator_type_ = ACTIVATOR_TYPE.IAF;
-    }
+//     ConvCTRNNActivator(std::size_t num_states, TReal step_size) : 
+//         num_states_(num_states), step_size_(step_size) {
+//       // bias[K] and rtau[K]
+//       parameter_count_ = num_states * 2;
+//       activator_type_ = ACTIVATOR_TYPE.CONV_CTRNN;
+//     }
 
-    ~IafActivator()=default;
+//     ~ConvCTRNNActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+//     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+//       for (Index iii = 0; iii < num_states_; iii++) {
+//         state[iii] += step_size_ * rtaus[iii] * 
+//             (-state[iii] + utilities::sigmoid(biases[iii] + input_buffer[iii]));
+//       }
+//     }
 
-    }
+//     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+//       assert(parameters.size() == parameter_count_);
+//       biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+//                 parameters.start(), num_states, parameters.stride());
+//       rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+//                 parameters.start() + num_states, num_states, 
+//                 parameters.stride());
+//     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+//     void Reset() {};
 
-    }
+//   protected:
+//     multi_array::ConstArraySlice<TReal> biases;
+//     multi_array::ConstArraySlice<TReal> rtaus;
+//     TReal step_size_;
+//     std::size_t num_states_;
+// };
 
-  protected:
-    multi_array::ConstArraySlice<TReal> range_;
-    multi_array::ConstArraySlice<TReal> rtaus_;
-    multi_array::ConstArraySlice<TReal> reset_;
-    // Need Peak for value at burst
-    // Need memory vector that holds last time for reset
-    // Need reset time parameter
-    TReal step_size_;
-    std::size_t num_states_;
-};
+/*
+ * Simulates a spiking neuron. It has its own internal state Tensor
+ * in order to mimic the transmission of only super-threshold activity.
+ * Sub-threshold activity is recorded in a local tensor, while the Layer
+ * state only holds spikes.
+ */
+// template<typename TReal>
+// class IafActivator : public Activator<TReal> {
+//   public:
+//     typedef Index std::size_t;
+
+//     IafActivator(std::size_t num_states, TReal step_size) : 
+//         num_states_(num_states), step_size_(step_size) {
+//       // peak, refract, range, rtaus, and reset
+//       parameter_count_ = 2 + num_states * 3;
+//       activator_type_ = ACTIVATOR_TYPE.IAF;
+//       last_spike_time_.resize(num_states_);
+//       subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
+//     }
+
+//     ~IafActivator()=default;
+
+//     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+      
+//     }
+
+//     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
+//     }
+
+//     void Reset() {
+//       for (Index iii = 0; iii < num_states_; iii++) {
+//         last_spike_time_[iii] = std::numeric_limits<TReal>::max();
+//         subthreshold_state_[iii] = 0;
+//       }
+//     }
+
+//   protected:
+//     multi_array::ConstArraySlice<TReal> range_;
+//     multi_array::ConstArraySlice<TReal> rtaus_;
+//     multi_array::ConstArraySlice<TReal> reset_;
+//     TReal peak_;
+//     TReal refractory_period_;
+//     TReal step_size_;
+//     std::vector<TReal> last_spike_time_;
+//     multi_array::Tensor<TReal> subthreshold_state_;
+//     std::size_t num_states_;
+// };
 
 } // End nervous_system namespace
 

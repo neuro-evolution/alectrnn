@@ -66,9 +66,9 @@ class Layer {
     LAYER_TYPE layer_type_;
     multi_array::Tensor<TReal> layer_state_;
     multi_array::Tensor<TReal> input_buffer_;
-    Integrator& back_integrator_;
-    Integrator& self_integrator_;
-    Activator<TReal>& activation_function_;
+    Integrator<TReal>* back_integrator_;
+    Integrator<TReal>* self_integrator_;
+    Activator<TReal>* activation_function_;
     std::size_t parameter_count_;
 };
 

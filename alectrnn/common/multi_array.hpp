@@ -243,13 +243,6 @@ class ArrayView : public ArrayViewBase<T> {
         : super_type(array.data(), array.strides().data()) {
     }
 
-    // TODO: Need to get (ArrDims - NumDim) arguments to determine offset for each dimension that is being sliced around.
-    // Probably implement via a initializer list. Need two information (1) select axis for slice, (2) select row of non-slected axis
-    // template<std::size_t ArrDims>
-    // ArrayView(MultiArray<T, ArrDims>& array, Index axis, Index axis_index) 
-    //      {
-    // }
-
     ArrayView(const ArrayView<T, NumDim>& view) : super_type(view) {
     }
 
@@ -293,11 +286,6 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     ArrayView(MultiArray<T, 1>& array) 
         : super_type(array.data(), array.strides().data()) {
     }
-
-    // template<std::size_t ArrDims> ///////see above
-    // ArrayView(MultiArray<T, ArrDims>& array) 
-    //     : super_type(array.data(), array.strides().data() + ArrDims - 1) {
-    // }
 
     ArrayView(const ArrayView<T, 1>& view) : super_type(view) {
     }

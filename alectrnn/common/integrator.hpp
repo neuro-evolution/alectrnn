@@ -2,18 +2,19 @@
 #define NN_INTEGRATOR_H_
 
 #include <cstddef>
+#include "multi_array.hpp"
+#include "graphs.hpp"
 
 namespace nervous_system {
 
 enum INTEGRATOR_TYPE {
   BASE,
-  IDENTITY,
+  NONE,
   CONV,
   NET,
   RESERVOIR
 };
 
-// Abstract integrator
 template<typename TReal>
 class Integrator {
   public:
@@ -38,35 +39,38 @@ class Integrator {
     std::size_t parameter_count_;
 }
 
-// Identity integrator
-class IdentityIntegrator : public Integrator {
-  public:
-    IdentityIntegrator();
-    ~IdentityIntegrator();
-    
-};
-
 // None integrator - does nothing
-class NoneIntegrator : public Integrator {
+template<typename TReal>
+class NoneIntegrator : public Integrator<TReal> {
+  public:
+    NoneIntegrator() : Integrator() { integrator_type_ = INTEGRATOR_TYPE.NONE }
+    ~NoneIntegrator()=default;
 
+    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
+    void Configure(const multi_array::ArraySlice<TReal>& parameters) {}
 }
 
 // Conv integrator - uses implicit structure
-class ConvIntegrator : public Integrator {
+// FIX: Not sure if I need NumDim... issue is that on CONSTRUCTION, I know layer type... but... not after
+// ALso. layer can't know type of generic Integrator... So the builder of both would need to know NumDim (maybe in case switch??)
+template<typename TReal>
+class Conv3DIntegrator : public Integrator {
 
   protected:
   // Put buffers here
 }
 
 // Network integrator -- uses explicit unweighted structure
-class NetIntegrator : public Integrator {
+template<typename TReal>
+class NetIntegrator : public Integrator<TReal> {
 
   protected:
     // Need network w/ structure here
 }
 
 // Reservoir -- uses explicit weighted structure
-class ReservoirIntegrator : public Integrator {
+template<typename TReal>
+class ReservoirIntegrator : public Integrator<TReal> {
 
   protected:
     // Need network w/ structure here
