@@ -53,7 +53,13 @@ template<typename T>
 class ArraySlice;
 
 template<typename T>
+class ConstArraySlice;
+
+template<typename T>
 class Slice;
+
+template<typename T>
+class ConstSlice;
 
 template<typename T>
 class Tensor;
