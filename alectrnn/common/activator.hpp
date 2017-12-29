@@ -137,7 +137,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
   public:
     typedef Index std::size_t;
 
-    Conv3DCTRNNActivator(const std::vector<Index>& shape, TReal step_size) : 
+    Conv3DCTRNNActivator(const multi_array::Array<Index, 3>& shape, TReal step_size) : 
         step_size_(step_size), shape_(shape) {
       parameter_count_ = shape_[0] * 2;
       activator_type_ = ACTIVATOR_TYPE.CONV_CTRNN;
@@ -146,8 +146,8 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     ~Conv3DCTRNNActivator()=default;
 
     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
-      multi_array::ArrayView<TReal, 3> state_accessor = state.accessor();
-      const multi_array::ArrayView<TReal, 3> input_accessor = input_buffer.accessor();
+      multi_array::ArrayView<TReal, 3> state_accessor = state.accessor<3>();
+      const multi_array::ArrayView<TReal, 3> input_accessor = input_buffer.accessor<3>();
 
       for (Index filter = 0; filter < shape_[0]; filter++) {
         for (Index iii = 0; iii < shape_[1]; iii++) {
@@ -177,7 +177,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     multi_array::ConstArraySlice<TReal> biases;
     multi_array::ConstArraySlice<TReal> rtaus;
     TReal step_size_;
-    std::std::vector<Index> shape_;
+    multi_array::Array<Index, 3> shape_;
 };
 
 /*

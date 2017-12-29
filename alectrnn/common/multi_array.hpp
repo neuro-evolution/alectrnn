@@ -199,13 +199,13 @@ class ArrayViewBase {
       return base_[flat_index];
     }
 
-    T& operator()(const std::initializer_list<T>& indices) {
+    template< template<typename, typename...> class Container, typename... Args>
+    const T& operator()(const Container<T, Args...>& indices) const {
       Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
       return base_[flat_index];
     }
 
-    template< template<typename, typename...> class Container, typename... Args>
-    const T& operator()(const Container<T, Args...>& indices) const {
+    T& operator()(const std::initializer_list<T>& indices) {
       Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
       return base_[flat_index];
     }
@@ -242,40 +242,55 @@ class ArrayView : public ArrayViewBase<T> {
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
 
-    ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
+    ArrayView(TPtr base, DimPtr strides, DimPtr shape) 
+        : super_type(base, strides), shape_(shape) {
     }
 
     ArrayView(MultiArray<T, NumDim>& array) 
-        : super_type(array.data(), array.strides().data()) {
+        : super_type(array.data(), array.strides().data()), 
+          array.shape().data() {
     }
 
-    ArrayView(const ArrayView<T, NumDim>& view) : super_type(view) {
+    ArrayView(const ArrayView<T, NumDim>& view) : super_type(view),
+      shape_(view.shape_) {
     }
 
     ArrayView(ArrayView<T, NumDim>&& view) : super_type(std::move(view)) {
+      shape_ = view.shape_;
+      view.shape_ = nullptr;
     }
 
     ~ArrayView() {}
 
     ArrayView<T, NumDim>& operator=(const ArrayView<T,NumDim>& view) {
       super_type::operator=(view);
+      shape_ = view.shape_;
       return *this;
     }
 
     ArrayView<T, NumDim>& operator=(ArrayView<T,NumDim>&& view) {
       super_type::operator=(std::move(view));
+      shape_ = view.shape_;
+      view.shape_ = nullptr;
       return *this;
     }
 
     ArrayView<T, NumDim-1> operator[](Index index) {
       return ArrayView<T, NumDim-1>(super_type::base_ + 
-        index * super_type::strides_[0], super_type::strides_+1);
+        index * super_type::strides_[0], super_type::strides_+1, shape_+1);
     }
 
     const ArrayView<T, NumDim-1> operator[](Index index) const {
       return ArrayView<T, NumDim-1>(super_type::base_ + 
-        index * super_type::strides_[0], super_type::strides_+1);
+        index * super_type::strides_[0], super_type::strides_+1, shape_+1);
     }
+
+    Index extent(Index dimension) const {
+      return shape_[dimension];
+    }
+
+  protected:
+    DimPtr shape_;
 };
 
 template<typename T>
@@ -286,28 +301,36 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
 
-    ArrayView(TPtr base, DimPtr strides) : super_type(base, strides) {
+    ArrayView(TPtr base, DimPtr strides, DimPtr shape) 
+        : super_type(base, strides), shape_(shape) {
     }
 
     ArrayView(MultiArray<T, 1>& array) 
-        : super_type(array.data(), array.strides().data()) {
+        : super_type(array.data(), array.strides().data(), 
+          array.shape().data()) {
     }
 
-    ArrayView(const ArrayView<T, 1>& view) : super_type(view) {
+    ArrayView(const ArrayView<T, 1>& view) : super_type(view),
+      shape_(view.shape_) {
     }
 
     ArrayView(ArrayView<T, 1>&& view) : super_type(std::move(view)) {
+      shape_ = view.shape_;
+      view.shape_ = nullptr;
     }
 
     ~ArrayView() {}
 
     ArrayView<T, 1>& operator=(const ArrayView<T,1>& view) {
       super_type::operator=(view);
+      shape_ = view.shape_
       return *this;
     }
 
     ArrayView<T, 1>& operator=(ArrayView<T,1>&& view) {
       super_type::operator=(std::move(view));
+      shape_ = view.shape_;
+      view.shape_ = nullptr;
       return *this;
     }
 
@@ -318,6 +341,17 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     const T& operator[](Index index) const {
       return *(super_type::base_ + index * super_type::strides_[0]);
     }
+
+    Index extent(Index dimension) const {
+      return shape_[dimension];
+    }
+
+    Index extent() const {
+      return *shape_;
+    }
+
+  protected:
+    DimPtr shape_;
 };
 
 template<typename T, std::size_t NumDim>
@@ -799,6 +833,16 @@ class Tensor {
       return data_[index];
     }
 
+    T& operator()(const std::initializer_list<T>& indices) {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return data_[flat_index];
+    }
+
+    const T& operator()(const std::initializer_list<T>& indices) const {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      return data_[flat_index];
+    }
+
     Tensor<T>& operator=(const Tensor<T>& other) {
       delete[] data_;
       shape_ = other.shape_;
@@ -826,7 +870,15 @@ class Tensor {
     template<std::size_t NumDim>
     ArrayView<T, NumDim> accessor() {
       assert(NumDim == ndims_);
-      return ArrayView<T, NumDim>(this->data_, this->strides_.data());
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(), 
+        this->shape_data());
+    }
+
+    template<std::size_t NumDim>
+    const ArrayView<T, NumDim> accessor() const {
+      assert(NumDim == ndims_);
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
+        this->shape_data());
     }
 
   protected:

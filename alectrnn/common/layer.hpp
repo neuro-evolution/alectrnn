@@ -62,12 +62,24 @@ class Layer {
       layer_state_[neuron] = static_cast<TReal>(value);
     }
 
+    const multi_array::Tensor<TReal>& state() const {
+      return layer_state_;
+    }
+
+    multi_array::Tensor<TReal>& state() {
+      return layer_state_;
+    }
+
   protected:
     LAYER_TYPE layer_type_;
     multi_array::Tensor<TReal> layer_state_;
+    // holds input values used to update the layer's state
     multi_array::Tensor<TReal> input_buffer_;
+    // calculates inputs from other layers and applies them to input buffer
     Integrator<TReal>* back_integrator_;
+    // claculates inputs from neurons within the layer and applies them to input buffer
     Integrator<TReal>* self_integrator_;
+    // updates the layer's state using the input buffer (may also contain internal state)
     Activator<TReal>* activation_function_;
     std::size_t parameter_count_;
 };

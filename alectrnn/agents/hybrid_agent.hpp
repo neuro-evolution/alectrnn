@@ -29,9 +29,9 @@ class HyrbidAgent : public PlayerAgent {
 
   protected:
     NervousSystem *neural_net_;
-    std::vector<std::uint8_t> buffer_screen_;
-    std::vector<std::uint8_t> full_screen_;
-    std::vector<std::uint8_t> downsized_screen_;
+    std::vector<float> buffer_screen_;
+    std::vector<float> full_screen_;
+    std::vector<float> downsized_screen_;
     std::size_t input_screen_width_; // can get scrn hieght/width from neural net input shape
     std::size_t input_screen_height_; // can get scrn hieght/width from neural net input shape
     std::size_t update_rate_;
