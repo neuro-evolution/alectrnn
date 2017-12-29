@@ -412,6 +412,10 @@ class MultiArray {
       return data_;
     }
 
+    const TPtr data() const {
+      return data_;
+    }
+
     std::size_t size() const {
       return size_;
     }

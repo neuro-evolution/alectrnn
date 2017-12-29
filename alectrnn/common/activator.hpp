@@ -115,7 +115,8 @@ class CTRNNActivator : public Activator<TReal> {
       biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
                 parameters.start(), num_states, parameters.stride());
       rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start() + num_states, num_states, 
+                parameters.start() + parameters.stride() * num_states, 
+                num_states, 
                 parameters.stride());
     }
 
@@ -167,7 +168,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
                 parameters.start(), shape_[0], parameters.stride());
       rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start() + shape_[0], shape_[0], 
+                parameters.start() + parameters.stride() * shape_[0], shape_[0], 
                 parameters.stride());
     }
 

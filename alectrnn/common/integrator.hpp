@@ -70,19 +70,24 @@ class Conv3DIntegrator : public Integrator {
         const multi_array::Array<Index,3>& filter_shape, 
         const multi_array::Array<Index,3>& layer_shape, Index stride)
         : filter_shape_(filter_shape), num_filters_(num_filters), stride_(stride) {
-      parameters_per_filter_ = filter_shape[0] * (filter_shape[1] + filter_shape[2]);
-      parameter_count_ = num_filters * parameters_per_filter_;
+      major_filter_param_count_ = filter_shape[0] * filter_shape[2];
+      minor_filter_param_count_ = filter_shape[0] * filter_shape[2];
+      parameter_count_ = num_filters * (major_filter_param_count_ + minor_filter_param_count_);
       integrator_type_ = INTEGRATOR_TYPE.CONV;
-      state_buffer_1 = multi_array::Tensor<TReal>(layer_shape);
-      state_buffer_2 = multi_array::Tensor<TReal>(layer_shape);
-      filter_parameters_.resize(num_filters);
+      state_buffer1_ = multi_array::Tensor<TReal>(layer_shape);
+      state_buffer2_ = multi_array::Tensor<TReal>(layer_shape);
+      filter_parameters_major_({num_filters, filter_shape[0]});
+      filter_parameters_minor_({num_filters, filter_shape[0]});
     }
     ~Conv3DIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       const multi_array::ArrayView<TReal, 3> src_view = src_state.accessor<3>();
       multi_array::ArrayView<TReal, 3> tar_view = tar_state.accessor<3>();
-      multi_array::ArrayView<TReal, 3> buffer_view = state_buffer_.accessor<3>();
+      multi_array::ArrayView<TReal, 3> buffer1_view = state_buffer1_.accessor<3>();
+      multi_array::ArrayView<TReal, 3> buffer2_view = state_buffer2_.accessor<3>();
+      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
+      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
 
       // Clear target state for accumulation
       ZeroArray(tar_view);
@@ -94,22 +99,29 @@ class Conv3DIntegrator : public Integrator {
         for (Index jjj = 0; jjj < src_state.shape()[0]; jjj++) {
           // Carry out separable conv on filter
           const multi_array::ArrayView<TReal, 2> src_image = src_view[jjj];
-          multi_array::ArrayView<TReal, 2> buffer_image = buffer_view[jjj];
-          // call filter function len(shape times), one for each dim (starting with major)
-            // Need to initiate rolling sum
-            // loop through rolling sum before boundary conflicts (loop on major dim)
-            // some function for handling boundary conflicts
-          // not sure... should just add 2Dconvs for each filter?
+          multi_array::ArrayView<TReal, 2> buffer1_image = buffer1_view[jjj];
+          multi_array::ArrayView<TReal, 2> buffer2_image = buffer2_view[jjj];
+          Convolve2D(src_view, buffer1_image, buffer2_image,
+                     major_view[iii][jjj], minor_view[iii][jjj], stride_);
         }
       }
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      multi_array::ArrayView<<multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
+      multi_array::ArrayView<<multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
       for (Index filter = 0; filter < num_filters_; filter++) {
-        filter_parameters_[filter] = multi_array::ConstArraySlice<TReal>(
-          parameters.data(), 
-          parameters.start() + filter * parameters_per_filter_, 
-          parameters_per_filter_, parameters.stride());
+        for (Index iii = 0; iii < filter_shape_[0]; iii++) {
+          major_view[filter][iii] = multi_array::ConstArraySlice<TReal>(
+            parameters.data(), 
+            parameters.start() + parameters.stride() * filter * iii * filter_shape_[2], 
+            filter_shape_[2], parameters.stride());
+          
+          minor_view[filter][iii] = multi_array::ConstArraySlice<TReal>(
+            parameters.data(), 
+            parameters.start() + parameters.stride() * filter * iii * filter_shape_[1], 
+            filter_shape_[1], parameters.stride());
+        }
       }
     }
 
@@ -129,7 +141,7 @@ class Conv3DIntegrator : public Integrator {
         const multi_array::ConstArraySlice<TReal> &kernel_minor, 
         const multi_array::ConstArraySlice<TReal> &kernel_major,
         Index stride) {
-
+//////////////// NEED TO IMPLEMENT STRIDE :) ////////////////////////////////////////
       // Accumulate through major axis
       Index half_kernel = kernel_major.size() / 2;
       TReal major_first = kernel_major[kernel_major.size()-1];
@@ -216,10 +228,12 @@ class Conv3DIntegrator : public Integrator {
   protected:
     multi_array::Array<Index, 3> filter_shape_;
     Index num_filters_;
-    multi_array::Tensor<TReal> state_buffer_1;
-    multi_array::Tensor<TReal> state_buffer_2;
-    std::vector<multi_array::ConstArraySlice<TReal> > filter_parameters_;
-    Index parameters_per_filter_;
+    multi_array::Tensor<TReal> state_buffer1_;
+    multi_array::Tensor<TReal> state_buffer2_;
+    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_major_;
+    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_minor_;
+    Index major_filter_param_count_;
+    Index minor_filter_param_count_;
     Index stride_;
 }
 
