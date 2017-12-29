@@ -129,48 +129,56 @@ class CTRNNActivator : public Activator<TReal> {
 };
 
 /*
- * TODO: A uniform version of the CTRNN activator. All neurons in same filter
- * will share parameters. FIX: can't really use NumDim due to layer not knowing... lol since its a ref to Layer
- * Maybe fix by calling it Conv3D??? :(
+ * A uniform version of the CTRNN activator. All neurons in same filter
+ * will share parameters. The first index of the layer is the # filters
  */
-// template<typename TReal>
-// class Conv3DCTRNNActivator : public Activator<TReal> {
-//   public:
-//     typedef Index std::size_t;
+template<typename TReal>
+class Conv3DCTRNNActivator : public Activator<TReal> {
+  public:
+    typedef Index std::size_t;
 
-//     ConvCTRNNActivator(std::size_t num_states, TReal step_size) : 
-//         num_states_(num_states), step_size_(step_size) {
-//       // bias[K] and rtau[K]
-//       parameter_count_ = num_states * 2;
-//       activator_type_ = ACTIVATOR_TYPE.CONV_CTRNN;
-//     }
+    Conv3DCTRNNActivator(const std::vector<Index>& shape, TReal step_size) : 
+        step_size_(step_size), shape_(shape) {
+      parameter_count_ = shape_[0] * 2;
+      activator_type_ = ACTIVATOR_TYPE.CONV_CTRNN;
+    }
 
-//     ~ConvCTRNNActivator()=default;
+    ~Conv3DCTRNNActivator()=default;
 
-//     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
-//       for (Index iii = 0; iii < num_states_; iii++) {
-//         state[iii] += step_size_ * rtaus[iii] * 
-//             (-state[iii] + utilities::sigmoid(biases[iii] + input_buffer[iii]));
-//       }
-//     }
+    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+      multi_array::ArrayView<TReal, 3> state_accessor = state.accessor();
+      const multi_array::ArrayView<TReal, 3> input_accessor = input_buffer.accessor();
 
-//     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-//       assert(parameters.size() == parameter_count_);
-//       biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-//                 parameters.start(), num_states, parameters.stride());
-//       rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-//                 parameters.start() + num_states, num_states, 
-//                 parameters.stride());
-//     }
+      for (Index filter = 0; filter < shape_[0]; filter++) {
+        for (Index iii = 0; iii < shape_[1]; iii++) {
+          for (Index jjj = 0; jjj < shape_[2]; jjj++) {
+            state_accessor[filter][iii][jjj] += step_size_ 
+              * rtaus[filter]
+              * (-state_accessor[filter][iii][jjj] 
+              + utilities::sigmoid(biases[filter] 
+              + input_accessor[filter][iii][jjj]));
+          }
+        }
+      }
+    }
 
-//     void Reset() {};
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      assert(parameters.size() == parameter_count_);
+      biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+                parameters.start(), shape_[0], parameters.stride());
+      rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
+                parameters.start() + shape_[0], shape_[0], 
+                parameters.stride());
+    }
 
-//   protected:
-//     multi_array::ConstArraySlice<TReal> biases;
-//     multi_array::ConstArraySlice<TReal> rtaus;
-//     TReal step_size_;
-//     std::size_t num_states_;
-// };
+    void Reset() {};
+
+  protected:
+    multi_array::ConstArraySlice<TReal> biases;
+    multi_array::ConstArraySlice<TReal> rtaus;
+    TReal step_size_;
+    std::std::vector<Index> shape_;
+};
 
 /*
  * Simulates a spiking neuron. It has its own internal state Tensor

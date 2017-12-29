@@ -76,8 +76,8 @@ class Graph {
     std::size_t num_edges_;
 }
 
-typedef typename Graph<WeightedInEdge<float> > WeightedNeighorhGraph;
-typedef typename Graph<std::size_t> UnWeightedNeighorhGraph;
+typedef typename Graph<WeightedInEdge<float> > WeightedNeighborGraph;
+typedef typename Graph<std::size_t> UnWeightedNeighborGraph;
 
 } // End graphs namespace
 
