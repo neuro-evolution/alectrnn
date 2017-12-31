@@ -458,6 +458,12 @@ class MultiArray {
       return *this;
     }
 
+    void Fill(T value) {
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = value;
+      }
+    }
+
   protected:
     TPtr data_;
     Array<Index, NumDim> shape_;
@@ -883,6 +889,12 @@ class Tensor {
       assert(NumDim == ndims_);
       return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
         this->shape_data());
+    }
+
+    void Fill(T value) {
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = value;
+      }
     }
 
   protected:

@@ -53,7 +53,7 @@ class Graph {
       return *this;
     }
 
-    std::size_t CalcNumEdges() {
+    std::size_t CalcNumEdges() const {
       std::size_t sum = 0;
       for (NodeID iii = 0; iii < graph_.size(); iii++) {
         sum += graph_[iii].size();
@@ -62,11 +62,15 @@ class Graph {
       return sum;
     }
 
-    std::size_t GetNumNodes() {
+    std::size_t NumEdges() const {
+      return num_edges_;
+    }
+
+    std::size_t NumNodes() const {
       return num_nodes_;
     }
 
-    std::vector<Link>& GetNeighbors(NodeID node) {
+    const std::vector<Link>& Neighbors(NodeID node) const {
       return graph_[node];
     }
 
