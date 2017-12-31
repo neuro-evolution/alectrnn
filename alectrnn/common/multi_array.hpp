@@ -191,7 +191,7 @@ class ArrayViewBase {
       other.strides_ = nullptr;
     }
 
-    ~ArrayViewBase() {};
+    virtual ~ArrayViewBase()=default;
 
     template< template<typename, typename...> class Container, typename... Args>
     T& operator()(const Container<T, Args...>& indices) {
@@ -248,7 +248,7 @@ class ArrayView : public ArrayViewBase<T> {
 
     ArrayView(MultiArray<T, NumDim>& array) 
         : super_type(array.data(), array.strides().data()), 
-          array.shape().data() {
+          shape_(array.shape().data()) {
     }
 
     ArrayView(const ArrayView<T, NumDim>& view) : super_type(view),
@@ -323,7 +323,7 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
 
     ArrayView<T, 1>& operator=(const ArrayView<T,1>& view) {
       super_type::operator=(view);
-      shape_ = view.shape_
+      shape_ = view.shape_;
       return *this;
     }
 
@@ -755,8 +755,8 @@ class Tensor {
      * Build 'empty' Tensor.
      */
     template<typename Index, std::size_t NumDim>
-    Tensor(const Array<Index, NumDim> &shape) : shape_(shape), 
-        ndims_(shape.size()) {
+    Tensor(const Array<Index, NumDim> &shape) : ndims_(shape.size()), 
+          shape_(shape.begin(), shape.end()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
       strides_.resize(ndims_);

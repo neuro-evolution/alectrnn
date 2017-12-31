@@ -96,9 +96,6 @@ class Conv3DIntegrator : public Integrator {
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
 
-      // Clear target state for accumulation
-      tar_state.Fill(0.0);
-
       // for each filter
       for (Index iii = 0; iii < num_filters_; iii++) {
         multi_array::ArrayView<TReal, 2> tar_image = tar_view[iii];
@@ -271,7 +268,7 @@ class NetIntegrator : public Integrator<TReal> {
     ~NetIntegrator()=default;
 
     void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      tar_state.Fill(0);
+      
       assert(tar_state.size() == network_.NumNodes());
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
@@ -293,7 +290,7 @@ class NetIntegrator : public Integrator<TReal> {
     }
 
   protected:
-    const graphs::UnWeightedNeighborGraph& network_;
+    graphs::UnWeightedNeighborGraph network_;
     multi_array::ConstArraySlice<TReal> weights_;
 };
 
@@ -312,7 +309,6 @@ class ReservoirIntegrator : public Integrator<TReal> {
     ~ReservoirIntegrator()=default;
 
     void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      tar_state.Fill(0);
       assert(tar_state.size() == network_.NumNodes());
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Neighbors(node).size(); ++iii) {
@@ -324,7 +320,7 @@ class ReservoirIntegrator : public Integrator<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 
   protected:
-    const WeightedNeighborGraph& network_;
+    WeightedNeighborGraph network_;
 };
 
 } // End nervous_system namespace

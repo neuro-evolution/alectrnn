@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstddef>
+#include <cassert>
 #include <initializer_list>
 #include "activator.hpp"
 #include "integrator.hpp"
@@ -18,31 +19,90 @@ enum LAYER_TYPE {
   MOTOR
 };
 
+/*
+ * Layers take ownership of the integrators and activations functions they use.
+ * This is necessary as the Layer will be the only remaining access point to 
+ * those objects once it is pushed off to the nervous system.
+ */
 template<typename TReal>
 class Layer {
   public:
     typedef std::size_t Index;
 
-    Layer();
-    virtual ~Layer();
+    Layer(Integrator<TReal>* back_integrator, 
+          Integrator<TReal>* self_integrator,
+          Activator<TReal>* activation_function) 
+          : back_integrator_(back_integrator), 
+            self_integrator_(self_integrator), 
+            activation_function_(activation_function) {
+      parameter_count_ = back_integrator_->GetParameterCount() 
+                       + self_integrator_->GetParameterCount()
+                       + activation_function_->GetParameterCount();
+    }
 
-    /*
-     * Should return the number of dimensions which derives from derived type.
-     */
-    virtual Index NumDimensions() const=0;
+    Layer(const std::initializer_list<Index>& shape, 
+          Integrator<TReal>* back_integrator, 
+          Integrator<TReal>* self_integrator,
+          Activator<TReal>* activation_function) 
+          : Layer(back_integrator, self_integrator, activation_function),
+          layer_state_(shape), input_buffer_(shape), shape_(shape) {
+    }
+
+    Layer(const std::vector<Index>& shape, 
+          Integrator<TReal>* back_integrator, 
+          Integrator<TReal>* self_integrator,
+          Activator<TReal>* activation_function) 
+          : Layer(back_integrator, self_integrator, activation_function),
+          layer_state_(shape), input_buffer_(shape), shape_(shape) {
+    }
+
+    virtual ~Layer() {
+      delete back_integrator_;
+      delete self_integrator_;
+      delete activation_function_;
+    }
     
     /*
      * Update neuron state. Calls both integrator and activator.
      */
-    virtual void operator()(const Layer<TReal>&)=0;
+    virtual void operator()(const Layer<TReal>& prev_layer)=0; {
+      // First clear input buffer
+      input_buffer_.Fill(0.0);
+
+      // Call back integrator first to resolve input from prev layer
+      back_integrator_->(prev_layer.state(), input_buffer_);
+
+      // Resolve self-connections if there are any
+      self_integrator_->(input_buffer_, input_buffer_);
+
+      // Apply activation and update state
+      activation_function_->(layer_state_, input_buffer_);
+    }
 
     /*
      * Passes the needed parameters to the Layer - Should be Slice with 
      * parameter_count_ in size. Layer will then make and assign Slices to
      * The activation_function and Integrator function
      */
-    void Configure(const multi_array::ArraySlice<TReal>& parameters) {
-      // Need to make them at first... but would like to just use (data) and pass the change down
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      assert(parameters.size() == parameter_count_);
+      multi_array::ConstArraySlice<TReal>() back_slice(parameters.data(),
+        parameters.start(), 
+        back_integrator_->GetParameterCount(), 
+        parameters.stride());
+      back_integrator_->Configure(back_slice);
+
+      multi_array::ConstArraySlice<TReal>() self_slice(back_slice.data(),
+        back_slice.start() + back_slice.stride() * back_slice.size(),
+        self_integrator_->GetParameterCount(),
+        back_slice.stride());
+      self_integrator_->Configure(self_slice);
+
+      multi_array::ConstArraySlice<TReal>() activ_slice(self_slice.data(),
+        self_slice.start() + self_slice.stride() * self_slice.size(),
+        activation_function_->GetParameterCount(),
+        self_slice.stride());
+      activation_function_->Configure(activ_slice);
     }
 
     LAYER_TYPE GetLayerType() const {
@@ -70,6 +130,10 @@ class Layer {
       return layer_state_;
     }
 
+    const std::vector<Index>& shape() const {
+      return shape_;
+    }
+
   protected:
     LAYER_TYPE layer_type_;
     multi_array::Tensor<TReal> layer_state_;
@@ -82,6 +146,7 @@ class Layer {
     // updates the layer's state using the input buffer (may also contain internal state)
     Activator<TReal>* activation_function_;
     std::size_t parameter_count_;
+    std::vector<Index> shape_;
 };
 
 template<typename TReal>
