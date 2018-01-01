@@ -40,14 +40,6 @@ class Layer {
                        + activation_function_->GetParameterCount();
     }
 
-    Layer(const std::initializer_list<Index>& shape, 
-          Integrator<TReal>* back_integrator, 
-          Integrator<TReal>* self_integrator,
-          Activator<TReal>* activation_function) 
-          : Layer(back_integrator, self_integrator, activation_function),
-          layer_state_(shape), input_buffer_(shape), shape_(shape) {
-    }
-
     Layer(const std::vector<Index>& shape, 
           Integrator<TReal>* back_integrator, 
           Integrator<TReal>* self_integrator,
@@ -65,7 +57,7 @@ class Layer {
     /*
      * Update neuron state. Calls both integrator and activator.
      */
-    virtual void operator()(const Layer<TReal>& prev_layer)=0; {
+    virtual void operator()(const Layer<TReal>& prev_layer) {
       // First clear input buffer
       input_buffer_.Fill(0.0);
 
@@ -105,8 +97,10 @@ class Layer {
       activation_function_->Configure(activ_slice);
     }
 
-    LAYER_TYPE GetLayerType() const {
-      return layer_type_;
+    virtual void Reset() {
+      layer_state_.Fill(0.0);
+      input_buffer_.Fill(0.0);
+      activation_function_->Reset();
     }
 
     std::size_t GetParameterCount() const {
@@ -135,7 +129,6 @@ class Layer {
     }
 
   protected:
-    LAYER_TYPE layer_type_;
     multi_array::Tensor<TReal> layer_state_;
     // holds input values used to update the layer's state
     multi_array::Tensor<TReal> input_buffer_;
@@ -151,7 +144,28 @@ class Layer {
 
 template<typename TReal>
 class InputLayer : public Layer<TReal> {
+  public:
+    InputLayer(const std::vector<Index>& shape) 
+        : shape_(shape), layer_state_(shape) {
+      back_integrator_ = nullptr;
+      self_integrator_ = nullptr;
+      activation_function_ = nullptr;
+      parameter_count_ = 0;
+    }
 
+    InputLayer(const std::initializer_list<Index>& shape) 
+        : shape_(shape), layer_state_(shape) {
+      back_integrator_ = nullptr;
+      self_integrator_ = nullptr;
+      activation_function_ = nullptr;
+      parameter_count_ = 0;
+    }
+
+    void operator()(const Layer<TReal>& prev_layer) {}
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+
+    void Reset() { layer_state_.Fill(0.0); }
 };
 
 template<typename TReal>
