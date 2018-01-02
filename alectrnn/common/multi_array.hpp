@@ -177,6 +177,11 @@ class ArrayViewBase {
     typedef T* TPtr;
     typedef const std::size_t* DimPtr;
 
+    ArrayViewBase() {
+      base_ = nullptr;
+      strides_ = nullptr;
+    }
+
     ArrayViewBase(TPtr base, DimPtr strides) : base_(base), strides_(strides) {
     }
 
@@ -242,6 +247,10 @@ class ArrayView : public ArrayViewBase<T> {
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
 
+    ArrayView() : super_type() {
+      shape_ = nullptr;
+    }
+
     ArrayView(TPtr base, DimPtr strides, DimPtr shape) 
         : super_type(base, strides), shape_(shape) {
     }
@@ -300,6 +309,10 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     typedef typename super_type::Index Index;
     typedef typename super_type::TPtr TPtr;
     typedef typename super_type::DimPtr DimPtr;
+
+    ArrayView() : super_type() {
+      shape_ = nullptr;
+    }
 
     ArrayView(TPtr base, DimPtr strides, DimPtr shape) 
         : super_type(base, strides), shape_(shape) {
@@ -360,6 +373,10 @@ class MultiArray {
     typedef T* TPtr;
     typedef std::size_t Index;
 
+    MultiArray() {
+      data_ = nullptr;
+      size_ = 0;
+    }
     /*
      * Build 'empty' MultiArray 
      */ 
@@ -480,6 +497,13 @@ class ArraySlice {
   public:
     typedef std::size_t Index;
 
+    ArraySlice() {
+      data_ = nullptr;
+      start_ = 0;
+      stride_ = 0;
+      size_ = 0;
+    }
+
     ArraySlice(T* data, Index start, Index size, Index stride=1) : data_(data),
         start_(start), size_(size), stride_(stride) {
     }
@@ -548,6 +572,13 @@ class ConstArraySlice {
   public:
     typedef std::size_t Index;
 
+    ConstArraySlice() {
+      data_ = nullptr;
+      start_ = 0;
+      stride_ = 0;
+      size_ = 0;
+    }
+
     ConstArraySlice(const T* data, Index start, Index size, Index stride=1) : data_(data),
         start_(start), size_(size), stride_(stride) {
     }
@@ -608,6 +639,14 @@ template<typename T>
 class Slice {
   public:
     typedef std::size_t Index;
+
+    Slice() {
+      data_ = nullptr;
+      start_ = 0;
+      stop_ = 0;
+      stride_ = 0;
+      size_ = 0;
+    }
 
     Slice(T* data, Index start, Index stop, Index stride=1) : data_(data),
         start_(start), stop_(stop), stride_(stride) {
@@ -681,6 +720,14 @@ class ConstSlice {
   public:
     typedef std::size_t Index;
 
+    ConstSlice() {
+      data_ = nullptr;
+      start_ = 0;
+      stop_ = 0;
+      stride_ = 0;
+      size_ = 0;
+    }
+
     ConstSlice(const T* data, Index start, Index stop, Index stride=1) : data_(data),
         start_(start), stop_(stop), stride_(stride) {
       size_ = (stop_ - start_) / stride_;
@@ -750,6 +797,13 @@ class Tensor {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
+
+    // Default constructor
+    Tensor() {
+      ndims_ = 0;
+      size_ = 0;
+      data_ = nullptr;
+    }
 
     /*
      * Build 'empty' Tensor.

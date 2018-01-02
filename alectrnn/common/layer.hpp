@@ -195,6 +195,8 @@ class MotorLayer : public Layer<TReal> {
       back_integrator_ = new MotorLayer(num_outputs, num_inputs);
       self_integrator_ = nullptr;
       parameter_count_ = activation_function_->GetParameterCount();
+      layer_state_ = Tensor<TReal>({num_outputs});
+      input_buffer_ = Tensor<TReal>({num_outputs});
     }
 
     void operator()(const Layer<TReal>& prev_layer) {
