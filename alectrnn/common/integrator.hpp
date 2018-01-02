@@ -64,12 +64,49 @@ class NoneIntegrator : public Integrator<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 };
 
+// Integrator that has All2All connectivity with previous layer
+template<typename TReal>
+class All2AllIntegrator : public Integrator<TReal> {
+  public:
+    All2AllIntegrator(Index num_states, Index num_prev_states) 
+        : num_states_(num_states), num_prev_states_(num_prev_states) {
+      parameter_count_ = num_states_ * num_prev_states_;
+    }
+
+    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+      assert((src_state.size() == num_prev_states_) && (tar_state.size() == num_states));
+      Index weight_id = 0;
+      for (Index iii = 0; iii < tar_state.size(); ++iii) {
+        TReal cumulative_sum = 0.0;
+        for (Index jjj = 0; jjj < src_state.size(); ++jjj) {
+          cumulative_sum += src_state[jjj] * weights_[weight_id];
+          ++weight_id;
+        }
+        tar_state[iii] = cumulative_sum;
+      }
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      assert(parameters.size() == parameter_count_);
+      weights_ = multi_array::ConstArraySlice<TReal>(
+                  parameters.data(),
+                  parameters.start(),
+                  parameter_count_,
+                  parameters.stride());
+    }
+
+  protected:
+    Index num_states_;
+    Index num_prev_states_;
+    multi_array::ConstArraySlice<TReal> weights_;
+}
+
 /*
  * Conv integrator - uses implicit structure
  * Uses separable filters, so # params for a KxHxW kernel is K*(H+W)
  */
 template<typename TReal>
-class Conv3DIntegrator : public Integrator {
+class Conv3DIntegrator : public Integrator<TReal> {
   public:
     typedef std::size_t Index;
 

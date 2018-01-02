@@ -53,7 +53,7 @@ class Layer {
       delete self_integrator_;
       delete activation_function_;
     }
-    
+
     /*
      * Update neuron state. Calls both integrator and activator.
      */
@@ -113,7 +113,7 @@ class Layer {
 
     template<typename T>
     void SetNeuronState(Index neuron, T value) {
-      layer_state_[neuron] = static_cast<TReal>(value);
+      layer_state_[neuron] = value;
     }
 
     const multi_array::Tensor<TReal>& state() const {
@@ -170,7 +170,8 @@ class InputLayer : public Layer<TReal> {
 
 template<typename TReal>
 class ConvLayer : public Layer<TReal> {
-
+  // only might need to make it easier to build... maybe...
+  // since it could generate the activators and integrators inside
 };
 
 template<typename TReal>
@@ -185,7 +186,30 @@ class ReservoirLayer : public Layer<TReal> {
 
 template<typename TReal>
 class MotorLayer : public Layer<TReal> {
+  public:
+    typedef std::size_t Index;
 
+    MotorLayer(Index num_outputs, Index num_inputs, 
+        Activator<TReal>* activation_function) 
+        : activation_function_(activation_function) {
+      back_integrator_ = new MotorLayer(num_outputs, num_inputs);
+      self_integrator_ = nullptr;
+      parameter_count_ = activation_function_->GetParameterCount();
+    }
+
+    void operator()(const Layer<TReal>& prev_layer) {
+      // First clear input buffer
+      input_buffer_.Fill(0.0);
+      // Call back integrator first to resolve input from prev layer
+      back_integrator_->(prev_layer.state(), input_buffer_);
+      // Apply activation and update state
+      activation_function_->(layer_state_, input_buffer_);
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      assert(parameter_count_ == parameters.size());
+      back_integrator_->Configure(parameters);
+    }
 };
 
 } // End nervous_system namespace
