@@ -29,7 +29,7 @@ class Layer {
   public:
     typedef std::size_t Index;
 
-    Layer(Integrator<TReal>* back_integrator, 
+    Layer(Integrator<TReal>* back_integrator,
           Integrator<TReal>* self_integrator,
           Activator<TReal>* activation_function) 
           : back_integrator_(back_integrator), 

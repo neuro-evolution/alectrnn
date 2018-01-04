@@ -5,7 +5,6 @@
  *      Author: Nathaniel Rodriguez
  *
  * A utility functions for use by other classes or functions.
- * Uses CImg library for debugging if needed: see http://cimg.eu
  */
 
 #ifndef ALECTRNN_COMMON_CAPI_TOOLS_H_
@@ -18,17 +17,17 @@
 #include <string>
 #include "arrayobject.h"
 #include "capi_tools.hpp"
-// #include "CImg.h"
+#include "multi_array.hpp"
 
 namespace alectrnn {
 
 float *PyArrayToCArray(PyArrayObject *py_array);
-// cimg_library::CImg<std::uint8_t> ConvertGrayFrameToImg(
-//   const std::vector<std::uint8_t> &frame,
-//   std::size_t frame_width, std::size_t frame_height);
-// void SaveGrayFrameToPNG(const std::vector<std::uint8_t> &frame,
-//   std::size_t frame_width, std::size_t frame_height,
-//   const std::string &filename);
+
+template<typename T, std::size_t NumDims>
+multi_array::SharedMultiArray<T, NumDims> PyArrayToSharedMultiArray(PyArrayObject *py_array) {
+  return multi_array::SharedMultiArray<T, NumDims>((T *) py_array->data, 
+    multi_array::Array<std::size_t, NumDims>(py_array->dimensions));
+}
 
 }
 

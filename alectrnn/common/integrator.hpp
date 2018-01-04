@@ -23,6 +23,7 @@ namespace nervous_system {
 enum INTEGRATOR_TYPE {
   BASE,
   NONE,
+  ALL2ALL,
   CONV,
   NET,
   RESERVOIR
@@ -296,7 +297,7 @@ template<typename TReal>
 class NetIntegrator : public Integrator<TReal> {
   public:
 
-    NetIntegrator(const graphs::UnWeightedNeighborGraph& network) 
+    NetIntegrator(const graphs::DiGraph& network) 
         : network_(network) {
       integrator_type_ = INTEGRATOR_TYPE.NET;
       parameter_count_ = network_.NumEdges();
@@ -309,8 +310,8 @@ class NetIntegrator : public Integrator<TReal> {
       assert(tar_state.size() == network_.NumNodes());
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
-        for (Index iii = 0; iii < network_.Neighbors(node).size(); ++iii) {
-          tar_state[node] += src_state[network_.Neighbors(node)[iii].source] * weights_[edge_id];
+        for (Index iii = 0; iii < network_.InNeighbors(node).size(); ++iii) {
+          tar_state[node] += src_state[network_.InNeighbors(node)[iii].source] * weights_[edge_id];
           ++edge_id;
         }
       }
@@ -327,7 +328,7 @@ class NetIntegrator : public Integrator<TReal> {
     }
 
   protected:
-    graphs::UnWeightedNeighborGraph network_;
+    graphs::DiGraph network_;
     multi_array::ConstArraySlice<TReal> weights_;
 };
 
@@ -335,9 +336,8 @@ class NetIntegrator : public Integrator<TReal> {
 template<typename TReal>
 class ReservoirIntegrator : public Integrator<TReal> {
   public:
-    typedef typename graphs::Graph<WeightedInEdge<TReal> > WeightedNeighborGraph;
     typedef std::size_t Index;
-    ReservoirIntegrator(const WeightedNeighborGraph& network)
+    ReservoirIntegrator(const graphs::DiGraph& network)
         : network_(network) {
       integrator_type_ = INTEGRATOR_TYPE.RESERVOIR;
       parameter_count_ = 0;
@@ -348,8 +348,8 @@ class ReservoirIntegrator : public Integrator<TReal> {
     void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       assert(tar_state.size() == network_.NumNodes());
       for (Index node = 0; node < network_.NumNodes(); ++node) {
-        for (Index iii = 0; iii < network_.Neighbors(node).size(); ++iii) {
-          tar_state[node] += src_state[network_.Neighbors(node)[iii].source] * network_.Neighbors(node)[iii].weight;
+        for (Index iii = 0; iii < network_.InNeighbors(node).size(); ++iii) {
+          tar_state[node] += src_state[network_.InNeighbors(node)[iii].source] * network_.InNeighbors(node)[iii].weight;
         }
       }
     }
@@ -357,7 +357,7 @@ class ReservoirIntegrator : public Integrator<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 
   protected:
-    WeightedNeighborGraph network_;
+    graphs::DiGraph network_;
 };
 
 } // End nervous_system namespace

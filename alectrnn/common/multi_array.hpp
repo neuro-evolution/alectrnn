@@ -49,6 +49,9 @@ class ArrayView;
 template<typename T, std::size_t NumDim>
 class MultiArray;
 
+template<typename T, std::size_t NumDim>
+class SharedMultiArray;
+
 template<typename T>
 class ArraySlice;
 
@@ -260,6 +263,11 @@ class ArrayView : public ArrayViewBase<T> {
           shape_(array.shape().data()) {
     }
 
+    ArrayView(SharedMultiArray<T, NumDim>& array) 
+        : super_type(array.data(), array.strides().data()), 
+          shape_(array.shape().data()) {
+    }
+
     ArrayView(const ArrayView<T, NumDim>& view) : super_type(view),
       shape_(view.shape_) {
     }
@@ -319,6 +327,11 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     }
 
     ArrayView(MultiArray<T, 1>& array) 
+        : super_type(array.data(), array.strides().data(), 
+          array.shape().data()) {
+    }
+
+    ArrayView(SharedMultiArray<T, 1>& array) 
         : super_type(array.data(), array.strides().data(), 
           array.shape().data()) {
     }
@@ -395,6 +408,16 @@ class MultiArray {
     }
 
     /*
+     * Generates array from existing data and takes ownership of data
+     */
+    MultiArray(TPtr data, const std::vector<Index> &shape) 
+        : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      CalculateStrides();
+    }
+
+    /*
      * Copy (copies data as well)
      */
     MultiArray(const MultiArray<T,NumDim> &other) : shape_(other.shape_),
@@ -466,6 +489,118 @@ class MultiArray {
     }
 
     MultiArray<T,NumDim>& operator=(MultiArray<T,NumDim>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      shape_ = std::move(other.shape_);
+      strides_ = std::move(other.strides_);
+      size_ = std::move(other.size_);
+
+      return *this;
+    }
+
+    void Fill(T value) {
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = value;
+      }
+    }
+
+  protected:
+    TPtr data_;
+    Array<Index, NumDim> shape_;
+    Array<Index, NumDim> strides_;
+    std::size_t size_;
+};
+
+/*
+ * This array shares data and does not take ownership. Think of it as the 
+ * base for a view, as the view also does not take ownership, but it requires
+ * pointers to stride and shape objects.
+ */
+template<typename T, std::size_t NumDim>
+class SharedMultiArray {
+  public:
+    typedef T* TPtr;
+    typedef std::size_t Index;
+
+    SharedMultiArray() {
+      data_ = nullptr;
+      size_ = 0;
+    }
+
+    SharedMultiArray(TPtr data, const Array<Index, NumDim> &shape) 
+        : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      CalculateStrides();
+    }
+
+    SharedMultiArray(TPtr data, const std::vector<Index> &shape) 
+        : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      CalculateStrides();
+    }
+
+    /*
+     * Copy (doesn't copy data)
+     */
+    SharedMultiArray(const SharedMultiArray<T,NumDim> &other) : shape_(other.shape_),
+        strides_(other.strides_), size_(other.size_), data_(data) {
+    }
+
+    SharedMultiArray(SharedMultiArray<T,NumDim> &&other) : shape_(std::move(other.shape_)),
+        strides_(std::move(other.strides_)), size_(std::move(other.size_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    ~SharedMultiArray()=default;
+
+    void CalculateStrides() {
+      for (Index iii = 0; iii < NumDim; iii++) {
+        strides_[iii] = 1;
+        for (Index jjj = iii + 1; jjj < NumDim; jjj++) {
+          strides_[iii] *= shape_[jjj];
+        }
+      }
+    }
+
+    TPtr data() {
+      return data_;
+    }
+
+    const TPtr data() const {
+      return data_;
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    const Array<Index, NumDim>& shape() const {
+      return shape_;
+    }
+
+    const Array<Index, NumDim>& strides() const {
+      return strides_;
+    }
+
+    T& operator[](Index index) {
+      return data_[index]; 
+    }
+
+    const T& operator[](Index index) const {
+      return data_[index];
+    }
+
+    SharedMultiArray<T,NumDim>& operator=(const SharedMultiArray<T,NumDim>& other) {
+      shape_ = other.shape_;
+      strides_ = other.strides_;
+      size_ = other.size_;
+      data_ = data;
+    }
+
+    SharedMultiArray<T,NumDim>& operator=(SharedMultiArray<T,NumDim>&& other) {
       data_ = other.data_;
       other.data_ = nullptr;
       shape_ = std::move(other.shape_);
@@ -958,6 +1093,16 @@ class Tensor {
     std::size_t size_;
     std::size_t ndims_;
 };
+
+template<T>
+void CalculateStrides(const std::size_t* shape, std::size_t* strides, ndims) {
+  for (std::size_t iii = 0; iii < ndims; iii++) {
+    strides[iii] = 1;
+    for (std::size_t jjj = iii + 1; jjj < ndims; jjj++) {
+      strides[iii] *= shape[jjj];
+    }
+  }
+}
 
 } // End namespace multi_array
 

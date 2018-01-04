@@ -38,6 +38,7 @@ class NervousSystem {
         network_layers_[iii]->(*(network_layers_[iii-1]));
       }
     }
+    
     void Reset() {
       for (auto::iterator iter = network_layers_.begin(); iter != network_layers_.end(); ++iter) {
         iter->Reset();

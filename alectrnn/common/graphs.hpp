@@ -1,52 +1,69 @@
 #ifndef GRAPHS_H_
 #define GRAPHS_H_
 
-namespace graphs {
-
 #include <cstddef>
 #include <vector>
+#include "multi_array.hpp"
 
-template<TReal>
-struct WeightedInEdge {
+namespace graphs {
 
-  WeightedInEdge() {
+typedef std::size_t NodeID;
+typedef std::size_t Index;
+
+template<typename TReal>
+struct EdgeTail {
+
+  EdgeTail() {
     source = 0;
-    weight = 0;
+    weight = 1;
   }
 
-  WeightedInEdge(std::size_t source_node, TReal source_weight) : 
+  EdgeTail(NodeID source_node, TReal source_weight) : 
       source(source_node), weight(source_weight) {}
 
-  std::size_t source;
+  NodeID source;
   TReal weight;
 };
 
-template<typename Link>
-class Graph {
+template<typename TReal>
+class DiGraph {
   public:
     typedef std::size_t NodeID;
     typedef std::size_t Index;
 
-    Graph(const std::vector< std::vector<Link> >& graph) : graph_(graph) {
+    /*
+     * When building from an edge list it is assumed nodes are labelled
+     * contiguously starting from 0 to num_nodes-1
+     */
+    DiGraph(NodeID num_nodes)
+        : num_nodes_(num_nodes) {
+      graph_.resize(num_nodes);
+      num_edges_ = 0;
+      for (NodeID iii = 0; iii < num_nodes; ++iii) {
+        graph_[iii].resize(0);
+      }
+    }
+
+    DiGraph(const std::vector< std::vector<EdgeTail<TReal>> >& graph) : graph_(graph) {
       num_nodes_ = graph_.size();
       num_edges_ = CalcNumEdges();
     }
 
-    Graph(const Graph<Link>& other) : graph_(other.graph_),
+    DiGraph(const DiGraph& other) : graph_(other.graph_),
         num_nodes_(other.num_nodes_), num_edges_(other.graph_) {}
 
-    Graph(Graph<Link>&& other) : graph_(std::move(other.graph_)),
+    DiGraph(DiGraph&& other) : graph_(std::move(other.graph_)),
         num_nodes_(std::move(other.num_nodes_)), 
         num_edges_(std::move(other.num_edges_)) {}
 
-    Graph<Link>& operator=(const Graph<Link>& other) {
+    DiGraph& operator=(const DiGraph& other) {
       graph_ = other.graph_;
       num_nodes_ = other.num_nodes_;
       num_edges_ = other.num_edges_;
       return *this;
     }
 
-    Graph<Link>& operator=(Graph<Link>&& other) {
+    DiGraph& operator=(DiGraph&& other) {
       graph_ = std::move(other.graph_);
       num_nodes_ = std::move(other.num_nodes_);
       num_edges_ = std::move(other.num_edges_);
@@ -70,18 +87,55 @@ class Graph {
       return num_nodes_;
     }
 
-    const std::vector<Link>& Neighbors(NodeID node) const {
+    const std::vector<EdgeTail<TReal>>& InNeighbors(NodeID node) const {
       return graph_[node];
     }
 
+    const EdgeTail<TReal>& Edge(NodeID source, NodeID target) const {
+      return graph_[source][target];
+    }
+
+    void AddEdge(NodeID source, NodeID target, TReal weight=1) {
+      graph_[target].push_back(EdgeTail<TReal>(source, weight));
+    }
+
   protected:
-    std::vector< std::vector<Link> > graph_;
+    std::vector< std::vector<EdgeTail<TReal>> > graph_;
     std::size_t num_nodes_;
     std::size_t num_edges_;
 }
 
-typedef typename Graph<WeightedInEdge<float> > WeightedNeighborGraph;
-typedef typename Graph<std::size_t> UnWeightedNeighborGraph;
+/*
+ * edge list may exclude end nodes if they aren't connected, so it is
+ * insufficient to just pass a node list.
+ * First dimension is NumEdges, second dimension is [source, target]
+ * If there are weights then pass weight array (must be same size as edges)
+ */
+
+DiGraph ConvertEdgeListToDiGraph(NodeID num_nodes,
+    const multi_array::MultiArray<NodeID, 2>& edge_list) {
+  graph = DiGraph(num_nodes);
+  ArrayView<NodeID, 2> edge_view(edge_list);
+  for (NodeID iii = 0; iii < edge_view.extent(0); ++iii) {
+    graph.AddEdge(edge_view[iii][1], edge_view[iii][0]);
+  }
+
+  return graph;
+}
+
+template<TReal>
+DiGraph ConvertEdgeListToDiGraph(NodeID num_nodes,
+    const multi_array::MultiArray<NodeID, 2>& edge_list, 
+    const multi_array::MultiArray<TReal, 1>& weights) {
+  graph = DiGraph(num_nodes);
+  ArrayView<NodeID, 2> edge_view(edge_list);
+  ArrayView<TReal, 1> weight_view(weights);
+  for (NodeID iii = 0; iii < edge_view.extent(0); ++iii) {
+    graph.AddEdge(edge_view[iii][1], edge_view[iii][0], weight_view[iii]);
+  }
+
+  return graph;
+}
 
 } // End graphs namespace
 
