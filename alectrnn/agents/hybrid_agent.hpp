@@ -32,8 +32,8 @@ class HyrbidAgent : public PlayerAgent {
     std::vector<float> buffer_screen_;
     std::vector<float> full_screen_;
     std::vector<float> downsized_screen_;
-    std::size_t input_screen_width_; // can get scrn hieght/width from neural net input shape
-    std::size_t input_screen_height_; // can get scrn hieght/width from neural net input shape
+    std::size_t input_screen_width_; // can get scrn height/width from neural net input shape
+    std::size_t input_screen_height_; // can get scrn height/width from neural net input shape
     std::size_t update_rate_;
     bool use_color_;
     bool is_configured_;

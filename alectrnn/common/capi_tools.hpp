@@ -30,8 +30,9 @@ std::vector<T> PyArrayToVector(PyArrayObject *py_array) {
     num_elements *= py_array->dimensions[iii];
   }
   std::vector<T> vec(num_elements);
+  T* data_array = static_cast<T*>(py_array->data);
   for (std::size_t iii = 0; iii < num_elements; ++iii) {
-    vec[iii] = static_cast<T*>(py_array->data)[iii];
+    vec[iii] = data_array[iii];
   }
   return vec;
 }

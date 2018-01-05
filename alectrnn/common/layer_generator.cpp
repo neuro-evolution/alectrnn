@@ -34,6 +34,8 @@
 #include "layer.hpp"
 #include "capi_tools.hpp"
 #include "multi_array.hpp"
+#include "activator.hpp"
+#include "integrator.hpp"
 
 /*
  * DeleteLayer can be shared among the Layers as a destructor
@@ -86,16 +88,15 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"ale", "num_outputs", "num_inputs", "activator_type", "activator_args", NULL};
+  static char *keyword_list[] = {"ale", "num_inputs", "activator_type", "activator_args", NULL};
 
   PyObject* ale_capsule;
-  int num_outputs;
   int num_inputs;
   int activator_type;
   PyObject* activator_args;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiiiO", keyword_list,
-      &ale_capsule, &num_outputs, &num_inputs, &activator_type, &activator_args)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiiO", keyword_list,
+      &ale_capsule, &num_inputs, &activator_type, &activator_args)) {
     std::cout << "Error parsing CreateMotorLayer arguments" << std::endl;
     return NULL;
   }
@@ -112,6 +113,8 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
   nervous_system::Activator<float>* activator = ActivatorParser(
     activator_type, activator_args);
 
+  int num_outputs = ale->getMinimalActionSet().size();
+
   nervous_system::Layer<float>* layer = new nervous_system::MotorLayer<float>(
     num_outputs, num_inputs, activator);
 
@@ -127,6 +130,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
     case nervous_system::ACTIVATOR_TYPE.IDENTITY:
       new_activator = new nervous_system::IdentityActivator<float>();
       break;
+
     case nervous_system::ACTIVATOR_TYPE.CTRNN:
       int num_states;
       float step_size;
@@ -136,6 +140,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       }
       new_activator = new nervous_system::CTRNNActivator<float>(num_states, step_size);
       break;
+
     case nervous_system::ACTIVATOR_TYPE.CONV_CTRNN:
       PyArrayObject* shape;
       float step_size;
@@ -146,6 +151,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       new_activator = new nervous_system::Conv3DCTRNNActivator<float>(
         multi_array::Array<std::size_t,3>(shape->data), step_size);
       break;
+
     default:
       std::cout << "Activator case not supported... exiting." << std::endl;
       assert(0);
@@ -161,6 +167,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
     case nervous_system::LAYER_TYPE.NONE:
       new_integrator = new nervous_system::NoneIntegrator<float>();
       break;
+
     case nervous_system::LAYER_TYPE.ALL2ALL:
       int num_states;
       int num_prev_states;
@@ -171,6 +178,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       new_integrator = new nervous_system::All2AllIntegrator<float>(
         num_states, num_prev_states);
       break;
+
     case nervous_system::LAYER_TYPE.CONV:
       int num_filters;
       PyArrayObject* filter_shape;
@@ -186,6 +194,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         multi_array::Array<std::size_t,3>(layer_shape->data),
         stride);
       break;
+
     case nervous_system::LAYER_TYPE.NET:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
@@ -197,6 +206,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         graphs::ConvertEdgeListToDiGraph(
         num_nodes, PyArrayToSharedMultiArray<float,2>(edge_list)));
       break;
+
     case nervous_system::LAYER_TYPE.RESERVOIR:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
@@ -210,6 +220,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         num_nodes, PyArrayToSharedMultiArray<float,2>(edge_list),
         PyArrayToSharedMultiArray<float,1>(weights)));
       break;
+
     default:
       std::cout << "Integrator case not supported... exiting." << std::endl;
       assert(0);
