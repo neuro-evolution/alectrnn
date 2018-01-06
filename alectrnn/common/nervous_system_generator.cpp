@@ -4,6 +4,11 @@
  *  Created on: Jan 2, 2018
  *      Author: Nathaniel Rodriguez
  *
+ * Currently, unfortunately, PyCapsules are used to give those pointers.
+ * NervousSystem TAKES OWNERSHIP of the Layers, the PyCapsules are not
+ * the owners and will not destroy them once they go out of scope in Python.
+ * The capsules act only to pass the Layers to the NervousSystem, and should
+ * be discarded and can be considered temporary.
  */
 
 #include <Python.h>
@@ -11,17 +16,10 @@
 #include <cstddef>
 #include <iostream>
 #include <vector>
+#include "nervous_system_generator.hpp"
 #include "agent_generator.hpp"
 #include "layer.hpp"
 #include "nervous_system.hpp"
-
-// Load in ALE, a couple numpy arrays and variables needed for NN creation
-// this should include Input sizes
-
-// Create NN
-// Return NN pointer
-
-// Create additional function that returns the # of parameters needed -> each layer will need a param Count member
 
 /*
  * DeleteLayer can be shared among the Layers as a destructor
@@ -79,6 +77,7 @@ nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape
 
     nervous_system::Layer<float>* layer = static_cast<nervous_system::Layer<float>*>(
       PyCapsule_GetPointer(layer_capsule, "layer_generator.layer"));
+
     nervous_system.AddLayer(layer);
   }
 

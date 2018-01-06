@@ -9,12 +9,12 @@
 #ifndef NERVOUS_SYSTEM_GENERATOR_H_
 #define NERVOUS_SYSTEM_GENERATOR_H_
 
-// Load in ALE, a couple numpy arrays and variables needed for NN creation
-// this should include Input sizes
+#include <Python.h>
+#include <cstddef>
+#include <vector>
+#include "nervous_system.hpp"
 
-// Create NN
-// Return NN pointer
-
-// Create additional function that returns the # of parameters needed -> each layer will need a param Count member
+nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape, PyObject* args);
+PyMODINIT_FUNC PyInit_NervousSystem_generator(void);
 
 #endif /* NERVOUS_SYSTEM_GENERATOR_H_ */

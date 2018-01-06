@@ -39,6 +39,22 @@ void ResizeGrayScreen(std::size_t src_width, std::size_t src_height,
                       std::vector<std::uint8_t>& src_screen,
                       std::vector<std::uint8_t>& tar_screen,
                       std::vector<std::uint8_t>& buffer_screen);
+
+void Apply3x3BoxFilterGray(const std::vector<std::uint8_t>& src_screen,
+                           std::vector<float>& buffer_screen1,
+                           std::vector<float>& buffer_screen2,
+                           std::size_t screen_width, std::size_t screen_height);
+void SubsampleGrayScreen(std::size_t src_width, std::size_t src_height,
+                         std::size_t tar_width, std::size_t tar_height,
+                         const std::vector<float>& src_screen,
+                         std::vector<float>& tar_screen);
+void ResizeGrayScreen(std::size_t src_width, std::size_t src_height,
+                      std::size_t tar_width, std::size_t tar_height,
+                      const std::vector<std::uint8_t>& src_screen,
+                      std::vector<float>& tar_screen,
+                      std::vector<float>& buffer_screen1,
+                      std::vector<float>& buffer_screen2);
+
 }
 
 #endif /* ALECTRNN_COMMON_SCREEN_PREPROCESSING_H_ */

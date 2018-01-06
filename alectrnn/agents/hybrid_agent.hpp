@@ -18,7 +18,8 @@ class HyrbidAgent : public PlayerAgent {
   public:
     typedef std::size_t Index;
 
-    HyrbidAgent(ALEInterface* ale, NervousSystem* neural_net);
+    HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net);
+    HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net, Index update_rate);
     ~HyrbidAgent();
 
     void Configure(const float *parameters);
@@ -28,14 +29,12 @@ class HyrbidAgent : public PlayerAgent {
     Action Act();
 
   protected:
-    NervousSystem *neural_net_;
-    std::vector<float> buffer_screen_;
-    std::vector<float> full_screen_;
+    NervousSystem& neural_net_;
+    std::vector<std::uint8_t> full_screen_;
+    std::vector<float> buffer_screen1_;
+    std::vector<float> buffer_screen2_;
     std::vector<float> downsized_screen_;
-    std::size_t input_screen_width_; // can get scrn height/width from neural net input shape
-    std::size_t input_screen_height_; // can get scrn height/width from neural net input shape
     std::size_t update_rate_;
-    bool use_color_;
     bool is_configured_;
 };
 

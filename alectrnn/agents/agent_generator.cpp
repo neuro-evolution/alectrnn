@@ -23,6 +23,7 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
+#include "nervous_system.hpp"
 #include "agent_generator.hpp"
 #include "player_agent.hpp"
 // Add includes to agents you wish to add below:
@@ -85,6 +86,47 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
   return agent_capsule;
 }
 
+static PyObject *CreateHybridAgent(PyObject *self, PyObject *args,
+    PyObject *kwargs) {
+  static char *keyword_list[] = {"ale", "nervous_system", "update_rate", NULL};
+
+  PyObject* ale_capsule;
+  PyObject* nervous_system_capsule;
+  int update_rate;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOi", keyword_list,
+      &ale_capsule, &nervous_system_capsule, &update_rate)) {
+    std::cout << "Error parsing Agent arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
+  {
+    std::cout << "Invalid pointer to ALE returned from capsule,"
+        " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
+      ale_capsule, "ale_generator.ale"));
+
+  if (!PyCapsule_IsValid(nervous_system_capsule, "ale_generator.ale"))
+  {
+    std::cout << "Invalid pointer to NervousSystem returned from capsule,"
+        " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nervous_system = 
+      static_cast<nervous_system::NervousSystem<float>*>(PyCapsule_GetPointer(
+      nervous_system_capsule, "nervous_system_generator.nn"));
+
+  alectrnn::PlayerAgent *agent = new alectrnn::HybridAgent(
+    ale, nervous_system, update_rate);
+
+  PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
+                                "agent_generator.agent", DeleteAgent);
+  return agent_capsule;
+}
+
 /*
  * Add new agents in additional lines below:
  */
@@ -92,6 +134,9 @@ static PyMethodDef AgentMethods[] = {
   { "CreateCtrnnAgent", (PyCFunction) CreateCtrnnAgent,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a CtrnnAgent"},
+  { "CreateHybridAgent", (PyCFunction) CreateHybridAgent,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a HybridAgent"},
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

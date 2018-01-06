@@ -2,8 +2,6 @@
 #ifndef NN_NERVOUS_SYSTEM_H_
 #define NN_NERVOUS_SYSTEM_H_
 
-namespace nervous_system {
-
 #include <cstddef>
 #include <cassert>
 #include <vector>
@@ -11,12 +9,10 @@ namespace nervous_system {
 #include "layer.hpp"
 #include "multi_array.hpp"
 
+namespace nervous_system {
+
 /*
- * TODO:... figure out if python capsule knows if NervousSystem is using the pointers... I don't think it does
- * this could be a problem, becaues Idk if the capsule can be made to give up ownership. Maybe manual incref/decref
- * in destructor? needs to import c-api though :(
- * Maybe don't give capsule a.... destructor? THis could be dangerous if we want to keep the layers in python...
- * oh dear :(
+ * NervousSystem takes ownership of the layers it is given.
  */
 template<typename TReal>
 class NervousSystem {
@@ -27,6 +23,7 @@ class NervousSystem {
       network_layers_.push_back(new InputLayer<TReal>(input_shape));
     }
 
+    If NervousSystem is owner, it needs this destructor
     ~NervousSystem() {
       for (auto::iterator obj_ptr = network_layers_.begin(); obj_ptr != network_layers_.end(); ++obj_ptr) {
         delete *obj_ptr;
@@ -59,12 +56,23 @@ class NervousSystem {
       }
     }
 
+    /*
+     * First layer is the input layer, its states are set here
+     */
     template<typename T>
     void SetInput(const std::vector<T>& inputs) {
       for (Index iii = 0; iii < network_layers_[0].NumNeurons(); iii++)
       {
         network_layers_[0].SetNeuronState(iii, inputs[iii]);
       }
+    }
+
+    /*
+     * It is assumed that the last layer is the output of the network
+     * Its states will be returned as a Tensor.
+     */
+    const multi_array::Tensor<TReal>& GetOutput() const {
+      return network_layers_[network_layers_.size()-1].state();
     }
 
     void AddLayer(Layer<TReal>* layer) {
@@ -74,6 +82,10 @@ class NervousSystem {
 
     std::size_t GetParameterCount() const {
       return parameter_count_;
+    }
+
+    const Layer<TReal>& operator[](Index index) const {
+      return network_layers_[index];
     }
 
   protected:

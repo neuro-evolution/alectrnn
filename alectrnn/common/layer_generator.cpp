@@ -30,6 +30,7 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
+#include "layer_generator.hpp"
 #include "arrayobject.h"
 #include "layer.hpp"
 #include "capi_tools.hpp"
@@ -39,10 +40,12 @@
 
 /*
  * DeleteLayer can be shared among the Layers as a destructor
+ * Nothing is deleted because ownership is supposed to be passed to
+ * the NervousSystem, which will handle garbage collection.
  */
 static void DeleteLayer(PyObject *layer_capsule) {
-  delete (nervous_system::Layer *)PyCapsule_GetPointer(
-        layer_capsule, "layer_generator.layer");
+  // delete (nervous_system::Layer *)PyCapsule_GetPointer(
+  //       layer_capsule, "layer_generator.layer");
 }
 
 /*

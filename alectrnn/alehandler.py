@@ -15,6 +15,9 @@ from functools import partial
 from pkg_resources import resource_listdir
 from pkg_resources import resource_filename
 
+###### Use ALEHandler to generate motor layer internally so i don't have to worry about it
+
+
 def generate_rom_dictionary():
     roms_list = resource_listdir("alectrnn", "roms")
     rom_path_list = [ resource_filename("alectrnn", "roms/" + rom) 
