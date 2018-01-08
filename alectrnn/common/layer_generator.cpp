@@ -29,6 +29,7 @@
 #include <cassert>
 #include <ale_interface.hpp>
 #include <cstddef>
+#include <inttypes.h>
 #include <iostream>
 #include "layer_generator.hpp"
 #include "arrayobject.h"
@@ -167,11 +168,11 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
   nervous_system::Integrator<float>* new_integrator;  
   switch(type) {
-    case nervous_system::LAYER_TYPE.NONE:
+    case nervous_system::INTEGRATOR_TYPE.NONE:
       new_integrator = new nervous_system::NoneIntegrator<float>();
       break;
 
-    case nervous_system::LAYER_TYPE.ALL2ALL:
+    case nervous_system::INTEGRATOR_TYPE.ALL2ALL:
       int num_states;
       int num_prev_states;
       if (!PyArg_ParseTuple(args, "ii", &num_states, &num_prev_states)) {
@@ -182,7 +183,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         num_states, num_prev_states);
       break;
 
-    case nervous_system::LAYER_TYPE.CONV:
+    case nervous_system::INTEGRATOR_TYPE.CONV:
       int num_filters;
       PyArrayObject* filter_shape;
       PyArrayObject* layer_shape;
@@ -198,7 +199,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         stride);
       break;
 
-    case nervous_system::LAYER_TYPE.NET:
+    case nervous_system::INTEGRATOR_TYPE.NET:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
@@ -207,10 +208,10 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       }
       new_integrator = new nervous_system::NetIntegrator<float>(
         graphs::ConvertEdgeListToDiGraph(
-        num_nodes, PyArrayToSharedMultiArray<float,2>(edge_list)));
+        num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
 
-    case nervous_system::LAYER_TYPE.RESERVOIR:
+    case nervous_system::INTEGRATOR_TYPE.RESERVOIR:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       PyArrayObject* weights; // Nx1 dimensional array
@@ -220,7 +221,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       }
       new_integrator = new nervous_system::NetIntegrator<float>(
         graphs::ConvertEdgeListToDiGraph(
-        num_nodes, PyArrayToSharedMultiArray<float,2>(edge_list),
+        num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
         PyArrayToSharedMultiArray<float,1>(weights)));
       break;
 

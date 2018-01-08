@@ -169,22 +169,6 @@ class InputLayer : public Layer<TReal> {
 };
 
 template<typename TReal>
-class ConvLayer : public Layer<TReal> {
-  // only might need to make it easier to build... maybe...
-  // since it could generate the activators and integrators inside
-};
-
-template<typename TReal>
-class RecurrentLayer : public Layer<TReal> {
-
-};
-
-template<typename TReal>
-class ReservoirLayer : public Layer<TReal> {
-
-};
-
-template<typename TReal>
 class MotorLayer : public Layer<TReal> {
   public:
     typedef std::size_t Index;

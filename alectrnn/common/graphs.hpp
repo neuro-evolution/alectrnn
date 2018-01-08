@@ -112,25 +112,26 @@ class DiGraph {
  * If there are weights then pass weight array (must be same size as edges)
  */
 
+template<typename Integer>
 DiGraph ConvertEdgeListToDiGraph(NodeID num_nodes,
-    const multi_array::MultiArray<NodeID, 2>& edge_list) {
+    const multi_array::MultiArray<Integer, 2>& edge_list) {
   graph = DiGraph(num_nodes);
-  ArrayView<NodeID, 2> edge_view(edge_list);
-  for (NodeID iii = 0; iii < edge_view.extent(0); ++iii) {
+  ArrayView<Integer, 2> edge_view(edge_list);
+  for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
     graph.AddEdge(edge_view[iii][1], edge_view[iii][0]);
   }
 
   return graph;
 }
 
-template<TReal>
+template<typename Integer, typename TReal>
 DiGraph ConvertEdgeListToDiGraph(NodeID num_nodes,
-    const multi_array::MultiArray<NodeID, 2>& edge_list, 
+    const multi_array::MultiArray<Integer, 2>& edge_list, 
     const multi_array::MultiArray<TReal, 1>& weights) {
   graph = DiGraph(num_nodes);
-  ArrayView<NodeID, 2> edge_view(edge_list);
+  ArrayView<Integer, 2> edge_view(edge_list);
   ArrayView<TReal, 1> weight_view(weights);
-  for (NodeID iii = 0; iii < edge_view.extent(0); ++iii) {
+  for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
     graph.AddEdge(edge_view[iii][1], edge_view[iii][0], weight_view[iii]);
   }
 

@@ -102,6 +102,7 @@ agent_sources = [
     "alectrnn/agents/agent_generator.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/agents/ctrnn_agent.cpp",
+    "alectrnn/agents/hybrid_agent.cpp",
     "alectrnn/common/network_constructor.cpp",
     "alectrnn/common/ctrnn.cpp",
     "alectrnn/common/screen_preprocessing.cpp"
@@ -111,6 +112,21 @@ objective_sources = [
     "alectrnn/common/capi_tools.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/controllers/controller.cpp"
+]
+
+layer_sources = [
+    "alectrnn/common/layer_generator.cpp",
+    "alectrnn/common/capi_tools.cpp"
+]
+
+nn_sources = [
+    "alectrnn/common/nervous_system_generator.cpp",
+    "alectrnn/common/capi_tools.cpp"
+]
+
+nn_handler_sources = [
+    "alectrnn/common/nervous_system_handler.cpp",
+    "alectrnn/common/capi_tools.cpp"
 ]
 
 PACKAGE_NAME = 'alectrnn'
@@ -145,10 +161,40 @@ objective_module = Extension('objective',
                     extra_link_args=extra_link_args + main_link_args
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
+layer_module = Extension('layer_generator',
+                    language = "c++14",
+                    sources=layer_sources,
+                    libraries=main_libraries,
+                    extra_compile_args=extra_compile_args,
+                    include_dirs=include_dirs,
+                    library_dirs=library_dirs,
+                    extra_link_args=extra_link_args + main_link_args
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
+
+nn_module = Extension('nn_generator',
+                    language = "c++14",
+                    sources=nn_sources,
+                    libraries=main_libraries,
+                    extra_compile_args=extra_compile_args,
+                    include_dirs=include_dirs,
+                    library_dirs=library_dirs,
+                    extra_link_args=extra_link_args + main_link_args
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
+
+nn_handler_module = Extension('nn_handler',
+                    language = "c++14",
+                    sources=nn_handler_sources,
+                    libraries=main_libraries,
+                    extra_compile_args=extra_compile_args,
+                    include_dirs=include_dirs,
+                    library_dirs=library_dirs,
+                    extra_link_args=extra_link_args + main_link_args
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
+
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
-      cmdclass = {'build_ext': build_ext, 
+      cmdclass = {'build_ext': build_ext,
                   'install': install,
                   'develop': develop
                   },
@@ -159,7 +205,8 @@ setup(name=PACKAGE_NAME,
       ],
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
-      ext_modules=[ale_module, agent_module, objective_module],
+      ext_modules=[ale_module, agent_module, objective_module, 
+                    layer_module, nn_module, nn_handler_module],
       package_data={PACKAGE_NAME: [
         'roms/*.bin', 
         'alelib/bin/ale',
