@@ -32,9 +32,8 @@ static void DeleteNervousSystem(PyObject *nervous_system_capsule) {
  * Create a new py_function Create for each NervousSystem you want to add
  */
 static PyObject *CreateNervousSystem(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"ale", "input_shape", "layers", NULL};
+  static char *keyword_list[] = {"input_shape", "layers", NULL};
 
-  PyObject* ale_capsule;
   PyArrayObject* input_shape;
   PyObject* layers_tuple;
 
@@ -43,15 +42,6 @@ static PyObject *CreateNervousSystem(PyObject *self, PyObject *args, PyObject *k
     std::cout << "Error parsing CreateLayer arguments" << std::endl;
     return NULL;
   }
-
-  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
-  {
-    std::cout << "Invalid pointer to ALE returned from capsule,"
-        " or is not a capsule." << std::endl;
-    return NULL;
-  }
-  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
-      ale_capsule, "ale_generator.ale"));
 
   std::vector<std::size_t> shape = PyArrayToVector(input_shape);
   nervous_system::NervousSystem<float>* nervous_system = ParseLayers(shape, layers_tuple);

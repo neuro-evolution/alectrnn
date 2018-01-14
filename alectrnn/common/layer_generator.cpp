@@ -92,32 +92,22 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"ale", "num_inputs", "activator_type", "activator_args", NULL};
+  static char *keyword_list[] = {"num_outputs", "num_inputs", 
+                                "activator_type", "activator_args", NULL};
 
-  PyObject* ale_capsule;
+  int num_outputs;
   int num_inputs;
   int activator_type;
   PyObject* activator_args;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiiO", keyword_list,
-      &ale_capsule, &num_inputs, &activator_type, &activator_args)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iiiO", keyword_list,
+      &num_outputs, &num_inputs, &activator_type, &activator_args)) {
     std::cout << "Error parsing CreateMotorLayer arguments" << std::endl;
     return NULL;
   }
 
-  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
-  {
-    std::cout << "Invalid pointer to ALE returned from capsule,"
-        " or is not a capsule." << std::endl;
-    return NULL;
-  }
-  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
-      ale_capsule, "ale_generator.ale"));
-
   nervous_system::Activator<float>* activator = ActivatorParser(
     activator_type, activator_args);
-
-  int num_outputs = ale->getMinimalActionSet().size();
 
   nervous_system::Layer<float>* layer = new nervous_system::MotorLayer<float>(
     num_outputs, num_inputs, activator);

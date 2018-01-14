@@ -13,6 +13,7 @@ import alectrnn.objective
 import alectrnn.layer_generator
 import alectrnn.nn_generator
 import alectrnn.nn_handler
+import alectrnn.ale_handler
 import sys
 from functools import partial
 from pkg_resources import resource_listdir
@@ -145,6 +146,9 @@ class ALEHandler(Handler):
             max_num_frames_per_episode=self.max_num_frames_per_episode,
             print_screen=self.print_screen)
 
+    def action_set_size(self):
+        return ale_handler.NumOutputs(self.handle)
+
     @classmethod
     def print_available_roms(cls):
         print("Available roms:")
@@ -171,7 +175,7 @@ class INTEGRATOR_TYPE(Enum):
 class NervousSystem:
     """
     Layer: 3x integ/act type, args (tuple)
-    Motor: ALE, num_inputs, act type, args (tuple)
+    Motor: num_outputs, num_inputs, act type, args (tuple)
 
     if ACT CTRNN: i num_states, f step_size
     if ACT CONV_CTRNN: numpy array 3ele shape(float32), f step_size
@@ -182,12 +186,20 @@ class NervousSystem:
     if int RESERVOIR: i #nodes, np arr std::uint64_t edge_list, np arr f32 weights
     """
 
-    def __init__(self, input_shape, step_size, nn_parameters):
+    def __init__(self, input_shape, num_outputs, step_size, nn_parameters):
         """
         nn_parameters - list of dictionaries. One for each layer.
 
-        (filter-dimensions, # filters)
-        (#nodes, edge_list)
+        back_connections:
+            (filter-dimensions, # filters)
+            (#nodes, edge_list)[bipartite]
+
+        self_connections:
+            (#nodes, edge_list)[graph]
+            (#nodes, edge_list), (weights)
+
+        activator:
+            (type)
 
         """
 

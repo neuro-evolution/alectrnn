@@ -19,6 +19,8 @@
  *
  * The Slice class is also a 1D slice, however it uses start/stop/stride to 
  * deterine which elements to access.
+ * 
+ * TODO: Implement at() for everyone which will check bounds
  */
 
 #ifndef MULTI_ARRAY_H_
@@ -327,13 +329,13 @@ class ArrayView<T,1> : public ArrayViewBase<T> {
     }
 
     ArrayView(MultiArray<T, 1>& array) 
-        : super_type(array.data(), array.strides().data(), 
-          array.shape().data()) {
+        : super_type(array.data(), array.strides().data()), 
+          shape_(array.shape().data()) {
     }
 
     ArrayView(SharedMultiArray<T, 1>& array) 
-        : super_type(array.data(), array.strides().data(), 
-          array.shape().data()) {
+        : super_type(array.data(), array.strides().data()), 
+          shape_(array.shape().data()) {
     }
 
     ArrayView(const ArrayView<T, 1>& view) : super_type(view),
@@ -393,11 +395,16 @@ class MultiArray {
     /*
      * Build 'empty' MultiArray 
      */ 
-    template< template<typename, typename...> class Container, typename... Args>
-    MultiArray(const Container<Index, Args...> &shape) : shape_(shape) {
+    MultiArray(const Array<Index, NumDim> &shape) : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
       CalculateStrides();
+    }
+
+    MultiArray(const std::vector<Index> &shape) : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = new T[size_];
+      CalculateStrides(); 
     }
 
     MultiArray(const std::initializer_list<Index> &shape) 
@@ -486,6 +493,8 @@ class MultiArray {
       for (Index iii = 0; iii < size_; iii++) {
         data_[iii] = other.data_[iii];
       }
+
+      return *this;
     }
 
     MultiArray<T,NumDim>& operator=(MultiArray<T,NumDim>&& other) {
@@ -527,7 +536,7 @@ class SharedMultiArray {
       size_ = 0;
     }
 
-    SharedMultiArray(TPtr data, const Array<Index, NumDim> &shape) 
+    SharedMultiArray(TPtr data, const Array<Index, NumDim> &shape)
         : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = data;
@@ -544,8 +553,9 @@ class SharedMultiArray {
     /*
      * Copy (doesn't copy data)
      */
-    SharedMultiArray(const SharedMultiArray<T,NumDim> &other) : shape_(other.shape_),
-        strides_(other.strides_), size_(other.size_), data_(data) {
+    SharedMultiArray(const SharedMultiArray<T,NumDim> &other) 
+        : data_(other.data_), shape_(other.shape_), strides_(other.strides_), 
+        size_(other.size_) {
     }
 
     SharedMultiArray(SharedMultiArray<T,NumDim> &&other) : shape_(std::move(other.shape_)),
@@ -594,10 +604,11 @@ class SharedMultiArray {
     }
 
     SharedMultiArray<T,NumDim>& operator=(const SharedMultiArray<T,NumDim>& other) {
+      data_ = other.data_;
       shape_ = other.shape_;
       strides_ = other.strides_;
       size_ = other.size_;
-      data_ = data;
+      return *this;
     }
 
     SharedMultiArray<T,NumDim>& operator=(SharedMultiArray<T,NumDim>&& other) {
@@ -635,18 +646,30 @@ class ArraySlice {
     ArraySlice() {
       data_ = nullptr;
       start_ = 0;
-      stride_ = 0;
       size_ = 0;
+      stride_ = 0;
     }
 
     ArraySlice(T* data, Index start, Index size, Index stride=1) : data_(data),
         start_(start), size_(size), stride_(stride) {
     }
 
+    ArraySlice(const ArraySlice<T>& other) : data_(other.data_), 
+        start_(other.start_), size_(other.size_), stride_(other.stride_) {
+    }
+
     ArraySlice(ArraySlice<T>&& other) : start_(std::move(other.start_)),
         size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
       data_ = other.data_;
       other.data_ = nullptr;
+    }
+
+    ArraySlice<T>& operator=(const ArraySlice<T>& other) {
+      data_ = other.data_;
+      start_ = other.start_;
+      size_ = other.size_;
+      stride_ = other.stride_;
+      return *this; 
     }
 
     ArraySlice<T>& operator=(ArraySlice<T>&& other) {
@@ -695,8 +718,8 @@ class ArraySlice {
   protected:
     T* data_;
     Index start_;
-    Index stride_;
     Index size_;
+    Index stride_;
 };
 
 /*
@@ -710,18 +733,30 @@ class ConstArraySlice {
     ConstArraySlice() {
       data_ = nullptr;
       start_ = 0;
-      stride_ = 0;
       size_ = 0;
+      stride_ = 0;
     }
 
-    ConstArraySlice(const T* data, Index start, Index size, Index stride=1) : data_(data),
-        start_(start), size_(size), stride_(stride) {
+    ConstArraySlice(const T* data, Index start, Index size, Index stride=1) : 
+        data_(data), start_(start), size_(size), stride_(stride) {
+    }
+
+    ConstArraySlice(const ConstArraySlice<T>& other) : data_(other.data_), 
+        start_(other.start_), size_(other.size_), stride_(other.stride_) {
     }
 
     ConstArraySlice(ConstArraySlice<T>&& other) : start_(std::move(other.start_)),
         size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
       data_ = other.data_;
       other.data_ = nullptr;
+    }
+
+    ConstArraySlice<T>& operator=(const ConstArraySlice<T>& other) {
+      data_ = other.data_;
+      start_ = other.start_;
+      size_ = other.size_;
+      stride_ = other.stride_;
+      return *this; 
     }
 
     ConstArraySlice<T>& operator=(ConstArraySlice<T>&& other) {
@@ -762,8 +797,8 @@ class ConstArraySlice {
   protected:
     const T* data_;
     Index start_;
-    Index stride_;
     Index size_;
+    Index stride_;
 };
 
 /*
@@ -788,12 +823,26 @@ class Slice {
       size_ = (stop_ - start_) / stride_;
     }
 
+    Slice(const Slice<T>& other) : data_(other.data_), start_(other.start_), 
+        stop_(other.stop_), stride_(other.stride_),
+        size_(other.size_) {
+    }
+
     Slice(Slice<T>&& other) : start_(std::move(other.start_)), 
         stop_(std::move(other.stop_)), stride_(std::move(other.stride_)),
         size_(std::move(other.size_)) {
       data_ = other.data_;
       other.data_ = nullptr;
     }
+
+    Slice<T>& operator=(const Slice<T>& other) {
+      data_ = other.data_;
+      start_ = std::move(other.start_);
+      stop_ = std::move(other.stop_);
+      stride_ = std::move(other.stride_);
+      size_ = std::move(other.size_);
+      return *this; 
+    }    
 
     Slice<T>& operator=(Slice<T>&& other) {
       data_ = other.data_;
@@ -868,11 +917,25 @@ class ConstSlice {
       size_ = (stop_ - start_) / stride_;
     }
 
+    ConstSlice(const ConstSlice<T>& other) :  data_(other.data_), 
+        start_(other.start_), stop_(other.stop_), stride_(other.stride_),
+        size_(other.size_) {
+    }
+
     ConstSlice(ConstSlice<T>&& other) : start_(std::move(other.start_)), 
         stop_(std::move(other.stop_)), stride_(std::move(other.stride_)),
         size_(std::move(other.size_)) {
       data_ = other.data_;
       other.data_ = nullptr;
+    }
+
+    ConstSlice<T>& operator=(const ConstSlice<T>& other) {
+      data_ = other.data_;
+      start_ = other.start_;
+      stop_ = other.stop_;
+      stride_ = other.stride_;
+      size_ = other.size_;
+      return *this;      
     }
 
     ConstSlice<T>& operator=(ConstSlice<T>&& other) {
@@ -944,8 +1007,8 @@ class Tensor {
      * Build 'empty' Tensor.
      */
     template<typename Index, std::size_t NumDim>
-    Tensor(const Array<Index, NumDim> &shape) : ndims_(shape.size()), 
-          shape_(shape.begin(), shape.end()) {
+    Tensor(const Array<Index, NumDim> &shape) : shape_(shape.begin(), shape.end()),
+        ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
       strides_.resize(ndims_);
@@ -972,7 +1035,7 @@ class Tensor {
      * Copy (copies data as well)
      */
     Tensor(const Tensor<T> &other) : shape_(other.shape_),
-        strides_(other.strides_), size_(other.size_), ndims_(other.ndims_) {
+        strides_(other.strides_), ndims_(other.ndims_), size_(other.size_) {
       data_ = new T[size_];
 
       for (Index iii = 0; iii < size_; iii++) {
@@ -981,8 +1044,8 @@ class Tensor {
     }
 
     Tensor(Tensor<T> &&other) : shape_(std::move(other.shape_)),
-        strides_(std::move(other.strides_)), size_(std::move(other.size_)),
-        ndims_(std::move(other.ndims_)) {
+        strides_(std::move(other.strides_)), ndims_(std::move(other.ndims_)),
+        size_(std::move(other.size_)) {
       data_ = other.data_;
       other.data_ = nullptr;
     }
@@ -1033,12 +1096,12 @@ class Tensor {
     }
 
     T& operator()(const std::initializer_list<T>& indices) {
-      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);
       return data_[flat_index];
     }
 
     const T& operator()(const std::initializer_list<T>& indices) const {
-      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_, 0);
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);
       return data_[flat_index];
     }
 
@@ -1053,6 +1116,8 @@ class Tensor {
       for (Index iii = 0; iii < size_; iii++) {
         data_[iii] = other.data_[iii];
       }
+
+      return *this;
     }
 
     Tensor<T>& operator=(Tensor<T>&& other) {
@@ -1090,12 +1155,11 @@ class Tensor {
     TPtr data_;
     std::vector<Index> shape_;
     std::vector<Index> strides_;
-    std::size_t size_;
     std::size_t ndims_;
+    std::size_t size_;
 };
 
-template<T>
-void CalculateStrides(const std::size_t* shape, std::size_t* strides, ndims) {
+void CalculateStrides(const std::size_t* shape, std::size_t* strides, std::size_t ndims) {
   for (std::size_t iii = 0; iii < ndims; iii++) {
     strides[iii] = 1;
     for (std::size_t jjj = iii + 1; jjj < ndims; jjj++) {

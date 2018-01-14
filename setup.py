@@ -129,6 +129,10 @@ nn_handler_sources = [
     "alectrnn/common/capi_tools.cpp"
 ]
 
+ale_handler_sources = [
+    "alectrnn/common/ale_handler.cpp"
+]
+
 PACKAGE_NAME = 'alectrnn'
 
 ale_module = Extension('ale_generator',
@@ -191,6 +195,16 @@ nn_handler_module = Extension('nn_handler',
                     extra_link_args=extra_link_args + main_link_args
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
+ale_handler = Extension('ale_handler',
+                    language = "c++14",
+                    sources=ale_handler_sources,
+                    libraries=main_libraries,
+                    extra_compile_args=extra_compile_args,
+                    include_dirs=include_dirs,
+                    library_dirs=library_dirs,
+                    extra_link_args=extra_link_args + main_link_args
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
+
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
@@ -206,7 +220,8 @@ setup(name=PACKAGE_NAME,
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
       ext_modules=[ale_module, agent_module, objective_module, 
-                    layer_module, nn_module, nn_handler_module],
+                    layer_module, nn_module, nn_handler_module,
+                    ale_handler],
       package_data={PACKAGE_NAME: [
         'roms/*.bin', 
         'alelib/bin/ale',
