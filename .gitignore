@@ -20,5 +20,6 @@
 # remove misc folders
 /alectrnn/alelib/
 /.settings/
+/.idea/
 /alectrnn/build/
 /alectrnn_debug/
