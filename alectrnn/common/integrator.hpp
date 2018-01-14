@@ -34,11 +34,11 @@ template<typename TReal>
 class Integrator {
   public:
     Integrator() {
-      integrator_type_ = INTEGRATOR_TYPE.BASE;
+      integrator_type_ = BASE;
       parameter_count_ = 0;
     }
-    virtual ~Integrator();
-    virtual void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state)=0;
+    virtual ~Integrator()=default;
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state)=0;
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0;
 
     std::size_t GetParameterCount() const {
@@ -57,25 +57,28 @@ class Integrator {
 // None integrator - does nothing
 template<typename TReal>
 class NoneIntegrator : public Integrator<TReal> {
+  typedef Integrator<TReal> super_type;
   public:
-    NoneIntegrator() : Integrator() { integrator_type_ = INTEGRATOR_TYPE.NONE }
+    NoneIntegrator() : super_type() { super_type::integrator_type_ = NONE; }
     ~NoneIntegrator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
+    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 };
 
 // Integrator that has All2All connectivity with previous layer
 template<typename TReal>
 class All2AllIntegrator : public Integrator<TReal> {
+  typedef Integrator<TReal> super_type;
+  typedef std::size_t Index;
   public:
     All2AllIntegrator(Index num_states, Index num_prev_states) 
         : num_states_(num_states), num_prev_states_(num_prev_states) {
-      parameter_count_ = num_states_ * num_prev_states_;
+      super_type::parameter_count_ = num_states_ * num_prev_states_;
     }
 
-    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      assert((src_state.size() == num_prev_states_) && (tar_state.size() == num_states));
+    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+      assert((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_));
       Index weight_id = 0;
       for (Index iii = 0; iii < tar_state.size(); ++iii) {
         TReal cumulative_sum = 0.0;
@@ -88,11 +91,11 @@ class All2AllIntegrator : public Integrator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
+      assert(parameters.size() == super_type::parameter_count_);
       weights_ = multi_array::ConstArraySlice<TReal>(
                   parameters.data(),
                   parameters.start(),
-                  parameter_count_,
+                  super_type::parameter_count_,
                   parameters.stride());
     }
 
@@ -100,7 +103,7 @@ class All2AllIntegrator : public Integrator<TReal> {
     Index num_states_;
     Index num_prev_states_;
     multi_array::ConstArraySlice<TReal> weights_;
-}
+};
 
 /*
  * Conv integrator - uses implicit structure
@@ -108,26 +111,26 @@ class All2AllIntegrator : public Integrator<TReal> {
  */
 template<typename TReal>
 class Conv3DIntegrator : public Integrator<TReal> {
+  typedef Integrator<TReal> super_type;
+  typedef std::size_t Index;
   public:
-    typedef std::size_t Index;
-
     Conv3DIntegrator(Index num_filters, 
         const multi_array::Array<Index,3>& filter_shape, 
         const multi_array::Array<Index,3>& layer_shape, Index stride)
-        : filter_shape_(filter_shape), num_filters_(num_filters), stride_(stride) {
+        : num_filters_(num_filters), filter_shape_(filter_shape), stride_(stride),
+        filter_parameters_major_({num_filters, filter_shape[0]}),
+        filter_parameters_minor_({num_filters, filter_shape[0]}) {
       major_filter_param_count_ = filter_shape[0] * filter_shape[2];
       minor_filter_param_count_ = filter_shape[0] * filter_shape[2];
-      parameter_count_ = num_filters * (major_filter_param_count_ + minor_filter_param_count_);
-      integrator_type_ = INTEGRATOR_TYPE.CONV;
+      super_type::parameter_count_ = num_filters * (major_filter_param_count_ + minor_filter_param_count_);
+      super_type::integrator_type_ = CONV;
       state_buffer1_ = multi_array::Tensor<TReal>(layer_shape);
       state_buffer2_ = multi_array::Tensor<TReal>(layer_shape);
-      filter_parameters_major_({num_filters, filter_shape[0]});
-      filter_parameters_minor_({num_filters, filter_shape[0]});
     }
     ~Conv3DIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      const multi_array::ArrayView<TReal, 3> src_view = src_state.accessor<3>();
+      const multi_array::ArrayView<TReal, 3> src_view = src_state.accessor();
       multi_array::ArrayView<TReal, 3> tar_view = tar_state.accessor<3>();
       multi_array::ArrayView<TReal, 3> buffer1_view = state_buffer1_.accessor<3>();
       multi_array::ArrayView<TReal, 3> buffer2_view = state_buffer2_.accessor<3>();
@@ -150,9 +153,9 @@ class Conv3DIntegrator : public Integrator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
-      multi_array::ArrayView<<multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
-      multi_array::ArrayView<<multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
+      assert(parameters.size() == super_type::parameter_count_);
+      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
+      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
       for (Index filter = 0; filter < num_filters_; filter++) {
         for (Index iii = 0; iii < filter_shape_[0]; iii++) {
           major_view[filter][iii] = multi_array::ConstArraySlice<TReal>(
@@ -207,7 +210,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
           //  Roll sum (in-bounds components)
           for (; jjj < src.extent(1)-half_kernel; jjj+=stride) {
-            for (Index kkk = 0; kkk < stride; +++kkk) {
+            for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][jjj + half_kernel - kkk]
                               - kernel_major[kkk] * src[iii][jjj - half_kernel - 1 - kkk];
             }
@@ -216,7 +219,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
           // Roll sum (out-of-bounds end components)
           for (; jjj < src.extent(1); jjj+=stride) {
-            for (Index kkk = 0; kkk < stride; +++kkk) {
+            for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][src.extent(1)-1 - kkk]
                               - kernel_major[kkk] * src[iii][jjj - half_kernel - 1 - kkk];
             }
@@ -247,9 +250,9 @@ class Conv3DIntegrator : public Integrator<TReal> {
           tar[0][iii] = cumulative_sum;
 
           // Roll sum (out-of-bounds components)
-          jjj = stride;
+          Index jjj = stride;
           for (; jjj < half_kernel+1; jjj+=stride) {
-            for (Index kkk = 0; kkk < stride; +++kkk) {
+            for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[jjj + half_kernel - kkk][iii]
                               - kernel_minor[kkk] * buffer[0][iii];
             }
@@ -258,7 +261,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
           //  Roll sum (in-bounds components)
           for (; jjj < buffer.extent(0)-half_kernel; jjj+=stride) {
-            for (Index kkk = 0; kkk < stride; +++kkk) {
+            for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[jjj + half_kernel - kkk][iii]
                               - kernel_minor[kkk] * buffer[jjj - half_kernel - 1 - kkk][iii];
             }
@@ -267,7 +270,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
           // Roll sum (out-of-bounds end components)
           for (; jjj < buffer.extent(0); jjj+=stride) {
-            for (Index kkk = 0; kkk < stride; +++kkk) {
+            for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[src.extent(0)-1][iii]
                               - kernel_minor[kkk] * buffer[jjj - half_kernel - 1 - kkk][iii];
             }
@@ -281,31 +284,33 @@ class Conv3DIntegrator : public Integrator<TReal> {
     }
 
   protected:
-    multi_array::Array<Index, 3> filter_shape_;
     Index num_filters_;
-    multi_array::Tensor<TReal> state_buffer1_;
-    multi_array::Tensor<TReal> state_buffer2_;
+    multi_array::Array<Index, 3> filter_shape_;
+    Index stride_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_major_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_minor_;
     Index major_filter_param_count_;
     Index minor_filter_param_count_;
-    Index stride_;
+    multi_array::Tensor<TReal> state_buffer1_;
+    multi_array::Tensor<TReal> state_buffer2_;
 };
 
 // Network integrator -- uses explicit unweighted structure
 template<typename TReal>
 class NetworkIntegrator : public Integrator<TReal> {
+  typedef Integrator<TReal> super_type;
+  typedef std::size_t Index;
   public:
 
     NetworkIntegrator(const graphs::PredecessorGraph<>& network) 
         : network_(network) {
-      integrator_type_ = INTEGRATOR_TYPE.NETWORK;
-      parameter_count_ = network_.NumEdges();
+      super_type::integrator_type_ = NETWORK;
+      super_type::parameter_count_ = network_.NumEdges();
     }
 
     ~NetworkIntegrator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       
       assert(tar_state.size() == network_.NumNodes());
       Index edge_id = 0;
@@ -319,11 +324,11 @@ class NetworkIntegrator : public Integrator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
+      assert(parameters.size() == super_type::parameter_count_);
       weights_ = multi_array::ConstArraySlice<TReal>(
                   parameters.data(),
                   parameters.start(),
-                  parameter_count_,
+                  super_type::parameter_count_,
                   parameters.stride());
     }
 
@@ -335,17 +340,18 @@ class NetworkIntegrator : public Integrator<TReal> {
 // Reservoir -- uses explicit weighted structure
 template<typename TReal>
 class ReservoirIntegrator : public Integrator<TReal> {
+  typedef Integrator<TReal> super_type;
+  typedef std::size_t Index;
   public:
-    typedef std::size_t Index;
     ReservoirIntegrator(const graphs::PredecessorGraph<TReal>& network)
         : network_(network) {
-      integrator_type_ = INTEGRATOR_TYPE.RESERVOIR;
-      parameter_count_ = 0;
+      super_type::integrator_type_ = RESERVOIR;
+      super_type::parameter_count_ = 0;
     }
 
     ~ReservoirIntegrator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       assert(tar_state.size() == network_.NumNodes());
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {

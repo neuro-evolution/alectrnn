@@ -74,6 +74,9 @@ class ConstSlice;
 
 template<typename T>
 class Tensor;
+
+template<typename T>
+class TensorView;
 // End Forward declare
 
 template<typename T, std::size_t NumElem>
@@ -716,6 +719,22 @@ class ArraySlice {
 
     ~ArraySlice() {}
 
+    ArraySlice<T> slice(Index start, Index size, Index stride=1) {
+      // Check for boundary violations
+      assert((start >= start_) && 
+            ((start + stride * size) <= (start_ + stride_ * size_)));
+
+      return ArraySlice<T>(this->data(), start, size, stride);
+    }
+
+    const ArraySlice<T> slice(Index start, Index size, Index stride=1) const {
+      // Check for boundary violations
+      assert((start >= start_) && 
+            ((start + stride * size) <= (start_ + stride_ * size_)));
+
+      return ArraySlice<T>(this->data(), start, size, stride); 
+    }
+
     std::size_t size() const {
       return size_;
     }
@@ -803,6 +822,22 @@ class ConstArraySlice {
 
     ~ConstArraySlice() {}
 
+    ConstArraySlice<T> slice(Index start, Index size, Index stride=1) {
+      // Check for boundary violations
+      assert((start >= start_) && 
+            ((start + stride * size) <= (start_ + stride_ * size_)));
+
+      return ConstArraySlice<T>(this->data(), start, size, stride);
+    }
+
+    const ConstArraySlice<T> slice(Index start, Index size, Index stride=1) const {
+      // Check for boundary violations
+      assert((start >= start_) && 
+            ((start + stride * size) <= (start_ + stride_ * size_)));
+
+      return ConstArraySlice<T>(this->data(), start, size, stride); 
+    }
+
     std::size_t size() const {
       return size_;
     }
@@ -888,6 +923,20 @@ class Slice {
     }
 
     ~Slice() {}
+
+    Slice<T> slice(Index start, Index stop, Index stride=1) {
+      // Check for boundary violations
+      assert((start >= start_) && (stop <= stop_));
+
+      return Slice<T>(this->data(), start, stop, stride);
+    }
+
+    const Slice<T> slice(Index start, Index stop, Index stride=1) const {
+      // Check for boundary violations
+      assert((start >= start_) && (stop <= stop_));
+
+      return Slice<T>(this->data(), start, stop, stride); 
+    }
 
     const T& operator[](Index index) const {
       return data_[start_ + index * stride_];
@@ -979,6 +1028,20 @@ class ConstSlice {
       stride_ = std::move(other.stride_);
       size_ = std::move(other.size_);
       return *this; 
+    }
+
+    ConstSlice<T> slice(Index start, Index stop, Index stride=1) {
+      // Check for boundary violations
+      assert((start >= start_) && (stop <= stop_));
+
+      return ConstSlice<T>(this->data(), start, stop, stride);
+    }
+
+    const ConstSlice<T> slice(Index start, Index stop, Index stride=1) const {
+      // Check for boundary violations
+      assert((start >= start_) && (stop <= stop_));
+
+      return ConstSlice<T>(this->data(), start, stop, stride); 
     }
 
     ~ConstSlice() {}
@@ -1164,18 +1227,12 @@ class Tensor {
       return *this;
     }
 
-    template<std::size_t NumDim>
-    ArrayView<T, NumDim> accessor() {
-      assert(NumDim == ndims_);
-      return ArrayView<T, NumDim>(this->data_, this->strides_.data(), 
-        this->shape_.data());
+    TensorView<T> accessor() {
+      return {this->data_, this->strides_.data()};
     }
 
-    template<std::size_t NumDim>
-    const ArrayView<T, NumDim> accessor() const {
-      assert(NumDim == ndims_);
-      return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
-        this->shape_.data());
+    const TensorView<T> accessor() const {
+      return {this->data_, this->strides_.data()};
     }
 
     void Fill(T value) {
@@ -1190,6 +1247,41 @@ class Tensor {
     std::vector<Index> strides_;
     std::size_t ndims_;
     std::size_t size_;
+};
+
+/*
+ * TensorView provides a dimensionless accessor to a Tensor so no dim type
+ * needs to be specified. Views are returned via nested [] operator overloads,
+ * which adjust the data pointer as successive calls to [] are made.
+ * Once the last level is reached, data will point to the desired value.
+ * Access is handled by overload to static_cast, which casts the View to that
+ * data point.
+ * Assignment is handled by overload of assignment, which moves the new value
+ * to replace the old one.
+ */
+template<typename T>
+class TensorView {
+  typedef std::size_t Index;
+  public:
+    T* data = nullptr;
+    const Index* stride = nullptr;
+
+    TensorView operator[](Index index) {
+      return {data + *stride * index, stride + 1};
+    }
+
+    const TensorView operator[](Index index) const {
+      return {data + *stride * index, stride + 1};
+    }
+
+    operator T&() const {
+      return *data;
+    }
+
+    T& operator=(T in) {
+      *data = std::move(in);
+      return *data;
+    }
 };
 
 void CalculateStrides(const std::size_t* shape, std::size_t* strides, std::size_t ndims) {
