@@ -20,6 +20,12 @@
  * The Slice class is also a 1D slice, however it uses start/stop/stride to 
  * deterine which elements to access.
  * 
+ * accessors are available for Tensor and MultiArray and SharedMultiArray.
+ * accessors return an ArrayView. Importantly, if the above containers are const
+ * the accessors are guaranteed to be const as well, so that the underlying
+ * data can not be changed. This is helpful in situations where containers need
+ * to be passed as const reference.
+ *
  * TODO: Implement at() for everyone which will check bounds
  */
 
@@ -260,7 +266,7 @@ class ArrayView : public ArrayViewBase<T> {
         : super_type(base, strides), shape_(shape) {
     }
 
-    ArrayView(MultiArray<T, NumDim>& array) 
+    ArrayView(MultiArray<T, NumDim>& array)
         : super_type(array.data(), array.strides().data()), 
           shape_(array.shape().data()) {
     }
@@ -507,6 +513,16 @@ class MultiArray {
       return *this;
     }
 
+    ArrayView<T, NumDim> accessor() {
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(), 
+        this->shape_.data());
+    }
+
+    const ArrayView<T, NumDim> accessor() const {
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
+        this->shape_.data());
+    }
+
     void Fill(T value) {
       for (Index iii = 0; iii < size_; iii++) {
         data_[iii] = value;
@@ -544,6 +560,13 @@ class SharedMultiArray {
     }
 
     SharedMultiArray(TPtr data, const std::vector<Index> &shape) 
+        : shape_(shape) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      CalculateStrides();
+    }
+
+    SharedMultiArray(TPtr data, const std::initializer_list<Index> &shape) 
         : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = data;
@@ -619,6 +642,16 @@ class SharedMultiArray {
       size_ = std::move(other.size_);
 
       return *this;
+    }
+
+    ArrayView<T, NumDim> accessor() {
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(), 
+        this->shape_.data());
+    }
+
+    const ArrayView<T, NumDim> accessor() const {
+      return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
+        this->shape_.data());
     }
 
     void Fill(T value) {
@@ -1135,14 +1168,14 @@ class Tensor {
     ArrayView<T, NumDim> accessor() {
       assert(NumDim == ndims_);
       return ArrayView<T, NumDim>(this->data_, this->strides_.data(), 
-        this->shape_data());
+        this->shape_.data());
     }
 
     template<std::size_t NumDim>
     const ArrayView<T, NumDim> accessor() const {
       assert(NumDim == ndims_);
       return ArrayView<T, NumDim>(this->data_, this->strides_.data(),
-        this->shape_data());
+        this->shape_.data());
     }
 
     void Fill(T value) {

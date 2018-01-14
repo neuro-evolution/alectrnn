@@ -235,27 +235,27 @@ class PredecessorGraph<void> {
  * If there are weights then pass weight array (must be same size as edges)
  */
 
-template<typename Integer>
+template<typename Integer, template<typename, Index> class multi>
 PredecessorGraph<> ConvertEdgeListToPredecessorGraph(NodeID num_nodes,
-    const multi_array::MultiArray<Integer, 2>& edge_list) {
+    const multi<Integer, 2>& edge_list) {
   PredecessorGraph<> graph = PredecessorGraph<>(num_nodes);
-  multi_array::ArrayView<Integer, 2> edge_view(edge_list);
+  const multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
   for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
-    graph.AddEdge(edge_view[iii][1], edge_view[iii][0]);
+    graph.AddEdge(edge_view[iii][0], edge_view[iii][1]);
   }
 
   return graph;
 }
 
-template<typename Integer, typename TReal>
+template<typename Integer, typename TReal, template<typename, Index> class multi>
 PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(NodeID num_nodes,
-    const multi_array::MultiArray<Integer, 2>& edge_list, 
-    const multi_array::MultiArray<TReal, 1>& weights) {
+    const multi<Integer, 2>& edge_list, 
+    const multi<TReal, 1>& weights) {
   PredecessorGraph<TReal> graph = PredecessorGraph<TReal>(num_nodes);
-  multi_array::ArrayView<Integer, 2> edge_view(edge_list);
-  multi_array::ArrayView<TReal, 1> weight_view(weights);
+  multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
+  multi_array::ArrayView<TReal, 1> weight_view = weights.accessor();
   for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
-    graph.AddEdge(edge_view[iii][1], edge_view[iii][0], weight_view[iii]);
+    graph.AddEdge(edge_view[iii][0], edge_view[iii][1], weight_view[iii]);
   }
 
   return graph;
