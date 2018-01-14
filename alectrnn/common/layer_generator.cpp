@@ -189,15 +189,15 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         stride);
       break;
 
-    case nervous_system::INTEGRATOR_TYPE.NET:
+    case nervous_system::INTEGRATOR_TYPE.NETWORK:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
         std::cout << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
-      new_integrator = new nervous_system::NetIntegrator<float>(
-        graphs::ConvertEdgeListToDiGraph(
+      new_integrator = new nervous_system::NetworkIntegrator<float>(
+        graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
 
@@ -209,8 +209,8 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         std::cout << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
-      new_integrator = new nervous_system::NetIntegrator<float>(
-        graphs::ConvertEdgeListToDiGraph(
+      new_integrator = new nervous_system::NetworkIntegrator<float>(
+        graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
         PyArrayToSharedMultiArray<float,1>(weights)));
       break;

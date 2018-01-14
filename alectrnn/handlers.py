@@ -169,7 +169,7 @@ class INTEGRATOR_TYPE(Enum):
     NONE=1
     ALL2ALL=2
     CONV=3
-    NET=4
+    NETWORK=4
     RESERVOIR=5
 
 class NervousSystem:
