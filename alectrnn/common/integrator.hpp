@@ -18,8 +18,6 @@
 #include "multi_array.hpp"
 #include "graphs.hpp"
 
-#include <iostream> /////////////////////////////// TESTING
-
 namespace nervous_system {
 
 enum INTEGRATOR_TYPE {
@@ -28,7 +26,8 @@ enum INTEGRATOR_TYPE {
   ALL2ALL,
   CONV,
   NETWORK,
-  RESERVOIR
+  RESERVOIR,
+  RESERVOIR_HYBRID
 };
 
 // Abstract base class
@@ -106,27 +105,26 @@ class All2AllIntegrator : public Integrator<TReal> {
 /*
  * Conv integrator - uses implicit structure
  * Uses separable filters, so # params for a KxHxW kernel is K*(H+W)
+ *
+ * F = layer.shape[0]
+ * H/W = filter.shape[1/2]
+ * D = filter.shape[0]
+ * filter_shape and layer_shape implicitly contain most the information for
+ * the shape of the previous layer. Because this is a separable filter
+ * the # of parameters for each filter is (W * D) + (H * D).
+ * This convolution uses spatially and depthwise separable convolutions.
+ * First F HxW convolutions are applied to each input dimension D.
+ * Then F Dx1x1 filters are applied to the results.
+ * Principle behind DxHxW + DxFx1x1 is that the same filter is used on all
+ * layers, and then a 1x1 filter is used to do a weighted sum. This is
+ * opposed to having a separate filer for each input channel 
+ * (each 1x1 needs D parameters, with a total of F 1x1 filters)
  */
 template<typename TReal>
 class Conv3DIntegrator : public Integrator<TReal> {
   typedef Integrator<TReal> super_type;
   typedef std::size_t Index;
   public:
-    /*
-     * F = layer.shape[0]
-     * H/W = filter.shape[1/2]
-     * D = filter.shape[0]
-     * filter_shape and layer_shape implicitly contain most the information for
-     * the shape of the previous layer. Because this is a separable filter
-     * the # of parameters for each filter is (W * D) + (H * D).
-     * This convolution uses spatially and depthwise separable convolutions.
-     * First F HxW convolutions are applied to each input dimension D.
-     * Then F Dx1x1 filters are applied to the results.
-     * Principle behind DxHxW + DxFx1x1 is that the same filter is used on all
-     * layers, and then a 1x1 filter is used to do a weighted sum. This is
-     * opposed to having a separate filer for each input channel 
-     * (each 1x1 needs D parameters, with a total of F 1x1 filters)
-     */
     Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape, 
         const multi_array::Array<Index,3>& layer_shape, 
         const multi_array::Array<Index,3>& prev_layer_shape, Index stride)
@@ -302,8 +300,6 @@ class Conv3DIntegrator : public Integrator<TReal> {
             for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[jjj + half_kernel - kkk][iii]
                               - kernel_minor[kkk] * buffer[0][iii];
-              std::cout<<"\t\tcum:" << cumulative_sum << " ADDat:" << jjj + half_kernel - kkk
-              << " SUBat:" << 0 <<std::endl;
             }
             tar[output_index++][iii] = cumulative_sum;
           }
@@ -373,13 +369,6 @@ class Conv3DIntegrator : public Integrator<TReal> {
           }
         }
       }
-      for (Index iii = 0; iii < tar.extent(0); ++iii) {
-        for (Index jjj = 0; jjj < tar.extent(1); ++jjj) {
-
-          std::cout << tar[iii][jjj] << " ";
-        }
-        std::cout << std::endl;//
-      }
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
@@ -434,7 +423,8 @@ class NetworkIntegrator : public Integrator<TReal> {
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += src_state[network_.Predecessors(node)[iii].source] * weights_[edge_id];
+          tar_state[node] += src_state[network_.Predecessors(node)[iii].source] 
+                          * weights_[edge_id];
           ++edge_id;
         }
       }
@@ -443,11 +433,7 @@ class NetworkIntegrator : public Integrator<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(parameters.size() == super_type::parameter_count_);
-      weights_ = multi_array::ConstArraySlice<TReal>(
-                  parameters.data(),
-                  parameters.start(),
-                  super_type::parameter_count_,
-                  parameters.stride());
+      weights_ = parameters.slice(0, super_type::parameter_count_);
     }
 
   protected:
@@ -473,7 +459,8 @@ class ReservoirIntegrator : public Integrator<TReal> {
       assert(tar_state.size() == network_.NumNodes());
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += src_state[network_.Predecessors(node)[iii].source] * network_.Predecessors(node)[iii].weight;
+          tar_state[node] += src_state[network_.Predecessors(node)[iii].source] 
+                          * network_.Predecessors(node)[iii].weight;
         }
       }
     }
@@ -483,6 +470,18 @@ class ReservoirIntegrator : public Integrator<TReal> {
   protected:
     graphs::PredecessorGraph<TReal> network_;
 };
+
+// A hybrid reservoir, where only some of the weights are trained
+// template<typename TReal>
+// class ReservoirHybridIntegrator : public Integrator<TReal> {
+//   typedef Integrator<TReal> super_type;
+//   typedef std::size_t Index;
+//   public:
+
+//   protected:
+//     graphs::PredecessorGraph<TReal> network_;
+//     multi_array::ConstArraySlice<TReal> weights_;
+// };
 
 } // End nervous_system namespace
 
