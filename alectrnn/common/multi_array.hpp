@@ -19,6 +19,11 @@
  *
  * The Slice class is also a 1D slice, however it uses start/stop/stride to 
  * deterine which elements to access.
+ *
+ * Slices can make strict subslices of themselves using the slice() method
+ * which builds a subslice relative to the data the slice can access. E.g.
+ * for an ArraySlice A.slice(0, 5) creates a slice that starts at A[0] 
+ * and ends at A[4].
  * 
  * accessors are available for Tensor and MultiArray and SharedMultiArray.
  * accessors return an ArrayView. Importantly, if the above containers are const
@@ -684,18 +689,22 @@ class ArraySlice {
       start_ = 0;
       size_ = 0;
       stride_ = 0;
+      stop_ = 0;
     }
 
     ArraySlice(T* data, Index start, Index size, Index stride=1) : data_(data),
         start_(start), size_(size), stride_(stride) {
+      stop_ = size_ * stride_ + start_;
     }
 
     ArraySlice(const ArraySlice<T>& other) : data_(other.data_), 
         start_(other.start_), size_(other.size_), stride_(other.stride_) {
+      stop_ = size_ * stride_ + start_;
     }
 
     ArraySlice(ArraySlice<T>&& other) : start_(std::move(other.start_)),
-        size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
+        size_(std::move(other.size_)), stride_(std::move(other.stride_)),
+        stop_(std::move(other.stop_)) {
       data_ = other.data_;
       other.data_ = nullptr;
     }
@@ -705,6 +714,7 @@ class ArraySlice {
       start_ = other.start_;
       size_ = other.size_;
       stride_ = other.stride_;
+      stop_ = other.stop_;
       return *this; 
     }
 
@@ -714,25 +724,24 @@ class ArraySlice {
       start_ = std::move(other.start_);
       size_ = std::move(other.size_);
       stride_ = std::move(other.stride_);
+      stop_ = std::move(other.stop_);
       return *this; 
     }
 
     ~ArraySlice() {}
 
-    ArraySlice<T> slice(Index start, Index size, Index stride=1) {
+    ArraySlice<T> slice(Index start, Index size) {
       // Check for boundary violations
-      assert((start >= start_) && 
-            ((start + stride * size) <= (start_ + stride_ * size_)));
+      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
 
-      return ArraySlice<T>(this->data(), start, size, stride);
+      return ArraySlice<T>(this->data(), start_ + start, size, stride_);
     }
 
-    const ArraySlice<T> slice(Index start, Index size, Index stride=1) const {
+    const ArraySlice<T> slice(Index start, Index size) const {
       // Check for boundary violations
-      assert((start >= start_) && 
-            ((start + stride * size) <= (start_ + stride_ * size_)));
+      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
 
-      return ArraySlice<T>(this->data(), start, size, stride); 
+      return ArraySlice<T>(this->data(), start_ + start, size, stride_); 
     }
 
     std::size_t size() const {
@@ -767,11 +776,16 @@ class ArraySlice {
       return start_;
     }
 
+    Index stop() const {
+      return stop_;
+    }
+
   protected:
     T* data_;
     Index start_;
     Index size_;
     Index stride_;
+    Index stop_;
 };
 
 /*
@@ -787,18 +801,22 @@ class ConstArraySlice {
       start_ = 0;
       size_ = 0;
       stride_ = 0;
+      stop_ = 0;
     }
 
     ConstArraySlice(const T* data, Index start, Index size, Index stride=1) : 
         data_(data), start_(start), size_(size), stride_(stride) {
+      stop_ = size_ * stride_ + start_;
     }
 
     ConstArraySlice(const ConstArraySlice<T>& other) : data_(other.data_), 
         start_(other.start_), size_(other.size_), stride_(other.stride_) {
+      stop_ = size_ * stride_ + start_;
     }
 
     ConstArraySlice(ConstArraySlice<T>&& other) : start_(std::move(other.start_)),
-        size_(std::move(other.size_)), stride_(std::move(other.stride_)) {
+        size_(std::move(other.size_)), stride_(std::move(other.stride_)),
+        stop_(std::move(other.stop_)) {
       data_ = other.data_;
       other.data_ = nullptr;
     }
@@ -808,6 +826,7 @@ class ConstArraySlice {
       start_ = other.start_;
       size_ = other.size_;
       stride_ = other.stride_;
+      stop_ = other.stop_;
       return *this; 
     }
 
@@ -817,25 +836,17 @@ class ConstArraySlice {
       start_ = std::move(other.start_);
       size_ = std::move(other.size_);
       stride_ = std::move(other.stride_);
+      stop_ = std::move(other.stop_);
       return *this; 
     }
 
     ~ConstArraySlice() {}
 
-    ConstArraySlice<T> slice(Index start, Index size, Index stride=1) {
+    ConstArraySlice<T> slice(Index start, Index size) const {
       // Check for boundary violations
-      assert((start >= start_) && 
-            ((start + stride * size) <= (start_ + stride_ * size_)));
+      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
 
-      return ConstArraySlice<T>(this->data(), start, size, stride);
-    }
-
-    const ConstArraySlice<T> slice(Index start, Index size, Index stride=1) const {
-      // Check for boundary violations
-      assert((start >= start_) && 
-            ((start + stride * size) <= (start_ + stride_ * size_)));
-
-      return ConstArraySlice<T>(this->data(), start, size, stride); 
+      return ConstArraySlice<T>(this->data(), start_ + start, size, stride_); 
     }
 
     std::size_t size() const {
@@ -862,11 +873,16 @@ class ConstArraySlice {
       return start_;
     }
 
+    Index stop() const {
+      return stop_;
+    }
+
   protected:
     const T* data_;
     Index start_;
     Index size_;
     Index stride_;
+    Index stop_;
 };
 
 /*
@@ -924,18 +940,18 @@ class Slice {
 
     ~Slice() {}
 
-    Slice<T> slice(Index start, Index stop, Index stride=1) {
+    Slice<T> slice(Index start, Index stop) {
       // Check for boundary violations
-      assert((start >= start_) && (stop <= stop_));
+      assert((stop + start_) <= stop_);
 
-      return Slice<T>(this->data(), start, stop, stride);
+      return Slice<T>(this->data(), start + start_, stop + start_, stride_);
     }
 
-    const Slice<T> slice(Index start, Index stop, Index stride=1) const {
+    const Slice<T> slice(Index start, Index stop) const {
       // Check for boundary violations
-      assert((start >= start_) && (stop <= stop_));
+      assert((stop + start_) <= stop_);
 
-      return Slice<T>(this->data(), start, stop, stride); 
+      return Slice<T>(this->data(), start + start_, stop + start_, stride_); 
     }
 
     const T& operator[](Index index) const {
@@ -1030,18 +1046,11 @@ class ConstSlice {
       return *this; 
     }
 
-    ConstSlice<T> slice(Index start, Index stop, Index stride=1) {
+    ConstSlice<T> slice(Index start, Index stop) const {
       // Check for boundary violations
-      assert((start >= start_) && (stop <= stop_));
+      assert((stop + start_) <= stop_);
 
-      return ConstSlice<T>(this->data(), start, stop, stride);
-    }
-
-    const ConstSlice<T> slice(Index start, Index stop, Index stride=1) const {
-      // Check for boundary violations
-      assert((start >= start_) && (stop <= stop_));
-
-      return ConstSlice<T>(this->data(), start, stop, stride); 
+      return ConstSlice<T>(this->data(), start + start_, stop + start_, stride_);
     }
 
     ~ConstSlice() {}
@@ -1228,11 +1237,11 @@ class Tensor {
     }
 
     TensorView<T> accessor() {
-      return {this->data_, this->strides_.data()};
+      return {this->data_, this->strides_.data(), this->shape_.data()};
     }
 
     const TensorView<T> accessor() const {
-      return {this->data_, this->strides_.data()};
+      return {this->data_, this->strides_.data(), this->shape_.data()};
     }
 
     void Fill(T value) {
@@ -1258,6 +1267,7 @@ class Tensor {
  * data point.
  * Assignment is handled by overload of assignment, which moves the new value
  * to replace the old one.
+ * const versions of [] are provided for const container access
  */
 template<typename T>
 class TensorView {
@@ -1265,13 +1275,14 @@ class TensorView {
   public:
     T* data = nullptr;
     const Index* stride = nullptr;
+    const Index* shape = nullptr;
 
     TensorView operator[](Index index) {
-      return {data + *stride * index, stride + 1};
+      return {data + *stride * index, stride + 1, shape + 1};
     }
 
     const TensorView operator[](Index index) const {
-      return {data + *stride * index, stride + 1};
+      return {data + *stride * index, stride + 1, shape + 1};
     }
 
     operator T&() const {
@@ -1282,9 +1293,14 @@ class TensorView {
       *data = std::move(in);
       return *data;
     }
+
+    Index extent(Index dimension) const {
+      return shape[dimension];
+    }
 };
 
-void CalculateStrides(const std::size_t* shape, std::size_t* strides, std::size_t ndims) {
+void CalculateStrides(const std::size_t* shape, std::size_t* strides, 
+    std::size_t ndims) {
   for (std::size_t iii = 0; iii < ndims; iii++) {
     strides[iii] = 1;
     for (std::size_t jjj = iii + 1; jjj < ndims; jjj++) {

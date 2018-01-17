@@ -18,6 +18,8 @@
 #include "multi_array.hpp"
 #include "graphs.hpp"
 
+#include <iostream> /////////////////////////////// TESTING
+
 namespace nervous_system {
 
 enum INTEGRATOR_TYPE {
@@ -92,11 +94,7 @@ class All2AllIntegrator : public Integrator<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(parameters.size() == super_type::parameter_count_);
-      weights_ = multi_array::ConstArraySlice<TReal>(
-                  parameters.data(),
-                  parameters.start(),
-                  super_type::parameter_count_,
-                  parameters.stride());
+      weights_ = multi_array::ConstArraySlice<TReal>(parameters);
     }
 
   protected:
@@ -114,66 +112,72 @@ class Conv3DIntegrator : public Integrator<TReal> {
   typedef Integrator<TReal> super_type;
   typedef std::size_t Index;
   public:
-    Conv3DIntegrator(Index num_filters, 
-        const multi_array::Array<Index,3>& filter_shape, 
-        const multi_array::Array<Index,3>& layer_shape, Index stride)
-        : num_filters_(num_filters), filter_shape_(filter_shape), stride_(stride),
-        filter_parameters_major_({num_filters, filter_shape[0]}),
-        filter_parameters_minor_({num_filters, filter_shape[0]}) {
-      major_filter_param_count_ = filter_shape[0] * filter_shape[2];
-      minor_filter_param_count_ = filter_shape[0] * filter_shape[2];
-      super_type::parameter_count_ = num_filters * (major_filter_param_count_ + minor_filter_param_count_);
+    /*
+     * F = layer.shape[0]
+     * H/W = filter.shape[1/2]
+     * D = filter.shape[0]
+     * filter_shape and layer_shape implicitly contain most the information for
+     * the shape of the previous layer. Because this is a separable filter
+     * the # of parameters for each filter is (W * D) + (H * D).
+     * This convolution uses spatially and depthwise separable convolutions.
+     * First F HxW convolutions are applied to each input dimension D.
+     * Then F Dx1x1 filters are applied to the results.
+     * Principle behind DxHxW + DxFx1x1 is that the same filter is used on all
+     * layers, and then a 1x1 filter is used to do a weighted sum. This is
+     * opposed to having a separate filer for each input channel 
+     * (each 1x1 needs D parameters, with a total of F 1x1 filters)
+     */
+    Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape, 
+        const multi_array::Array<Index,3>& layer_shape, 
+        const multi_array::Array<Index,3>& prev_layer_shape, Index stride)
+        : num_filters_(layer_shape[0]), filter_shape_(filter_shape), stride_(stride),
+        filter_parameters_major_({num_filters_}),
+        filter_parameters_minor_({num_filters_}),
+        channel_weights_({num_filters_}) {
+
+      assert(filter_shape[0] == prev_layer_shape[0]);
+      super_type::parameter_count_ = num_filters_ 
+        * (filter_shape_[2] + filter_shape_[1] + filter_shape_[0]);
       super_type::integrator_type_ = CONV;
-      state_buffer1_ = multi_array::Tensor<TReal>(layer_shape);
-      state_buffer2_ = multi_array::Tensor<TReal>(layer_shape);
+      firstpass_buffer_ = multi_array::Tensor<TReal>(
+                            {prev_layer_shape[1], layer_shape[2]});
+      secondpass_buffer_ = multi_array::Tensor<TReal>(
+                            {layer_shape[1], layer_shape[2]});
     }
     ~Conv3DIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      const multi_array::ArrayView<TReal, 3> src_view = src_state.accessor();
-      multi_array::ArrayView<TReal, 3> tar_view = tar_state.accessor<3>();
-      multi_array::ArrayView<TReal, 3> buffer1_view = state_buffer1_.accessor<3>();
-      multi_array::ArrayView<TReal, 3> buffer2_view = state_buffer2_.accessor<3>();
-      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
-      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
+
+      const multi_array::TensorView<TReal> src_view = src_state.accessor();
+      multi_array::TensorView<TReal> tar_view = tar_state.accessor();
+      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> major_view(filter_parameters_major_);
+      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> minor_view(filter_parameters_minor_);
+      multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> channel_view(channel_weights_);
 
       // for each filter
       for (Index iii = 0; iii < num_filters_; iii++) {
-        multi_array::ArrayView<TReal, 2> tar_image = tar_view[iii];
-        // for each input filter
+        multi_array::TensorView<TReal> tar_image = tar_view[iii];
+        // for each input channel
         for (Index jjj = 0; jjj < src_state.shape()[0]; jjj++) {
-          // Carry out separable conv on filter
-          const multi_array::ArrayView<TReal, 2> src_image = src_view[jjj];
-          multi_array::ArrayView<TReal, 2> buffer1_image = buffer1_view[jjj];
-          multi_array::ArrayView<TReal, 2> buffer2_image = buffer2_view[jjj];
-          Convolve2D(src_view, buffer1_image, buffer2_image,
-                     major_view[iii][jjj], minor_view[iii][jjj], stride_);
+          // Carry out separable conv on layer of inputs
+          const multi_array::TensorView<TReal> src_image = src_view[jjj];
+          multi_array::TensorView<TReal> secondpass_image = secondpass_buffer_.accessor();
+          multi_array::TensorView<TReal> firstpass_image = firstpass_buffer_.accessor();
+          Convolve2D(src_image, secondpass_image, firstpass_image,
+                     major_view[iii], minor_view[iii], stride_);
+
+          for (Index kkk = 0; kkk < tar_state.shape()[1]; ++kkk) {
+            for (Index lll = 0; lll < tar_state.shape()[2]; ++lll) {
+              tar_image[kkk][lll] += secondpass_image[kkk][lll] * channel_weights_[iii][jjj];
+            }
+          }
         }
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == super_type::parameter_count_);
-      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 2> major_view(filter_parameters_major_);
-      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 2> minor_view(filter_parameters_minor_);
-      for (Index filter = 0; filter < num_filters_; filter++) {
-        for (Index iii = 0; iii < filter_shape_[0]; iii++) {
-          major_view[filter][iii] = multi_array::ConstArraySlice<TReal>(
-            parameters.data(), 
-            parameters.start() + parameters.stride() * filter * iii * filter_shape_[2], 
-            filter_shape_[2], parameters.stride());
-          
-          minor_view[filter][iii] = multi_array::ConstArraySlice<TReal>(
-            parameters.data(), 
-            parameters.start() + parameters.stride() * filter * iii * filter_shape_[1], 
-            filter_shape_[1], parameters.stride());
-        }
-      }
-    }
-
-    void Convolve2D(const multi_array::ArrayView<TReal, 2>& src,
-        multi_array::ArrayView<TReal, 2>& tar, 
-        multi_array::ArrayView<TReal, 2>& buffer,
+    void Convolve2D(const multi_array::TensorView<TReal>& src,
+        multi_array::TensorView<TReal>& tar, 
+        multi_array::TensorView<TReal>& buffer,
         const multi_array::ConstArraySlice<TReal> &kernel_minor, 
         const multi_array::ConstArraySlice<TReal> &kernel_major,
         Index stride) {
@@ -183,20 +187,21 @@ class Conv3DIntegrator : public Integrator<TReal> {
         // Accumulate through major axis
         Index half_kernel = kernel_major.size() / 2;
         // Minor axis loop
-        for (Index iii = 0; iii < src.extent(0); iii++) {
-          TReal cumulative_sum = 0.0;
+        TReal cumulative_sum = 0.0;
+        Index output_index = 0;
+        for (Index iii = 0; iii < src.extent(0); ++iii) {
+          cumulative_sum = 0.0;
+          output_index = 0;
           // Initiate sum
-          for (Index jjj = 0; jjj < kernel_major.size(); jjj++) {
-            // Add out-of-bounds components
-            for (Index kkk = 0; kkk < half_kernel; kkk++) {
-              cumulative_sum += kernel_major[kkk] * src[iii][0];
-            }
-            // Add in-bounds components
-            for (Index kkk = half_kernel; kkk < kernel_major.size(); kkk++) {
-              cumulative_sum += kernel_major[kkk] * src[iii][kkk - half_kernel];
-            }
+          // Add out-of-bounds components
+          for (Index kkk = 0; kkk < half_kernel; kkk++) {
+            cumulative_sum += kernel_major[kkk] * src[iii][0];
           }
-          buffer[iii][0] = cumulative_sum;
+          // Add in-bounds components
+          for (Index kkk = half_kernel; kkk < kernel_major.size(); kkk++) {
+            cumulative_sum += kernel_major[kkk] * src[iii][kkk - half_kernel];
+          }
+          buffer[iii][output_index++] = cumulative_sum;
 
           // Roll sum (out-of-bounds components)
           Index jjj = stride;
@@ -205,7 +210,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
               cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][jjj + half_kernel - kkk]
                               - kernel_major[kkk] * src[iii][0];
             }
-            buffer[iii][jjj] = cumulative_sum;
+            buffer[iii][output_index++] = cumulative_sum;
           }
 
           //  Roll sum (in-bounds components)
@@ -214,49 +219,93 @@ class Conv3DIntegrator : public Integrator<TReal> {
               cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][jjj + half_kernel - kkk]
                               - kernel_major[kkk] * src[iii][jjj - half_kernel - 1 - kkk];
             }
-            buffer[iii][jjj] = cumulative_sum;
+            buffer[iii][output_index++] = cumulative_sum;
           }
 
           // Roll sum (out-of-bounds end components)
           for (; jjj < src.extent(1); jjj+=stride) {
             for (Index kkk = 0; kkk < stride; ++kkk) {
-              cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][src.extent(1)-1 - kkk]
+              cumulative_sum += kernel_major[kernel_major.size() - kkk - 1] * src[iii][src.extent(1)-1]
                               - kernel_major[kkk] * src[iii][jjj - half_kernel - 1 - kkk];
             }
-            buffer[iii][jjj] = cumulative_sum;
+            buffer[iii][output_index++] = cumulative_sum;
           }
         }
       }
       else {
+        // Accumulate through major axis
+        Index half_kernel = kernel_major.size() / 2;
+        // Minor axis loop
+        TReal cumulative_sum = 0.0;
+        Index output_index = 0;
+        for (Index iii = 0; iii < src.extent(0); ++iii) {
+          cumulative_sum = 0.0;
+          output_index = 0;
+          // Initiate sum
+          // Add out-of-bounds components
+          for (Index kkk = 0; kkk < half_kernel; kkk++) {
+            cumulative_sum += kernel_major[kkk] * src[iii][0];
+          }
+          // Add in-bounds components
+          for (Index kkk = half_kernel; kkk < kernel_major.size(); kkk++) {
+            cumulative_sum += kernel_major[kkk] * src[iii][kkk - half_kernel];
+          }
+          buffer[iii][output_index++] = cumulative_sum;
 
+          //  Roll sum (in-bounds components)
+          Index jjj = stride;
+          for (; jjj < src.extent(1)-half_kernel; jjj+=stride) {
+            cumulative_sum = 0.0;
+            for (Index kkk = 0; kkk < kernel_major.size(); ++kkk) {
+              cumulative_sum += kernel_major[kkk] * src[iii][jjj - half_kernel + kkk];
+            }
+            buffer[iii][output_index++] = cumulative_sum;
+          }
+
+          // Roll sum (out-of-bounds end components)
+          for (; jjj < src.extent(1); jjj+=stride) {
+            cumulative_sum = 0.0;
+            // Add in-bounds components
+            for (Index kkk = 0; kkk < half_kernel+1; kkk++) {
+              cumulative_sum += kernel_major[kkk] * src[iii][jjj - half_kernel + kkk];
+            }
+            // Add out-of-bounds components
+            for (Index kkk = half_kernel+1; kkk < kernel_major.size(); kkk++) {
+              cumulative_sum += kernel_major[kkk] * src[iii][src.extent(1)-1];
+            }
+            buffer[iii][output_index++] = cumulative_sum;
+          }
+        }
       }
-
       if (stride < kernel_minor.size()) {
         // Accumulate through minor axis
+        TReal cumulative_sum = 0.0;
+        Index output_index = 0;
         Index half_kernel = kernel_minor.size() / 2;
         for (Index iii = 0; iii < buffer.extent(1); iii++) {
-          TReal cumulative_sum = 0.0;
+          cumulative_sum = 0.0;
+          output_index = 0;
           // Initiate sum
-          for (Index jjj = 0; jjj < kernel_minor.size(); jjj++) {
-            // Add out-of-bounds components
-            for (Index kkk = 0; kkk < half_kernel; kkk++) {
-              cumulative_sum += kernel_minor[kkk] * buffer[0][iii];
-            }
-            // Add in-bounds components
-            for (Index kkk = half_kernel; kkk < kernel_minor.size(); kkk++) {
-              cumulative_sum += kernel_minor[kkk] * buffer[kkk - half_kernel][iii];
-            }
+          // Add out-of-bounds components
+          for (Index kkk = 0; kkk < half_kernel; kkk++) {
+            cumulative_sum += kernel_minor[kkk] * buffer[0][iii];
           }
-          tar[0][iii] = cumulative_sum;
+          // Add in-bounds components
+          for (Index kkk = half_kernel; kkk < kernel_minor.size(); kkk++) {
+            cumulative_sum += kernel_minor[kkk] * buffer[kkk - half_kernel][iii];
+          }
+          tar[output_index++][iii] = cumulative_sum;
 
           // Roll sum (out-of-bounds components)
           Index jjj = stride;
-          for (; jjj < half_kernel+1; jjj+=stride) {
+          for (; jjj < half_kernel+stride; jjj+=stride) {
             for (Index kkk = 0; kkk < stride; ++kkk) {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[jjj + half_kernel - kkk][iii]
                               - kernel_minor[kkk] * buffer[0][iii];
+              std::cout<<"\t\tcum:" << cumulative_sum << " ADDat:" << jjj + half_kernel - kkk
+              << " SUBat:" << 0 <<std::endl;
             }
-            tar[jjj][iii] = cumulative_sum;
+            tar[output_index++][iii] = cumulative_sum;
           }
 
           //  Roll sum (in-bounds components)
@@ -265,7 +314,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[jjj + half_kernel - kkk][iii]
                               - kernel_minor[kkk] * buffer[jjj - half_kernel - 1 - kkk][iii];
             }
-            tar[jjj][iii] = cumulative_sum;
+            tar[output_index++][iii] = cumulative_sum;
           }
 
           // Roll sum (out-of-bounds end components)
@@ -274,12 +323,82 @@ class Conv3DIntegrator : public Integrator<TReal> {
               cumulative_sum += kernel_major[kernel_minor.size() - kkk - 1] * buffer[src.extent(0)-1][iii]
                               - kernel_minor[kkk] * buffer[jjj - half_kernel - 1 - kkk][iii];
             }
-            tar[jjj][iii] = cumulative_sum;
+            tar[output_index++][iii] = cumulative_sum;
           }
         }
       }
       else {
 
+        // Accumulate through major axis
+        Index half_kernel = kernel_minor.size() / 2;
+        TReal cumulative_sum = 0.0;
+        Index output_index = 0;
+        // Minor axis loop
+        for (Index iii = 0; iii < buffer.extent(1); ++iii) {
+          cumulative_sum = 0.0;
+          output_index = 0;
+          // Initiate sum
+          // Add out-of-bounds components
+          for (Index kkk = 0; kkk < half_kernel; kkk++) {
+            cumulative_sum += kernel_minor[kkk] * buffer[0][iii];
+          }
+          // Add in-bounds components
+          for (Index kkk = half_kernel; kkk < kernel_minor.size(); kkk++) {
+            cumulative_sum += kernel_minor[kkk] * buffer[kkk - half_kernel][iii];
+          }
+          tar[output_index++][iii] = cumulative_sum;
+
+          //  Roll sum (in-bounds components)
+          Index jjj = stride;
+          for (; jjj < buffer.extent(0)-half_kernel; jjj+=stride) {
+            cumulative_sum = 0.0;
+            for (Index kkk = 0; kkk < kernel_minor.size(); ++kkk) {
+              cumulative_sum += kernel_minor[kkk] * buffer[jjj - half_kernel + kkk][iii];
+            }
+            tar[output_index++][iii] = cumulative_sum;
+          }
+
+          // Roll sum (out-of-bounds end components)
+          for (; jjj < buffer.extent(0); jjj+=stride) {
+            cumulative_sum = 0.0;
+            // Add in-bounds components
+            for (Index kkk = 0; kkk < half_kernel+1; kkk++) {
+              cumulative_sum += kernel_minor[kkk] * buffer[jjj - half_kernel + kkk][iii];
+            }
+            // Add out-of-bounds components
+            for (Index kkk = half_kernel+1; kkk < kernel_minor.size(); kkk++) {
+              cumulative_sum += kernel_minor[kkk] * buffer[buffer.extent(0)-1][iii];
+            }
+            tar[output_index++][iii] = cumulative_sum;
+          }
+        }
+      }
+      for (Index iii = 0; iii < tar.extent(0); ++iii) {
+        for (Index jjj = 0; jjj < tar.extent(1); ++jjj) {
+
+          std::cout << tar[iii][jjj] << " ";
+        }
+        std::cout << std::endl;//
+      }
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
+      assert(parameters.size() == super_type::parameter_count_);
+      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> major_view(filter_parameters_major_);
+      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> minor_view(filter_parameters_minor_);
+      multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> channel_view(channel_weights_);
+
+      Index start(0);
+      for (Index filter = 0; filter < num_filters_; filter++) {
+        major_view[filter] = parameters.slice(start, filter_shape_[2]);
+        start += parameters.stride() * filter_shape_[2];
+
+        minor_view[filter] = parameters.slice(start, filter_shape_[1]);
+        start += parameters.stride() * filter_shape_[1];
+
+        channel_view[filter] = parameters.slice(start, filter_shape_[0]);
+        start += parameters.stride() * filter_shape_[0];
       }
     }
 
@@ -287,12 +406,11 @@ class Conv3DIntegrator : public Integrator<TReal> {
     Index num_filters_;
     multi_array::Array<Index, 3> filter_shape_;
     Index stride_;
-    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_major_;
-    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 2> filter_parameters_minor_;
-    Index major_filter_param_count_;
-    Index minor_filter_param_count_;
-    multi_array::Tensor<TReal> state_buffer1_;
-    multi_array::Tensor<TReal> state_buffer2_;
+    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> filter_parameters_major_;
+    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> filter_parameters_minor_;
+    multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> channel_weights_;
+    multi_array::Tensor<TReal> secondpass_buffer_;
+    multi_array::Tensor<TReal> firstpass_buffer_;
 };
 
 // Network integrator -- uses explicit unweighted structure

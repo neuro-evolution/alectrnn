@@ -147,8 +147,8 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     ~Conv3DCTRNNActivator()=default;
 
     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
-      multi_array::ArrayView<TReal, 3> state_accessor = state.accessor<3>();
-      const multi_array::ArrayView<TReal, 3> input_accessor = input_buffer.accessor<3>();
+      multi_array::TensorView<TReal> state_accessor = state.accessor();
+      const multi_array::TensorView<TReal> input_accessor = input_buffer.accessor();
 
       for (Index filter = 0; filter < shape_[0]; filter++) {
         for (Index iii = 0; iii < shape_[1]; iii++) {
@@ -165,11 +165,9 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(parameters.size() == parameter_count_);
-      biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start(), shape_[0], parameters.stride());
-      rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start() + parameters.stride() * shape_[0], shape_[0], 
-                parameters.stride());
+      biases_ = parameters.slice(parameters.start(), shape_[0], parameters.stride());
+      rtaus_ = parameters.slice(parameters.start() + parameters.stride() * shape_[0], 
+                shape_[0], parameters.stride());
     }
 
     void Reset() {};
