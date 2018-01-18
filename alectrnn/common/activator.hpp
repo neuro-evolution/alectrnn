@@ -32,7 +32,7 @@ template<typename TReal>
 class Activator {
   public:
     Activator() {
-      activator_type_ = ACTIVATOR_TYPE.BASE;
+      activator_type_ = BASE;
       parameter_count_ = 0;
     }
     virtual ~Activator()=default;
@@ -41,14 +41,15 @@ class Activator {
      * This operator must take the host's state and perform the specified
      * state updates on that state.
      */
-    virtual void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer)=0;
+    virtual void operator()(multi_array::Tensor<TReal>& state, 
+                            const multi_array::Tensor<TReal>& input_buffer)=0;
 
     /*
      * When given a set of parameters, it will use them to set the 
      * Must provide an assert statement that requires # given parameters
      * to == parameter_count
      */
-    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0; // Just needs to set base_ in ConstArraySlice
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0;
     
     /*
      * Some activators may have internal states, these need to be resetable
@@ -70,15 +71,18 @@ class Activator {
 
 template<typename TReal>
 class IdentityActivator : public Activator<TReal> {
+  typedef Activator<TReal> super_type;
+  typedef std::size_t Index;
   public:
-    Identity() {
-      parameter_count_ = 0;
-      activator_type_ = ACTIVATOR_TYPE.IDENTITY;
+    IdentityActivator() {
+      super_type::parameter_count_ = 0;
+      super_type::activator_type_ = IDENTITY;
     }
 
-    ~Identity()=default;
+    ~IdentityActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+    void operator()(multi_array::Tensor<TReal>& state, 
+                    const multi_array::Tensor<TReal>& input_buffer) {
       for (Index iii = 0; iii < state.size(); iii++) {
         state[iii] = input_buffer[iii];
       }
@@ -92,41 +96,39 @@ class IdentityActivator : public Activator<TReal> {
 
 template<typename TReal>
 class CTRNNActivator : public Activator<TReal> {
+  typedef Activator<TReal> super_type;
+  typedef std::size_t Index;
   public:
-    typedef Index std::size_t;
     CTRNNActivator(std::size_t num_states, TReal step_size) : 
         num_states_(num_states), step_size_(step_size) {
       // bias[N] and rtau[N]
-      parameter_count_ = num_states * 2;
-      activator_type_ = ACTIVATOR_TYPE.CTRNN;
+      super_type::parameter_count_ = num_states * 2;
+      super_type::activator_type_ = CTRNN;
     }
 
     ~CTRNNActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+    void operator()(multi_array::Tensor<TReal>& state, 
+                    const multi_array::Tensor<TReal>& input_buffer) {
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] += step_size_ * rtaus[iii] * 
-            (-state[iii] + utilities::sigmoid(biases[iii] + input_buffer[iii]));
+        state[iii] += step_size_ * rtaus_[iii] * 
+            (-state[iii] + utilities::sigmoid(biases_[iii] + input_buffer[iii]));
       }
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
-      biases_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start(), num_states, parameters.stride());
-      rtaus_ = multi_array::ConstArraySlice<TReal>(parameters.data(), 
-                parameters.start() + parameters.stride() * num_states, 
-                num_states, 
-                parameters.stride());
+      assert(parameters.size() == super_type::parameter_count_);
+      biases_ = parameters.slice(0, num_states_);
+      rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
     }
 
     void Reset() {};
 
   protected:
-    multi_array::ConstArraySlice<TReal> biases;
-    multi_array::ConstArraySlice<TReal> rtaus;
-    TReal step_size_;
+    multi_array::ConstArraySlice<TReal> biases_;
+    multi_array::ConstArraySlice<TReal> rtaus_;
     std::size_t num_states_;
+    TReal step_size_;
 };
 
 /*
@@ -135,13 +137,13 @@ class CTRNNActivator : public Activator<TReal> {
  */
 template<typename TReal>
 class Conv3DCTRNNActivator : public Activator<TReal> {
+  typedef Activator<TReal> super_type;
+  typedef std::size_t Index;
   public:
-    typedef Index std::size_t;
-
     Conv3DCTRNNActivator(const multi_array::Array<Index, 3>& shape, TReal step_size) : 
         step_size_(step_size), shape_(shape) {
-      parameter_count_ = shape_[0] * 2;
-      activator_type_ = ACTIVATOR_TYPE.CONV_CTRNN;
+      super_type::parameter_count_ = shape_[0] * 2;
+      super_type::activator_type_ = CONV_CTRNN;
     }
 
     ~Conv3DCTRNNActivator()=default;
@@ -154,9 +156,9 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
         for (Index iii = 0; iii < shape_[1]; iii++) {
           for (Index jjj = 0; jjj < shape_[2]; jjj++) {
             state_accessor[filter][iii][jjj] += step_size_ 
-              * rtaus[filter]
+              * rtaus_[filter]
               * (-state_accessor[filter][iii][jjj] 
-              + utilities::sigmoid(biases[filter] 
+              + utilities::sigmoid(biases_[filter] 
               + input_accessor[filter][iii][jjj]));
           }
         }
@@ -164,17 +166,16 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
-      biases_ = parameters.slice(parameters.start(), shape_[0], parameters.stride());
-      rtaus_ = parameters.slice(parameters.start() + parameters.stride() * shape_[0], 
-                shape_[0], parameters.stride());
+      assert(parameters.size() == super_type::parameter_count_);
+      biases_ = parameters.slice(0, shape_[0]);
+      rtaus_ = parameters.slice(parameters.stride() * shape_[0], shape_[0]);
     }
 
     void Reset() {};
 
   protected:
-    multi_array::ConstArraySlice<TReal> biases;
-    multi_array::ConstArraySlice<TReal> rtaus;
+    multi_array::ConstArraySlice<TReal> biases_;
+    multi_array::ConstArraySlice<TReal> rtaus_;
     TReal step_size_;
     multi_array::Array<Index, 3> shape_;
 };
@@ -187,14 +188,15 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
  */
 // template<typename TReal>
 // class IafActivator : public Activator<TReal> {
+    // typedef Activator<TReal> super_type;
+    // typedef Index std::size_t;
 //   public:
-//     typedef Index std::size_t;
 
 //     IafActivator(std::size_t num_states, TReal step_size) : 
 //         num_states_(num_states), step_size_(step_size) {
-//       // peak, refract, range, rtaus, and reset
+//       // peak, refract, range, rtaus_, and reset
 //       parameter_count_ = 2 + num_states * 3;
-//       activator_type_ = ACTIVATOR_TYPE.IAF;
+//       activator_type_ = IAF;
 //       last_spike_time_.resize(num_states_);
 //       subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
 //     }

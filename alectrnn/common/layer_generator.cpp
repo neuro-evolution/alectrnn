@@ -176,15 +176,17 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
     case nervous_system::INTEGRATOR_TYPE.CONV:
       PyArrayObject* filter_shape;
       PyArrayObject* layer_shape;
+      PyArrayObject* prev_layer_shape;
       int stride;
-      if (!PyArg_ParseTuple(args, "OOi", &filter_shape,
-        &layer_shape, &stride)) {
+      if (!PyArg_ParseTuple(args, "OOOi", &filter_shape,
+        &layer_shape, &prev_layer_shape, &stride)) {
         std::cout << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
       new_integrator = new nervous_system::Conv3DIntegrator<float>(
         multi_array::Array<std::size_t,3>(filter_shape->data),
         multi_array::Array<std::size_t,3>(layer_shape->data),
+        multi_array::Array<std::size_t,3>(prev_layer_shape->data),
         stride);
       break;
 
