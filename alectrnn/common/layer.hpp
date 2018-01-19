@@ -175,11 +175,12 @@ class MotorLayer : public Layer<TReal> {
     typedef Layer<TReal> super_type;
 
     MotorLayer(Index num_outputs, Index num_inputs, 
-        Activator<TReal>* activation_function) 
-        : super_type::activation_function_(activation_function) {
-      super_type::back_integrator_ = new MotorLayer(num_outputs, num_inputs);
+        Activator<TReal>* activation_function) {
+      super_type::activation_function_ = activation_function;
+      super_type::back_integrator_ = new nervous_system::All2AllIntegrator<TReal>(num_outputs, num_inputs);
       super_type::self_integrator_ = nullptr;
-      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount();
+      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount() 
+                                   + super_type::back_integrator_->GetParameterCount();
       super_type::layer_state_ = multi_array::Tensor<TReal>({num_outputs});
       super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
     }
@@ -195,7 +196,11 @@ class MotorLayer : public Layer<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(super_type::parameter_count_ == parameters.size());
-      super_type::back_integrator_->Configure(parameters);
+      super_type::back_integrator_->Configure(
+        parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
+      super_type::activation_function_->Configure(
+        parameters.slice(super_type::back_integrator_->GetParameterCount(),
+                         super_type::activation_function_->GetParameterCount()));
     }
 };
 
