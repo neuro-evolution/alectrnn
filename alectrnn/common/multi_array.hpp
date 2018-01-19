@@ -46,6 +46,7 @@
 #include <numeric>
 #include <functional>
 #include <algorithm>
+#include <stdexcept>
 
 namespace multi_array {
 
@@ -497,6 +498,16 @@ class MultiArray {
       return data_[index];
     }
 
+    T& at(Index index) {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index]; 
+    }
+
+    const T& at(Index index) const {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index];
+    }
+
     MultiArray<T,NumDim>& operator=(const MultiArray<T,NumDim>& other) {
       delete[] data_;
       shape_ = other.shape_;
@@ -631,6 +642,16 @@ class SharedMultiArray {
     }
 
     const T& operator[](Index index) const {
+      return data_[index];
+    }
+
+    T& at(Index index) {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index]; 
+    }
+
+    const T& at(Index index) const {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
       return data_[index];
     }
 
@@ -1199,6 +1220,16 @@ class Tensor {
     const T& operator[](Index index) const {
       return data_[index];
     }
+
+    T& at(Index index) {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index]; 
+    }
+
+    const T& at(Index index) const {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index];
+    }    
 
     T& operator()(const std::initializer_list<T>& indices) {
       Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);

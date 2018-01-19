@@ -109,7 +109,7 @@ void ResizeGrayScreen(std::size_t src_width, std::size_t src_height,
                       src_screen, tar_screen);
 }
 
-void Apply3x3BoxFilterGray(std::vector<std::uint8_t>& src_screen,
+void Apply3x3BoxFilterGray(const std::vector<std::uint8_t>& src_screen,
     std::vector<float>& buffer_screen1, std::vector<float>& buffer_screen2,
     std::size_t screen_width, std::size_t screen_height) {
 
@@ -184,10 +184,10 @@ void SubsampleGrayScreen(std::size_t src_width, std::size_t src_height,
 
 void ResizeGrayScreen(std::size_t src_width, std::size_t src_height,
                       std::size_t tar_width, std::size_t tar_height,
-                      std::vector<std::uint8_t>& src_screen,
+                      const std::vector<std::uint8_t>& src_screen,
                       std::vector<float>& tar_screen,
                       std::vector<float>& buffer_screen1,
-                      std::vector<float>& buffer_screen2,) {
+                      std::vector<float>& buffer_screen2) {
   Apply3x3BoxFilterGray(src_screen, buffer_screen1, 
                         buffer_screen2, src_width, src_height);
   SubsampleGrayScreen(src_width, src_height, tar_width, tar_height,

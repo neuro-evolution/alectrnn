@@ -121,11 +121,11 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
 
   nervous_system::Activator<float>* new_activator;  
   switch(type) {
-    case nervous_system::ACTIVATOR_TYPE.IDENTITY:
+    case nervous_system::IDENTITY_ACTIVATOR:
       new_activator = new nervous_system::IdentityActivator<float>();
       break;
 
-    case nervous_system::ACTIVATOR_TYPE.CTRNN:
+    case nervous_system::CTRNN_ACTIVATOR:
       int num_states;
       float step_size;
       if (!PyArg_ParseTuple(args, "if", &num_states, &step_size)) {
@@ -135,7 +135,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       new_activator = new nervous_system::CTRNNActivator<float>(num_states, step_size);
       break;
 
-    case nervous_system::ACTIVATOR_TYPE.CONV_CTRNN:
+    case nervous_system::CONV_CTRNN_ACTIVATOR:
       PyArrayObject* shape;
       float step_size;
       if (!PyArg_ParseTuple(args, "Of", &shape, &step_size)) {
@@ -158,11 +158,11 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
   nervous_system::Integrator<float>* new_integrator;  
   switch(type) {
-    case nervous_system::INTEGRATOR_TYPE.NONE:
+    case nervous_system::NONE_INTEGRATOR:
       new_integrator = new nervous_system::NoneIntegrator<float>();
       break;
 
-    case nervous_system::INTEGRATOR_TYPE.ALL2ALL:
+    case nervous_system::ALL2ALL_INTEGRATOR:
       int num_states;
       int num_prev_states;
       if (!PyArg_ParseTuple(args, "ii", &num_states, &num_prev_states)) {
@@ -173,7 +173,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         num_states, num_prev_states);
       break;
 
-    case nervous_system::INTEGRATOR_TYPE.CONV:
+    case nervous_system::CONV_INTEGRATOR:
       PyArrayObject* filter_shape;
       PyArrayObject* layer_shape;
       PyArrayObject* prev_layer_shape;
@@ -190,7 +190,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         stride);
       break;
 
-    case nervous_system::INTEGRATOR_TYPE.NETWORK:
+    case nervous_system::NETWORK_INTEGRATOR:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
@@ -202,7 +202,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
 
-    case nervous_system::INTEGRATOR_TYPE.RESERVOIR:
+    case nervous_system::RESERVOIR_INTEGRATOR:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       PyArrayObject* weights; // Nx1 dimensional array

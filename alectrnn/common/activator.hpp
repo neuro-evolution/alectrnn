@@ -1,5 +1,5 @@
 /*
- * Current CTRNN activator has independent parameters for each neuron.
+ * Current CTRNN_ACTIVATOR activator has independent parameters for each neuron.
  * Could add a dimension member that specifies the # dim of containing layer
  * so that the activator will pick uniform parameters for neurons according
  * to the most minor dimension. This way a Conv layer w/ 64 filters will have
@@ -21,18 +21,18 @@
 namespace nervous_system {
 
 enum ACTIVATOR_TYPE {
-  BASE,
-  IDENTITY,
-  CTRNN,
-  CONV_CTRNN,
-  IAF
+  BASE_ACTIVATOR,
+  IDENTITY_ACTIVATOR,
+  CTRNN_ACTIVATOR,
+  CONV_CTRNN_ACTIVATOR,
+  IAF_ACTIVATOR
 };
 
 template<typename TReal>
 class Activator {
   public:
     Activator() {
-      activator_type_ = BASE;
+      activator_type_ = BASE_ACTIVATOR;
       parameter_count_ = 0;
     }
     virtual ~Activator()=default;
@@ -76,7 +76,7 @@ class IdentityActivator : public Activator<TReal> {
   public:
     IdentityActivator() {
       super_type::parameter_count_ = 0;
-      super_type::activator_type_ = IDENTITY;
+      super_type::activator_type_ = IDENTITY_ACTIVATOR;
     }
 
     ~IdentityActivator()=default;
@@ -103,7 +103,7 @@ class CTRNNActivator : public Activator<TReal> {
         num_states_(num_states), step_size_(step_size) {
       // bias[N] and rtau[N]
       super_type::parameter_count_ = num_states * 2;
-      super_type::activator_type_ = CTRNN;
+      super_type::activator_type_ = CTRNN_ACTIVATOR;
     }
 
     ~CTRNNActivator()=default;
@@ -132,7 +132,7 @@ class CTRNNActivator : public Activator<TReal> {
 };
 
 /*
- * A uniform version of the CTRNN activator. All neurons in same filter
+ * A uniform version of the CTRNN_ACTIVATOR activator. All neurons in same filter
  * will share parameters. The first index of the layer is the # filters
  */
 template<typename TReal>
@@ -143,7 +143,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     Conv3DCTRNNActivator(const multi_array::Array<Index, 3>& shape, TReal step_size) : 
         step_size_(step_size), shape_(shape) {
       super_type::parameter_count_ = shape_[0] * 2;
-      super_type::activator_type_ = CONV_CTRNN;
+      super_type::activator_type_ = CONV_CTRNN_ACTIVATOR;
     }
 
     ~Conv3DCTRNNActivator()=default;
@@ -196,7 +196,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
 //         num_states_(num_states), step_size_(step_size) {
 //       // peak, refract, range, rtaus_, and reset
 //       parameter_count_ = 2 + num_states * 3;
-//       activator_type_ = IAF;
+//       activator_type_ = IAF_ACTIVATOR;
 //       last_spike_time_.resize(num_states_);
 //       subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
 //     }
