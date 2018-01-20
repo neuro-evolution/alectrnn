@@ -3,8 +3,8 @@
  * as the basis for Action decisions.
  */
 
-#ifndef ALECTRNN_HYBRID_AGENT_H_
-#define ALECTRNN_HYBRID_AGENT_H_
+#ifndef ALECTRNN_NERVOUS_SYSTEM_AGENT_H_
+#define ALECTRNN_NERVOUS_SYSTEM_AGENT_H_
 
 #include <cstddef>
 #include <vector>
@@ -14,13 +14,13 @@
 
 namespace alectrnn {
 
-class HyrbidAgent : public PlayerAgent {
+class NervousSystemAgent : public PlayerAgent {
   public:
     typedef std::size_t Index;
 
-    HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net);
-    HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net, Index update_rate);
-    ~HyrbidAgent();
+    NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net);
+    NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net, Index update_rate);
+    ~NervousSystemAgent();
 
     void Configure(const float *parameters);
     void Reset();
@@ -40,4 +40,4 @@ class HyrbidAgent : public PlayerAgent {
 
 } // End alectrnn namespace
 
-#endif /* ALECTRNN_HYBRID_AGENT_H_ */
+#endif /* ALECTRNN_NERVOUS_SYSTEM_AGENT_H_ */

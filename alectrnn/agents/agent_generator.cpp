@@ -28,7 +28,7 @@
 #include "player_agent.hpp"
 // Add includes to agents you wish to add below:
 #include "ctrnn_agent.hpp"
-#include "hybrid_agent.hpp"
+#include "nervous_system_agent.hpp"
 
 /*
  * DeleteAgent can be shared among the agents as a destructor
@@ -86,7 +86,7 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
   return agent_capsule;
 }
 
-static PyObject *CreateHybridAgent(PyObject *self, PyObject *args,
+static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
     PyObject *kwargs) {
   static char *keyword_list[] = {"ale", "nervous_system", "update_rate", NULL};
 
@@ -119,7 +119,7 @@ static PyObject *CreateHybridAgent(PyObject *self, PyObject *args,
       static_cast<nervous_system::NervousSystem<float>*>(PyCapsule_GetPointer(
       nervous_system_capsule, "nervous_system_generator.nn"));
 
-  alectrnn::PlayerAgent *agent = new alectrnn::HybridAgent(
+  alectrnn::PlayerAgent *agent = new alectrnn::NervousSystemAgent(
     ale, nervous_system, update_rate);
 
   PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
@@ -134,9 +134,9 @@ static PyMethodDef AgentMethods[] = {
   { "CreateCtrnnAgent", (PyCFunction) CreateCtrnnAgent,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a CtrnnAgent"},
-  { "CreateHybridAgent", (PyCFunction) CreateHybridAgent,
+  { "CreateNervousSystemAgent", (PyCFunction) CreateNervousSystemAgent,
           METH_VARARGS | METH_KEYWORDS,
-          "Returns a handle to a HybridAgent"},
+          "Returns a handle to a NervousSystemAgent"},
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

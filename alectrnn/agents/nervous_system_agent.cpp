@@ -1,12 +1,12 @@
-#include "hybrid_agent.hpp"
+#include "nervous_system_agent.hpp"
 #include "multi_array.hpp"
 
-HyrbidAgent::HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net) 
-    : HyrbidAgent(ale, neural_net, 1) {
+NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net) 
+    : NervousSystemAgent(ale, neural_net, 1) {
 
 }
 
-HyrbidAgent::HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net, 
+NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net, 
     Index update_rate) : ale_(ale), neural_net_(neural_net), 
     update_rate_(update_rate) {
 
@@ -20,9 +20,9 @@ HyrbidAgent::HyrbidAgent(ALEInterface* ale, NervousSystem& neural_net,
   downsized_screen_.resize(neural_net_[0]->NumNeurons());
 }
 
-HyrbidAgent::~HyrbidAgent() {}
+NervousSystemAgent::~NervousSystemAgent() {}
 
-void HyrbidAgent::Configure(const float *parameters) {
+void NervousSystemAgent::Configure(const float *parameters) {
   // Assumed that parameters is a contiguous array with # elements == par count
   // User must make sure this holds, as the slices only garantee that it won't
   // exceed count
@@ -31,11 +31,11 @@ void HyrbidAgent::Configure(const float *parameters) {
   neural_net_.Configure(parameter_slice);
 }
 
-void HyrbidAgent::Reset() {
+void NervousSystemAgent::Reset() {
   neural_net_.Reset();
 }
 
-Action HyrbidAgent::Act() {
+Action NervousSystemAgent::Act() {
 
   // Need to get the screen
   ale_->getScreenGrayscale(full_screen_);

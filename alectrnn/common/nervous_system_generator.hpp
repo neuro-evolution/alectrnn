@@ -15,6 +15,6 @@
 #include "nervous_system.hpp"
 
 nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape, PyObject* args);
-PyMODINIT_FUNC PyInit_NervousSystem_generator(void);
+PyMODINIT_FUNC PyInit_nn_generator(void);
 
 #endif /* NERVOUS_SYSTEM_GENERATOR_H_ */

@@ -6,14 +6,14 @@
  *
  * The layer_generator is a python extension used to create layers in a NN.
  * Integrators
- * ALL2ALL (#_states in layer, # states in prev layer)
- * Conv3D (# filters, filter shape, layer_shape(depends on prev layer shape & stride), stride)
- * Net (Nx2)
- * Reservoir (Nx2), (Nx1)
+ * ALL2ALL: (#_states in layer, # states in prev layer)
+ * Conv3D: (# filters, filter shape, layer_shape, prev_layer_shape, stride)
+ * Network: graph - as (Nx2)
+ * Reservoir: weighted graph - as (Nx2), (Nx1)
  *
  * Activators
- * CTRNN (# states, step size)
- * CTRNNConv (shape, step_size)
+ * CTRNN: (# states, step size)
+ * CTRNNConv: (shape, step_size)
  *
  * Layers
  * Layer (back*, self*, activation*, shape)
@@ -34,6 +34,7 @@
 #include "layer_generator.hpp"
 #include "arrayobject.h"
 #include "layer.hpp"
+#include "graphs.hpp"
 #include "capi_tools.hpp"
 #include "multi_array.hpp"
 #include "activator.hpp"

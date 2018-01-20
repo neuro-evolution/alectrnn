@@ -46,7 +46,7 @@ static PyMethodDef ALEHandlerMethods[] = {
 static struct PyModuleDef ALEHandlerModule = {
   PyModuleDef_HEAD_INIT,
   "ale_handler",
-  "Returns a handle to an ALE",
+  "Allows manipulating the ALE environment in python.",
   -1,
   ALEHandlerMethods
 };

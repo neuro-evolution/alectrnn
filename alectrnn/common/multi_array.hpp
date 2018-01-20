@@ -548,6 +548,14 @@ class MultiArray {
       }
     }
 
+    template<std::size_t OtherNumDim>
+    void Fill(const MultiArray<T, OtherNumDim>& other_array) {
+      assert(other_array.size() == size_);
+      for (Index iii = 0; iii < size_; ++iii) {
+        data_[iii] = other_array[iii];
+      }
+    }
+
   protected:
     TPtr data_;
     Array<Index, NumDim> shape_;
@@ -686,6 +694,14 @@ class SharedMultiArray {
     void Fill(T value) {
       for (Index iii = 0; iii < size_; iii++) {
         data_[iii] = value;
+      }
+    }
+
+    template<std::size_t OtherNumDim>
+    void Fill(const SharedMultiArray<T, OtherNumDim>& other_array) {
+      assert(other_array.size() == size_);
+      for (Index iii = 0; iii < size_; ++iii) {
+        data_[iii] = other_array[iii];
       }
     }
 
@@ -1278,6 +1294,13 @@ class Tensor {
     void Fill(T value) {
       for (Index iii = 0; iii < size_; iii++) {
         data_[iii] = value;
+      }
+    }
+
+    void Fill(const Tensor<T>& other_tensor) {
+      assert(other_tensor.size() == size_);
+      for (Index iii = 0; iii < size_; ++iii) {
+        data_[iii] = other_tensor[iii];
       }
     }
 

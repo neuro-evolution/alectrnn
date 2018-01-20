@@ -19,6 +19,7 @@
 #include "nervous_system_generator.hpp"
 #include "layer.hpp"
 #include "nervous_system.hpp"
+#include "capi_tools.hpp"
 
 /*
  * DeleteLayer can be shared among the Layers as a destructor
@@ -37,8 +38,8 @@ static PyObject *CreateNervousSystem(PyObject *self, PyObject *args, PyObject *k
   PyArrayObject* input_shape;
   PyObject* layers_tuple;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO", keyword_list,
-      &ale_capsule, &input_shape, &layers_tuple)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", keyword_list,
+      &input_shape, &layers_tuple)) {
     std::cout << "Error parsing CreateLayer arguments" << std::endl;
     return NULL;
   }
@@ -77,7 +78,7 @@ nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape
  * Add new NervousSystems in additional lines below:
  */
 static PyMethodDef NervousSystemMethods[] = {
-  { "CreateNervousSystem", (PyCFunction) NervousSystem,
+  { "CreateNervousSystem", (PyCFunction) CreateNervousSystem,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a NervousSystem"},
       //Additional layers here, make sure to add includes top
@@ -89,7 +90,7 @@ static struct PyModuleDef NervousSystemModule = {
   "nervous_system_generator",
   "Returns a handle to a Nervous System",
   -1,
-  NervousSysMethods
+  NervousSystemMethods
 };
 
 PyMODINIT_FUNC PyInit_nn_generator(void) {
