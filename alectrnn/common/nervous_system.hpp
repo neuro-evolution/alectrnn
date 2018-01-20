@@ -17,42 +17,39 @@ namespace nervous_system {
 template<typename TReal>
 class NervousSystem {
   public:
-    typedef Index std::size_t;
+    typedef std::size_t Index ;
 
     NervousSystem(const std::vector<Index>& input_shape) : parameter_count_(0) {
       network_layers_.push_back(new InputLayer<TReal>(input_shape));
     }
 
-    If NervousSystem is owner, it needs this destructor
+    // If NervousSystem is owner, it needs this destructor
     ~NervousSystem() {
-      for (auto::iterator obj_ptr = network_layers_.begin(); obj_ptr != network_layers_.end(); ++obj_ptr) {
+      for (auto obj_ptr = network_layers_.begin(); obj_ptr != network_layers_.end(); ++obj_ptr) {
         delete *obj_ptr;
       }
     }
 
     void Step() {
       for (Index iii = 1; iii < network_layers_.size(); ++iii) {
-        network_layers_[iii]->(*(network_layers_[iii-1]));
+        (*network_layers_[iii])(network_layers_[iii-1]);
       }
     }
     
     void Reset() {
-      for (auto::iterator iter = network_layers_.begin(); iter != network_layers_.end(); ++iter) {
-        iter->Reset();
+      for (auto iter = network_layers_.begin(); iter != network_layers_.end(); ++iter) {
+        (*iter)->Reset();
       }
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(parameters.size() == parameter_count_);
-      Index slice_start = parameters.start();
-      for (auto::iterator layer_ptr = network_layers_.begin()+1; 
+      Index slice_start(0);
+      for (auto layer_ptr = network_layers_.begin()+1; 
           layer_ptr != network_layers_.end(); ++layer_ptr) {
-        layer_ptr->Configure(multi_array::ConstArraySlice<TReal>(
-          parameters.data(),
-          slice_start,
-          layer_ptr->GetParameterCount(),
-          parameters.stride()));
-        slice_start += parameters.stride() * layer_ptr->GetParameterCount();
+        (*layer_ptr)->Configure(parameters.slice(
+          slice_start, (*layer_ptr)->GetParameterCount()));
+        slice_start += parameters.stride() * (*layer_ptr)->GetParameterCount();
       }
     }
 
@@ -61,9 +58,9 @@ class NervousSystem {
      */
     template<typename T>
     void SetInput(const std::vector<T>& inputs) {
-      for (Index iii = 0; iii < network_layers_[0].NumNeurons(); iii++)
+      for (Index iii = 0; iii < network_layers_[0]->NumNeurons(); iii++)
       {
-        network_layers_[0].SetNeuronState(iii, inputs[iii]);
+        network_layers_[0]->SetNeuronState(iii, inputs[iii]);
       }
     }
 
@@ -72,7 +69,7 @@ class NervousSystem {
      * Its states will be returned as a Tensor.
      */
     const multi_array::Tensor<TReal>& GetOutput() const {
-      return network_layers_[network_layers_.size()-1].state();
+      return network_layers_[network_layers_.size()-1]->state();
     }
 
     void AddLayer(Layer<TReal>* layer) {
@@ -85,12 +82,16 @@ class NervousSystem {
     }
 
     const Layer<TReal>& operator[](Index index) const {
-      return network_layers_[index];
+      return *network_layers_[index];
+    }
+
+    Index size() const {
+      return network_layers_.size();
     }
 
   protected:
+    std::size_t parameter_count_;
     std::vector< Layer<TReal>* > network_layers_;
-    parameter_count_;
 };
 
 } // End nervous_system namespace

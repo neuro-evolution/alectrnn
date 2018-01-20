@@ -83,11 +83,11 @@ class Layer {
         parameters.slice(0, back_integrator_->GetParameterCount()));
 
       self_integrator_->Configure(
-        parameters.slice(back_integrator_->GetParameterCount(), 
+        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount(), 
                          self_integrator_->GetParameterCount()));
 
       activation_function_->Configure(
-        parameters.slice(back_integrator_->GetParameterCount() 
+        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount() 
                          + self_integrator_->GetParameterCount(), 
                          activation_function_->GetParameterCount()));
     }
@@ -199,7 +199,7 @@ class MotorLayer : public Layer<TReal> {
       super_type::back_integrator_->Configure(
         parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
       super_type::activation_function_->Configure(
-        parameters.slice(super_type::back_integrator_->GetParameterCount(),
+        parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
                          super_type::activation_function_->GetParameterCount()));
     }
 };
