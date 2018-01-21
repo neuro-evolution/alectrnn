@@ -40,11 +40,11 @@ static PyObject *CreateNervousSystem(PyObject *self, PyObject *args, PyObject *k
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", keyword_list,
       &input_shape, &layers_tuple)) {
-    std::cout << "Error parsing CreateLayer arguments" << std::endl;
+    std::cerr << "Error parsing CreateLayer arguments" << std::endl;
     return NULL;
   }
 
-  std::vector<std::size_t> shape = PyArrayToVector(input_shape);
+  std::vector<std::size_t> shape = alectrnn::PyArrayToVector(input_shape);
   nervous_system::NervousSystem<float>* nervous_system = ParseLayers(shape, layers_tuple);
 
   PyObject* nervous_system_capsule = PyCapsule_New(static_cast<void*>(nervous_system),
@@ -60,7 +60,7 @@ nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape
 
     if (!PyCapsule_IsValid(layer_capsule, "layer_generator.layer"))
     {
-      std::cout << "Invalid pointer to Layer returned from capsule,"
+      std::cerr << "Invalid pointer to Layer returned from capsule,"
           " or is not a capsule." << std::endl;
       return NULL;
     }

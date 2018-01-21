@@ -67,6 +67,22 @@ class StateLogger {
       ++fill_count_;
     }
 
+    const std::vector<multi_array::Tensor<TReal>>& GetLayerHistory(Index layer) const {
+      return history_[layer];
+    }
+
+    std::vector<multi_array::Tensor<TReal>>& GetLayerHistory(Index layer) {
+      return history_[layer];
+    }
+
+    const std::vector<Time>& GetTimes() const {
+      return time_stamps_;
+    }
+
+    std::vector<Time>& GetTimes() {
+      return time_stamps_;
+    }
+
   protected:
   std::vector<std::vector<multi_array::Tensor<TReal>>> history_;
   std::vector<Time> time_stamps_;

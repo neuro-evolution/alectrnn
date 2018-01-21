@@ -18,14 +18,14 @@ static PyObject *NumOutputs(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   PyObject *ale_capsule;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list, &ale)){
-    std::cout << "Error parsing NumOutput arguments" << std::endl;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list, &ale_capsule)){
+    std::cerr << "Error parsing NumOutput arguments" << std::endl;
     return NULL;
   }
 
   if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
   {
-    std::cout << "Invalid pointer to ALE returned from capsule,"
+    std::cerr << "Invalid pointer to ALE returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }

@@ -55,7 +55,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
       &rom, &seed, &repeat_action_probability, &display_screen, &sound,
       &color_avg, &frame_skip, &max_num_frames, &max_num_episodes,
       &max_num_frames_per_episode, &print_screen)){
-    std::cout << "Error parsing ALE arguments" << std::endl;
+    std::cerr << "Error parsing ALE arguments" << std::endl;
     return NULL;
   }
 

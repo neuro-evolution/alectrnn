@@ -70,12 +70,12 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
       &back_integrator_type, &back_integrator_args, &self_integrator_type,
       &self_integrator_args, &activator_type, &activator_args,
       &shape)) {
-    std::cout << "Error parsing CreateLayer arguments" << std::endl;
+    std::cerr << "Error parsing CreateLayer arguments" << std::endl;
     return NULL;
   }
 
   // Call parsers -> they create NEW integrators and activators
-  layer_shape = PyArrayToVector<float>(shape);
+  layer_shape = alectrnn::PyArrayToVector<float>(shape);
   nervous_system::Integrator<float>* back_integrator = IntegratorParser(
     back_integrator_type, back_integrator_args);
   nervous_system::Integrator<float>* self_integrator = IntegratorParser(
@@ -103,7 +103,7 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iiiO", keyword_list,
       &num_outputs, &num_inputs, &activator_type, &activator_args)) {
-    std::cout << "Error parsing CreateMotorLayer arguments" << std::endl;
+    std::cerr << "Error parsing CreateMotorLayer arguments" << std::endl;
     return NULL;
   }
 
@@ -130,7 +130,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       int num_states;
       float step_size;
       if (!PyArg_ParseTuple(args, "if", &num_states, &step_size)) {
-        std::cout << "Error parsing Activator arguments" << std::endl;
+        std::cerr << "Error parsing Activator arguments" << std::endl;
         assert(0);
       }
       new_activator = new nervous_system::CTRNNActivator<float>(num_states, step_size);
@@ -140,7 +140,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       PyArrayObject* shape;
       float step_size;
       if (!PyArg_ParseTuple(args, "Of", &shape, &step_size)) {
-        std::cout << "Error parsing Activator arguments" << std::endl;
+        std::cerr << "Error parsing Activator arguments" << std::endl;
         assert(0);
       }
       new_activator = new nervous_system::Conv3DCTRNNActivator<float>(
@@ -148,7 +148,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
 
     default:
-      std::cout << "Activator case not supported... exiting." << std::endl;
+      std::cerr << "Activator case not supported... exiting." << std::endl;
       assert(0);
   }
 
@@ -167,7 +167,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       int num_states;
       int num_prev_states;
       if (!PyArg_ParseTuple(args, "ii", &num_states, &num_prev_states)) {
-        std::cout << "Error parsing Integrator arguments" << std::endl;
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
       new_integrator = new nervous_system::All2AllIntegrator<float>(
@@ -181,7 +181,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       int stride;
       if (!PyArg_ParseTuple(args, "OOOi", &filter_shape,
         &layer_shape, &prev_layer_shape, &stride)) {
-        std::cout << "Error parsing Integrator arguments" << std::endl;
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
       new_integrator = new nervous_system::Conv3DIntegrator<float>(
@@ -195,12 +195,12 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
-        std::cout << "Error parsing Integrator arguments" << std::endl;
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
       new_integrator = new nervous_system::NetworkIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
-        num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
+        num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
 
     case nervous_system::RESERVOIR_INTEGRATOR:
@@ -208,17 +208,17 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       PyArrayObject* edge_list; // Nx2 dimensional array
       PyArrayObject* weights; // Nx1 dimensional array
       if (!PyArg_ParseTuple(args, "iOO", &num_nodes, &edge_list, &weights)) {
-        std::cout << "Error parsing Integrator arguments" << std::endl;
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
       new_integrator = new nervous_system::NetworkIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
-        num_nodes, PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
-        PyArrayToSharedMultiArray<float,1>(weights)));
+        num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
+        alectrnn::PyArrayToSharedMultiArray<float,1>(weights)));
       break;
 
     default:
-      std::cout << "Integrator case not supported... exiting." << std::endl;
+      std::cerr << "Integrator case not supported... exiting." << std::endl;
       assert(0);
   }
 

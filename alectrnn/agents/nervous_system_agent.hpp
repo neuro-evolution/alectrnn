@@ -11,6 +11,7 @@
 #include <ale_interface.hpp>
 #include "player_agent.hpp"
 #include "../common/nervous_system.hpp"
+#include "../common/state_logger.hpp"
 
 namespace alectrnn {
 
@@ -18,8 +19,9 @@ class NervousSystemAgent : public PlayerAgent {
   public:
     typedef std::size_t Index;
 
-    NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net);
-    NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net, Index update_rate);
+    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem& neural_net);
+    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem& neural_net, 
+        Index update_rate, bool is_logging);
     ~NervousSystemAgent();
 
     void Configure(const float *parameters);
@@ -27,14 +29,17 @@ class NervousSystemAgent : public PlayerAgent {
 
   protected:
     Action Act();
+    const nervous_system::StateLogger& GetLog() const;
 
   protected:
-    NervousSystem& neural_net_;
+    nervous_system::NervousSystem& neural_net_;
+    nervous_system::StateLogger log_;
     std::vector<std::uint8_t> full_screen_;
     std::vector<float> buffer_screen1_;
     std::vector<float> buffer_screen2_;
     std::vector<float> downsized_screen_;
     std::size_t update_rate_;
+    bool is_logging_;
     bool is_configured_;
 };
 

@@ -60,13 +60,13 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
       &ale_capsule, &num_neurons, &num_sensor_neurons,
       &input_screen_width, &input_screen_height, &use_color, &step_size,
       &update_rate)) {
-    std::cout << "Error parsing Agent arguments" << std::endl;
+    std::cerr << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
 
   if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
   {
-    std::cout << "Invalid pointer to ALE returned from capsule,"
+    std::cerr << "Invalid pointer to ALE returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }
@@ -96,13 +96,13 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOi", keyword_list,
       &ale_capsule, &nervous_system_capsule, &update_rate)) {
-    std::cout << "Error parsing Agent arguments" << std::endl;
+    std::cerr << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
 
   if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
   {
-    std::cout << "Invalid pointer to ALE returned from capsule,"
+    std::cerr << "Invalid pointer to ALE returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }
@@ -111,7 +111,7 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
 
   if (!PyCapsule_IsValid(nervous_system_capsule, "ale_generator.ale"))
   {
-    std::cout << "Invalid pointer to NervousSystem returned from capsule,"
+    std::cerr << "Invalid pointer to NervousSystem returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }

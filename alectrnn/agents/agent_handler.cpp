@@ -10,23 +10,70 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
+#include "arrayobject.h"
 #include "nervous_system.hpp"
 #include "agent_handler.hpp"
 #include "player_agent.hpp"
 // Add includes to agents you wish to add below:
-#include "ctrnn_agent.hpp"
 #include "nervous_system_agent.hpp"
 
 /*
  * Create a new py_function for each Agent type to handle
  */
-static PyObject *GetAgentHistory(PyObject *self, PyObject *args,
+static PyObject *GetLayerHistory(PyObject *self, PyObject *args,
     PyObject *kwargs) {
 
+  static char *keyword_list[] = {"agent", "layer", NULL};
+
+  PyObject *agent_capsule;
+  int layer_index;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi", keyword_list, 
+    &agent_capsule, &layer_index)){
+    std::cerr << "Error parsing GetLayerHistory arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(agent_capsule, "agent_generator.agent"))
+  {
+    std::cerr << "Invalid pointer to Agent returned from capsule,"
+        " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  alectrnn::NervousSystemAgent* agent = static_cast<alectrnn::NervousSystemAgent*>(PyCapsule_GetPointer(
+      agent_capsule, "agent_generator.agent"));
+
+  PyObject* np_history = ConvertLogToPyArray(agent->GetLog().GetLayerHistory(layer_index));
+
+  return np_history;
+}
+
+PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& history) {
+  // Determine the new shape from the layer shape + the temporal dimension
+  std::vector<std::size_t> shape(1+history[0].ndimensions());
+  shape[0] = history.size();
+  for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii) {
+    shape[iii] = history[0].shape()[iii];
+  }
+
+  // Build and fill python array
+  PyObject* py_array = PyArray_SimpleNew(tensor.ndimensions(), shape.data(), NPY_FLOAT32);
+  PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
+  NPY_FLOAT32* data = np_array->data;
+
+  std::vector<std::size_t> strides(shape.size());
+  multi_array::CalculateStrides(shape, strides.data());
+  for (std::size_t iii = 0; iii < history.size(); ++iii) {
+    for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
+      data[iii * strides[0] + jjj] = history[iii][jjj];
+    }
+  }
+
+  return ConvertTensorToPyArray(contiguous_history);
 }
 
 static PyMethodDef AgentHandlerMethods[] = {
-  { "GetAgentHistory", (PyCFunction) GetAgentHistory,
+  { "GetLayerHistory", (PyCFunction) GetLayerHistory,
           METH_VARARGS | METH_KEYWORDS,
           "Returns PyArray to agent state history"},
       //Additional agents here, make sure to add includes top

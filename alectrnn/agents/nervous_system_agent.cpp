@@ -1,14 +1,18 @@
 #include "nervous_system_agent.hpp"
 #include "multi_array.hpp"
+#include "../common/nervous_system.hpp"
+#include "../common/state_logger.hpp"
 
-NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net) 
-    : NervousSystemAgent(ale, neural_net, 1) {
+NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
+    nervous_system::NervousSystem& neural_net) 
+    : NervousSystemAgent(ale, neural_net, 1, false) {
 
 }
 
-NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_net, 
-    Index update_rate) : ale_(ale), neural_net_(neural_net), 
-    update_rate_(update_rate) {
+NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
+    nervous_system::NervousSystem& neural_net, 
+    Index update_rate, bool is_logging) : ale_(ale), neural_net_(neural_net), 
+    update_rate_(update_rate), is_logging_(is_logging) {
 
   is_configured_ = false;
   buffer_screen1_.resize(ale_->environment->getScreenHeight() *
@@ -18,6 +22,10 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, NervousSystem& neural_
   full_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   downsized_screen_.resize(neural_net_[0]->NumNeurons());
+
+  if (is_logging_) {
+    log_ = nervous_system::StateLogger<float>(neural_net_);
+  }
 }
 
 NervousSystemAgent::~NervousSystemAgent() {}
@@ -52,6 +60,9 @@ Action NervousSystemAgent::Act() {
   neural_net_.SetInput(downsized_screen_);
   // The neural network will be updates update_rate_ times before output is read
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
+    if (is_logging_) {
+      log_(neural_net_);
+    }
     neural_net_.Step();
   }
 

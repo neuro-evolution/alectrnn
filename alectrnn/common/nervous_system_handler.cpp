@@ -22,13 +22,13 @@ static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwa
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list,
       &nn_capsule)) {
-    std::cout << "Error parsing GetParameterCount arguments" << std::endl;
+    std::cerr << "Error parsing GetParameterCount arguments" << std::endl;
     return NULL;
   }
 
   if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
   {
-    std::cout << "Invalid pointer to NN returned from capsule,"
+    std::cerr << "Invalid pointer to NN returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }
@@ -47,13 +47,13 @@ static PyObject *GetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list,
       &nn_capsule)) {
-    std::cout << "Error parsing GetParameterCount arguments" << std::endl;
+    std::cerr << "Error parsing GetParameterCount arguments" << std::endl;
     return NULL;
   }
 
   if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
   {
-    std::cout << "Invalid pointer to NN returned from capsule,"
+    std::cerr << "Invalid pointer to NN returned from capsule,"
         " or is not a capsule." << std::endl;
     return NULL;
   }
