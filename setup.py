@@ -102,7 +102,7 @@ agent_sources = [
     "alectrnn/agents/agent_generator.cpp",
     "alectrnn/agents/player_agent.cpp",
     "alectrnn/agents/ctrnn_agent.cpp",
-    "alectrnn/agents/hybrid_agent.cpp",
+    "alectrnn/agents/nervous_system_agent.cpp",
     "alectrnn/common/network_constructor.cpp",
     "alectrnn/common/ctrnn.cpp",
     "alectrnn/common/screen_preprocessing.cpp"
@@ -131,6 +131,12 @@ nn_handler_sources = [
 
 ale_handler_sources = [
     "alectrnn/common/ale_handler.cpp"
+]
+
+agent_handler_sources = [
+    "alectrnn/agents/agent_handler.cpp",
+    "alectrnn/agents/player_agent.cpp",
+    "alectrnn/agents/nervous_system_agent.cpp"
 ]
 
 PACKAGE_NAME = 'alectrnn'
@@ -205,6 +211,16 @@ ale_handler = Extension('ale_handler',
                     extra_link_args=extra_link_args + main_link_args
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
+agent_handler = Extension('agent_handler',
+                    language = "c++14",
+                    sources=agent_handler_sources,
+                    libraries=main_libraries,
+                    extra_compile_args=extra_compile_args,
+                    include_dirs=include_dirs,
+                    library_dirs=library_dirs,
+                    extra_link_args=extra_link_args + main_link_args
+                        + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
+
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
@@ -221,7 +237,7 @@ setup(name=PACKAGE_NAME,
       ext_package=PACKAGE_NAME,
       ext_modules=[ale_module, agent_module, objective_module, 
                     layer_module, nn_module, nn_handler_module,
-                    ale_handler],
+                    ale_handler, agent_handler],
       package_data={PACKAGE_NAME: [
         'roms/*.bin', 
         'alelib/bin/ale',

@@ -14,6 +14,7 @@ import alectrnn.layer_generator
 import alectrnn.nn_generator
 import alectrnn.nn_handler
 import alectrnn.ale_handler
+import alectrnn.agent_handler
 import sys
 from functools import partial
 from pkg_resources import resource_listdir
@@ -83,8 +84,8 @@ class AgentHandler(Handler):
         if self.handle_type == "ctrnn":
             self.handle = alectrnn.agent_generator.CreateCtrnnAgent(self.ale, 
                                                         **self.handle_parameters)
-        elif self.handle_type == "hybrid":
-            self.handle = alectrnn.agent_generator.CreateHybridAgent(self.ale, 
+        elif self.handle_type == "nervous_system":
+            self.handle = alectrnn.agent_generator.CreateNervousSystemAgent(self.ale, 
                                                         **self.handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
@@ -191,7 +192,7 @@ class NervousSystem:
         nn_parameters - list of dictionaries. One for each layer.
 
         back_connections:
-            (filter-dimensions, # filters)
+            (filter-dimensions, # filters, stride)
             (#nodes, edge_list)[bipartite]
 
         self_connections:
@@ -199,18 +200,68 @@ class NervousSystem:
             (#nodes, edge_list), (weights)
 
         activator:
-            (type)
+            (step_size)
 
         """
 
         sefl.nn_parameters = nn_parameters
         self.layers = []
 
-    def add_motor_layer(self):
-        pass
+    def add_network_layer(self, ):
 
+    def add_reservoir_layer(self, ):
 
+    def add_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
+            stride, step_size):
+        """
+        Adds a convolutional layer with defaul CTRNN activator
+        TODO: add support for other CONV activators
+        """
+        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
 
+        back_type = INTEGRATOR_TYPE.CONV
+        back_args = (np.array(filter_shape, dtype=uint64),
+                    shape, #layer_shape funct outputs dtype=uint64
+                    np.array(prev_layer_shape, dtype=uint64,
+                    stride))
+        self_type = INTEGRATOR_TYPE.NONE
+        self_args = tuple()
+        act_type = ACTIVATOR_TYPE.CONV_CTRNN
+        act_args = (shape, step_size)
+        self.layers.append(layer_generator.CreateLayer(back_type,
+            back_args, self_type, self_args, act_type, act_args))
+
+    def add_motor_layer(self, size_of_prev_layer, num_outputs):
+        
+        self.layers.append(layer_generator.CreateMotorLayer(
+            size_of_prev_layer, num_outputs))
+
+def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
+    """
+    Determines layer shape given previous layer shape and the number of chosen
+    filters and stride for the next layer.
+    """
+
+    return np.array([num_filters] + calc_image_dimensions(
+                    image_dimensions[1:], stride), dtype=np.uint64)
+
+def calc_image_dimensions(prev_image_dimensions, stride):
+    """
+    Determine new layer window based on previous window and stride.
+    This is not the same as shape, as the first dimension (depth) is
+    excluded, as that is determined by the # of filters.
+    """
+
+    return [ calc_num_pixels(image_dimension, stride) 
+                for image_dimension in prev_image_dimensions ]
+
+def calc_num_pixels(num_pixels, stride):
+    """
+    Converts the current number of pixels to the number there will be given
+    a specific stride.
+    """
+
+    return 1 + (num_pixels - 1) // stride
 
 if __name__ == '__main__':
     """
