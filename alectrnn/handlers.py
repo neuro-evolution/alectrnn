@@ -61,7 +61,7 @@ class ObjHandler(Handler):
 
     def create(self):
         if self.handle_type == "totalcost":
-            self.handle = partial(alectrnn.objective.TotalCostObjective, 
+            self.handle = partial(objective.TotalCostObjective, 
                                     ale=self.ale, agent=self.agent)
 
 class AgentHandler(Handler):
@@ -82,13 +82,30 @@ class AgentHandler(Handler):
     def create(self):
         # Create Agent handle
         if self.handle_type == "ctrnn":
-            self.handle = alectrnn.agent_generator.CreateCtrnnAgent(self.ale, 
+            self.handle = agent_generator.CreateCtrnnAgent(self.ale, 
                                                         **self.handle_parameters)
         elif self.handle_type == "nervous_system":
-            self.handle = alectrnn.agent_generator.CreateNervousSystemAgent(self.ale, 
+            self.handle = agent_generator.CreateNervousSystemAgent(self.ale, 
                                                         **self.handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
+
+class NervousSystemAgentHandler(AgentHandler):
+
+    def __init__(self, ale, nervous_system, update_rate):
+        super(ale, "nervous_system", {'nervous_system': nervous_system, 
+                                 'update_rate': update_rate})
+
+    def create(self):
+        self.handle = agent_generator.CreateNervousSystemAgent(self.ale,
+                                                    **self.handle_parameters)
+    def layer_history(self, layer_index):
+        """
+        Returns a numpy array with dimensions equal to the layer dimensions
+        and # elements = # states in that layer.
+        It will be of dtype=float32
+        """
+        return agent_handler.GetLayerHistory(self.handle, layer_index)
 
 class ALEHandler(Handler):
 
@@ -136,7 +153,7 @@ class ALEHandler(Handler):
 
     def create(self):
         # Create ALE handle
-        self.handle = alectrnn.ale_generator.CreatALE(
+        self.handle = ale_generator.CreatALE(
             rom=self.rom_path, 
             seed=self.ale_seed, 
             display_screen=self.display_screen, 
@@ -175,66 +192,287 @@ class INTEGRATOR_TYPE(Enum):
 
 class NervousSystem:
     """
-    Layer: 3x integ/act type, args (tuple)
-    Motor: num_outputs, num_inputs, act type, args (tuple)
+    Builds a nervous system. A single activator is chosen for the whole network.
+    input_shape determines the dimensions of the input the network will receive.
+    num_outputs will determine motor_layer size.
 
-    if ACT CTRNN: i num_states, f step_size
-    if ACT CONV_CTRNN: numpy array 3ele shape(float32), f step_size
+    Both input and output layers will be generated automatically.
+    nn_parameters should contain parameters for the internal layers of the
+    network. It should be a list of dictionaries.
 
-    if int NONE: nothing, empty
-    if int CONV: i #filters, np arr filter_shape, np arr layer_shape, i stride, 
-    if int NET: i #nodes, np arr std::uint64_t edge_list
-    if int RESERVOIR: i #nodes, np arr std::uint64_t edge_list, np arr f32 weights
-    """
+    Convolutional layers should have a dictionary with the following keys:
+        'layer_type' = "conv"
+        'filter_shape' = 2-element list/array with filter dimensions
+        'num_filters'
+        'stride'
 
-    def __init__(self, input_shape, num_outputs, step_size, nn_parameters):
-        """
-        nn_parameters - list of dictionaries. One for each layer.
+    Reservoir layers should have a dictionary with the following keys:
+        'layer_type' = "reservoir"
+        'num_input_graph_nodes' = N
+        'input_graph' = Nx2, dtype=uint64 bipartite edge graph
+        'input_weights' = Nx1, dtype=float32
+        'num_reservoir_nodes' = M
+        'reservoir_graph' = Mx2, dtype=uint64 edge array
+        'reservoir_weights' = Mx1, dtype=float32 array
+
+    Network layers should have a dictionary with the following keys:
+        'layer_type' = "network"
+        'num_input_graph_nodes' = N
+        'input_graph' = Nx2, dtype=uint64 bipartite edge graph
+        'num_internal_nodes' = M
+        'internal_graph' = Mx2, dtype=uint64 edge array
+
+    conv_recurrent layers should have a dictionary with the following keys:
+        'layer_type' = "hybrid"
+        'back_integrator_type'
+        'back_integrator_args'
+        'self_integrator_type'
+        'self_integrator_args'
+
+    conv_recurrent layers allow the construction of layers that have a conv back
+    connection, but recurrent internal connection.
+
+    Valid back_integrator types:
+        INTEGRATOR_TYPE.CONV : args(filter-shape, # filters, stride)
+
+    In the bipartite graph, all tail edges will be interpreted as belonging
+    to the corresponding index state of the previous layer, while all heads will
+    be interpreted as index states of the current layer.
+
+    The internal graph, all heads and tails will be interpreted as belongining
+    to the current layer.
+
+    All node IDs should start at 0 and correspond to the state index.
+
+    No parameters are saved, as this is a waste of space. All layers created and
+    necessary arguments taken are copied and ownership is transfered to the
+    NN.
+
+    Reference:
 
         back_connections:
-            (filter-dimensions, # filters, stride)
-            (#nodes, edge_list)[bipartite]
+             - 
+            INTEGRATOR_TYPE.NETWORK - (#nodes, edge_list)[bipartite]
+            INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
 
         self_connections:
-            (#nodes, edge_list)[graph]
-            (#nodes, edge_list), (weights)
+            INTEGRATOR_TYPE.NETWORK - (#nodes, edge_list)[graph]
+            INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
 
         activator:
-            (step_size)
+            ACTIVATOR_TYPE.CTRNN - (step_size)
+            ACTIVATOR_TYPE.CONV_CTRNN - (shape, step_size)
+    """
 
+    def __init__(self, input_shape, num_outputs, nn_parameters,
+        act_type, act_args):
         """
+        nn_parameters - list of dictionaries. One for each layer.
+        Input layers are added by the NervousSystem itself by default.
+        """
+        input_shape = np.array(input_shape, dtype=uint64)
 
-        sefl.nn_parameters = nn_parameters
-        self.layers = []
+        layers = []
+        prev_layer_shape = input_shape
 
-    def add_network_layer(self, ):
+        if act_type == 'ctrnn':
+            step_size = act_args
+            for layer_pars in nn_parameters:
+                if layer_pars['layer_type'] == "conv":
+                    layers.append(self.create_ctrnn_conv_layer(prev_layer_shape, 
+                        layer_pars['num_filters'], layer_pars['filter_shape'], 
+                        layer_pars['stride'], step_size))
+                    prev_layer_shape = calc_conv_layer_shape(prev_layer_shape, 
+                        layer_pars['num_filters'], layer_pars['stride'])
 
-    def add_reservoir_layer(self, ):
+                elif layer_pars['layer_type'] == "network":
+                    layers.append(self.create_ctrnn_network_layer(
+                        layer_pars['num_input_graph_nodes'], 
+                        layer_pars['input_graph'],
+                        layer_pars['num_internal_nodes'],
+                        layer_pars['internal_graph'],
+                        step_size))
+                    prev_layer_shape = np.array([layer_pars['num_internal_nodes']],
+                                                dtype=uint64)
 
-    def add_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
+                elif layer_pars['layer_type'] == "reservor":
+                    layers.append(self.create_ctrnn_reservoir_layer(
+                        layer_pars['num_input_graph_nodes'], 
+                        layer_pars['input_graph'],
+                        layer_pars['input_weights'], 
+                        layer_pars['num_reservoir_nodes'],
+                        layer_pars['reservoir_graph'],
+                        layer_pars['reservoir_weights'],
+                        step_size))
+                    prev_layer_shape = np.array([layer_pars['num_reservoir_nodes']],
+                                                dtype=uint64)
+
+                elif layer_pars['layer_type'] == "conv_recurrent":
+                    raise NotImplementedError
+                    layers.append(self.create_conv_recurrent_layer(
+                        prev_layer_shape,
+                        layer_pars['back_integrator_type'],
+                        layer_pars['back_integrator_args'],
+                        layer_pars['self_integrator_type'],
+                        layer_pars['self_integrator_args'],
+                        step_size))
+                    prev_layer_shape = np.array([layer_pars['num_reservoir_nodes']],
+                            dtype=uint64)
+
+            # Build motor later
+            prev_layer_size = float(np.cumprod(prev_layer_shape))
+            layers.append(create_ctrnn_motor_layer(prev_layer_size, 
+                num_outputs, step_size))
+
+        elif act_type == 'iaf':
+            raise NotImplementedError
+
+        # Generate NN
+        self.neural_network = nn_generator.CreateNervousSystem(input_shape,
+            tuple(layers))
+
+    def create_ctrnn_conv_recurrent_layer(self, prev_layer_shape, num_filters, 
+            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
+            step_size, internal_weight_array=None):
+
+        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
+        act_type = ACTIVATOR_TYPE.CONV_CTRNN
+        act_args = (shape, int(step_size))
+
+        return self.create_conv_recurrent_layer(prev_layer_shape, num_filters, 
+            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
+            act_type, act_args, internal_weight_array)
+
+    def create_conv_recurrent_layer(self, prev_layer_shape, num_filters, 
+            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
+            act_type, act_args, internal_weight_array=None):
+
+        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
+        back_type = INTEGRATOR_TYPE.CONV
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=uint64), 
+                    shape, #layer_shape funct outputs dtype=uint64
+                    np.array(prev_layer_shape, dtype=uint64,
+                    int(stride)))
+
+        if internal_weight_array != None:
+            self_type = INTEGRATOR_TYPE.RESERVOIR
+            self_args = (int(num_internal_nodes),
+                        internal_edge_array,
+                        internal_weight_array)
+
+        if internal_weight_array == None:
+            self_type = INTEGRATOR_TYPE.NETWORK
+            self_args = (int(num_internal_nodes),
+                        internal_edge_array)
+
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+            self_args, act_type, act_args)
+
+    def create_ctrnn_network_layer(self, num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, num_internal_nodes,
+            internal_edge_array, step_size):
+
+        return self.create_network_layer(num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, num_internal_nodes,
+            internal_edge_array, ACTIVATOR_TYPE.CTRNN, (step_size,))
+
+    def create_network_layer(self, num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, num_internal_nodes,
+            internal_edge_array, act_type, act_args):
+        """
+        All graphs should be Nx2 with dtype=uint64
+        act_args should be in the proper tuple format for inputs into the
+        activator function
+        """
+        back_type = INTEGRATOR_TYPE.NETWORK
+        back_args = (int(num_bipartite_nodes),
+                    bipartite_input_edge_array)
+        self_type = INTEGRATOR_TYPE.NETWORK
+        self_args = (int(num_internal_nodes),
+                    internal_edge_array)
+        return layer_generator.CreateLayer(back_type,
+            back_args, self_type, self_args, act_type, act_args)
+
+    def create_ctrnn_reservoir_layer(self, num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, input_weights, num_internal_nodes,
+            internal_edge_array, internal_weight_array, step_size);
+
+        return self.create_reservoir_layer(num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, input_weights, num_internal_nodes,
+            internal_edge_array, internal_weight_array, ACTIVATOR_TYPE.CTRNN,
+            (step_size,))
+
+    def create_reservoir_layer(self, num_nodes, num_bipartite_nodes,
+            bipartite_input_edge_array, input_weights, num_internal_nodes,
+            internal_edge_array, internal_weight_array, act_type, act_args):
+        """
+        All graphs should be Nx2 with dtype=uint64
+        All weights should be Nx1 with dtype=float32
+        act_args should be in the proper tuple format for inputs into the
+        activator function
+        """
+        back_type = INTEGRATOR_TYPE.RESERVOIR
+        back_args = (int(num_bipartite_nodes),
+                    bipartite_input_edge_array, 
+                    input_weights)
+        self_type = INTEGRATOR_TYPE.RESERVOIR
+        self_args = (int(num_internal_nodes),
+                    internal_edge_array,
+                    internal_weight_array)
+        return layer_generator.CreateLayer(back_type,
+            back_args, self_type, self_args, act_type, act_args)
+
+    def create_spiking_conv_layer(sefl):
+        raise NotImplementedError
+
+    def create_ctrnn_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
             stride, step_size):
         """
         Adds a convolutional layer with defaul CTRNN activator
-        TODO: add support for other CONV activators
+        """
+        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
+        act_type = ACTIVATOR_TYPE.CONV_CTRNN
+        act_args = (shape, int(step_size))
+        return self.create_conv_layer(prev_layer_shape, num_filters, filter_shape, 
+            stride, act_type, act_args)
+
+    def create_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
+            stride, act_type, act_args):
+        """
+        act_args needs to be in the correct tuple format with properly
+        typed numpy arrays for any arguments
+
+        filter_shape = 2 element array/list with filter dimenstions
+        Final shape, which includes depth, depends on shape of prev layer
         """
         shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
 
         back_type = INTEGRATOR_TYPE.CONV
-        back_args = (np.array(filter_shape, dtype=uint64),
+        # Appropriate depth is added to filter shape to build the # 3-element 1D array
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=uint64), 
                     shape, #layer_shape funct outputs dtype=uint64
                     np.array(prev_layer_shape, dtype=uint64,
-                    stride))
+                    int(stride)))
         self_type = INTEGRATOR_TYPE.NONE
         self_args = tuple()
-        act_type = ACTIVATOR_TYPE.CONV_CTRNN
-        act_args = (shape, step_size)
-        self.layers.append(layer_generator.CreateLayer(back_type,
-            back_args, self_type, self_args, act_type, act_args))
+        return layer_generator.CreateLayer(back_type,
+            back_args, self_type, self_args, act_type, act_args)
 
-    def add_motor_layer(self, size_of_prev_layer, num_outputs):
+    def create_ctrnn_motor_layer(self, size_of_prev_layer, num_outputs, 
+            step_sizesize_of_prev_layer, num_outputs, step_size):
         
-        self.layers.append(layer_generator.CreateMotorLayer(
-            size_of_prev_layer, num_outputs))
+        act_type = ACTIVATOR_TYPE.CTRNN
+        act_args = (int(step_size),)
+        return self.create_motor_layer(size_of_prev_layer, num_outputs, step_size, 
+                             act_type, act_args)
+
+    def create_motor_layer(self, size_of_prev_layer, num_outputs, act_type, act_args):
+        """
+        act_args needs to be in the correct tuple format for the activator
+        """
+
+        return layer_generator.CreateMotorLayer(
+            int(size_of_prev_layer), int(num_outputs), act_type, act_args)
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
     """
@@ -262,6 +500,8 @@ def calc_num_pixels(num_pixels, stride):
     """
 
     return 1 + (num_pixels - 1) // stride
+
+########### more classes for some ez default neural nets
 
 if __name__ == '__main__':
     """
