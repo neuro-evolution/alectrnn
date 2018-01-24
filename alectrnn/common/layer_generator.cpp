@@ -8,7 +8,7 @@
  * Integrators
  * ALL2ALL: (#_states in layer, # states in prev layer)
  * Conv3D: (# filters, filter shape, layer_shape, prev_layer_shape, stride)
- * Network: graph - as (Nx2)
+ * Recurrent: graph - as (Nx2)
  * Reservoir: weighted graph - as (Nx2), (Nx1)
  *
  * Activators
@@ -191,14 +191,14 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         stride);
       break;
 
-    case nervous_system::NETWORK_INTEGRATOR:
+    case nervous_system::RECURRENT_INTEGRATOR:
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
-      new_integrator = new nervous_system::NetworkIntegrator<float>(
+      new_integrator = new nervous_system::RecurrentIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
@@ -211,7 +211,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
-      new_integrator = new nervous_system::NetworkIntegrator<float>(
+      new_integrator = new nervous_system::ReservoirIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
         alectrnn::PyArrayToSharedMultiArray<float,1>(weights)));

@@ -25,7 +25,7 @@ enum INTEGRATOR_TYPE {
   NONE_INTEGRATOR,
   ALL2ALL_INTEGRATOR,
   CONV_INTEGRATOR,
-  NETWORK_INTEGRATOR,
+  RECURRENT_INTEGRATOR,
   RESERVOIR_INTEGRATOR,
   RESERVOIR_INTEGRATOR_HYBRID
 };
@@ -404,18 +404,18 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
 // Network integrator -- uses explicit unweighted structure
 template<typename TReal>
-class NetworkIntegrator : public Integrator<TReal> {
+class RecurrentIntegrator : public Integrator<TReal> {
   typedef Integrator<TReal> super_type;
   typedef std::size_t Index;
   public:
 
-    NetworkIntegrator(const graphs::PredecessorGraph<>& network) 
+    RecurrentIntegrator(const graphs::PredecessorGraph<>& network) 
         : network_(network) {
-      super_type::integrator_type_ = NETWORK_INTEGRATOR;
+      super_type::integrator_type_ = RECURRENT_INTEGRATOR;
       super_type::parameter_count_ = network_.NumEdges();
     }
 
-    ~NetworkIntegrator()=default;
+    ~RecurrentIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       

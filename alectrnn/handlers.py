@@ -181,14 +181,18 @@ class ACTIVATOR_TYPE(Enum):
     CTRNN=2
     CONV_CTRNN=3
     IAF=4
+    CONV_IAF=5
 
 class INTEGRATOR_TYPE(Enum):
     BASE=0
     NONE=1
     ALL2ALL=2
     CONV=3
-    NETWORK=4
+    RECURRENT=4
     RESERVOIR=5
+
+ACTMAP = { ACTIVATOR_TYPE.IAF : ACTIVATOR_TYPE.CONV_IAF,
+           ACTIVATOR_TYPE.CTRNN : ACTIVATOR_TYPE.CONV_CTRNN }
 
 class NervousSystem:
     """
@@ -199,6 +203,11 @@ class NervousSystem:
     Both input and output layers will be generated automatically.
     nn_parameters should contain parameters for the internal layers of the
     network. It should be a list of dictionaries.
+
+    Activator type and arguments should be the base type and args. For example,
+    act_type = ACTIVATION_TYPE.CTRNN will need act_args = tuple(int(step_size)).
+    Shape arguments and activation types for CONV layers will be added 
+    automatically.
 
     Convolutional layers should have a dictionary with the following keys:
         'layer_type' = "conv"
@@ -211,23 +220,33 @@ class NervousSystem:
         'num_input_graph_nodes' = N
         'input_graph' = Nx2, dtype=uint64 bipartite edge graph
         'input_weights' = Nx1, dtype=float32
-        'num_reservoir_nodes' = M
-        'reservoir_graph' = Mx2, dtype=uint64 edge array
-        'reservoir_weights' = Mx1, dtype=float32 array
+        'num_internal_nodes' = M
+        'internal_graph' = Mx2, dtype=uint64 edge array
+        'internal_weights' = Mx1, dtype=float32 array
 
-    Network layers should have a dictionary with the following keys:
-        'layer_type' = "network"
+    Recurrent layers should have a dictionary with the following keys:
+        'layer_type' = "recurrent"
         'num_input_graph_nodes' = N
         'input_graph' = Nx2, dtype=uint64 bipartite edge graph
         'num_internal_nodes' = M
         'internal_graph' = Mx2, dtype=uint64 edge array
 
     conv_recurrent layers should have a dictionary with the following keys:
-        'layer_type' = "hybrid"
-        'back_integrator_type'
-        'back_integrator_args'
-        'self_integrator_type'
-        'self_integrator_args'
+        'layer_type' = "conv_recurrent"
+        'filter_shape'
+        'num_filters'
+        'stride'
+        'num_internal_nodes'
+        'internal_graph'
+
+    conv_reservoir layers should have a dictionary with the following keys:
+        'layer_type' = "conv_reservoir"
+        'filter_shape'
+        'num_filters'
+        'stride'
+        'num_internal_nodes'
+        'internal_graph'
+        'internal_weights'
 
     conv_recurrent layers allow the construction of layers that have a conv back
     connection, but recurrent internal connection.
@@ -251,101 +270,138 @@ class NervousSystem:
     Reference:
 
         back_connections:
-             - 
-            INTEGRATOR_TYPE.NETWORK - (#nodes, edge_list)[bipartite]
+            INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[bipartite]
             INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
 
         self_connections:
-            INTEGRATOR_TYPE.NETWORK - (#nodes, edge_list)[graph]
+            INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[graph]
             INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
 
         activator:
             ACTIVATOR_TYPE.CTRNN - (step_size)
-            ACTIVATOR_TYPE.CONV_CTRNN - (shape, step_size)
     """
 
     def __init__(self, input_shape, num_outputs, nn_parameters,
-        act_type, act_args):
+                 act_type, act_args):
         """
         nn_parameters - list of dictionaries. One for each layer.
         Input layers are added by the NervousSystem itself by default.
+
+        act_type = general ACTIVATION_TYPE for model
+        act_args = general arguments for model
+
+        CONV layers usually have additional arguments, like shape, for 
+        parameter sharing of act_args. They also have their own ACTIVATION_TYPE.
+        These are automatically added to the CONV layers.
         """
         input_shape = np.array(input_shape, dtype=uint64)
-
         layers = []
-        prev_layer_shape = input_shape
+        layer_shapes = self.configure_layer_shapes(input_shape, nn_parameters)
+        layer_act_types, layer_act_args = self.configure_layer_activations(
+                                            layer_shapes, nn_parameters,
+                                            act_type, act_args)
 
-        if act_type == 'ctrnn':
-            step_size = act_args
-            for layer_pars in nn_parameters:
-                if layer_pars['layer_type'] == "conv":
-                    layers.append(self.create_ctrnn_conv_layer(prev_layer_shape, 
-                        layer_pars['num_filters'], layer_pars['filter_shape'], 
-                        layer_pars['stride'], step_size))
-                    prev_layer_shape = calc_conv_layer_shape(prev_layer_shape, 
-                        layer_pars['num_filters'], layer_pars['stride'])
+        for i, layer_pars in enumerate(nn_parameters):
+            if layer_pars['layer_type'] == "conv":
+                layers.append(self.create_conv_layer(
+                    layer_shapes[i], 
+                    layer_pars['num_filters'], 
+                    layer_pars['filter_shape'], 
+                    layer_pars['stride'], 
+                    layer_act_types[i], 
+                    layer_act_args[i]))
 
-                elif layer_pars['layer_type'] == "network":
-                    layers.append(self.create_ctrnn_network_layer(
-                        layer_pars['num_input_graph_nodes'], 
-                        layer_pars['input_graph'],
-                        layer_pars['num_internal_nodes'],
-                        layer_pars['internal_graph'],
-                        step_size))
-                    prev_layer_shape = np.array([layer_pars['num_internal_nodes']],
-                                                dtype=uint64)
+            elif layer_pars['layer_type'] == "recurrent":
+                layers.append(self.create_recurrent_layer(
+                    layer_pars['num_input_graph_nodes'], 
+                    layer_pars['input_graph'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'], 
+                    layer_act_types[i], 
+                    layer_act_args[i]))
 
-                elif layer_pars['layer_type'] == "reservor":
-                    layers.append(self.create_ctrnn_reservoir_layer(
-                        layer_pars['num_input_graph_nodes'], 
-                        layer_pars['input_graph'],
-                        layer_pars['input_weights'], 
-                        layer_pars['num_reservoir_nodes'],
-                        layer_pars['reservoir_graph'],
-                        layer_pars['reservoir_weights'],
-                        step_size))
-                    prev_layer_shape = np.array([layer_pars['num_reservoir_nodes']],
-                                                dtype=uint64)
+            elif layer_pars['layer_type'] == "reservor":
+                layers.append(self.create_reservoir_layer(
+                    layer_pars['num_input_graph_nodes'], 
+                    layer_pars['input_graph'],
+                    layer_pars['input_weights'], 
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_pars['internal_weights'], 
+                    layer_act_types[i], 
+                    layer_act_args[i]))
 
-                elif layer_pars['layer_type'] == "conv_recurrent":
-                    raise NotImplementedError
-                    layers.append(self.create_conv_recurrent_layer(
-                        prev_layer_shape,
-                        layer_pars['back_integrator_type'],
-                        layer_pars['back_integrator_args'],
-                        layer_pars['self_integrator_type'],
-                        layer_pars['self_integrator_args'],
-                        step_size))
-                    prev_layer_shape = np.array([layer_pars['num_reservoir_nodes']],
-                            dtype=uint64)
+            elif layer_pars['layer_type'] == "conv_recurrent":
+                layers.append(self.create_conv_recurrent_layer(
+                    layer_shapes[i],
+                    layer_pars['num_filters'],
+                    layer_pars['filter_shape'],
+                    layer_pars['stride'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph']), 
+                    layer_act_types[i], 
+                    layer_act_args[i])
 
-            # Build motor later
-            prev_layer_size = float(np.cumprod(prev_layer_shape))
-            layers.append(create_ctrnn_motor_layer(prev_layer_size, 
-                num_outputs, step_size))
+            elif layer_pars['layer_type'] == "conv_reservoir":
+                layers.append(self.create_conv_reservoir_layer(
+                    layer_shapes[i],
+                    layer_pars['num_filters'],
+                    layer_pars['filter_shape'],
+                    layer_pars['stride'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_pars['internal_weights'],
+                    layer_act_types[i], 
+                    layer_act_args[i]))
 
-        elif act_type == 'iaf':
-            raise NotImplementedError
+        # Build motor later
+        prev_layer_size = float(np.cumprod(prev_layer_shape))
+        layers.append(create_motor_layer(prev_layer_size, 
+            num_outputs, act_type, act_args))
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
 
-    def create_ctrnn_conv_recurrent_layer(self, prev_layer_shape, num_filters, 
-            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
-            step_size, internal_weight_array=None):
+    def configure_layer_activations(self, layer_shapes, nn_parameters, 
+                                    act_type, act_args):
+        """
+        outputs the necessary tuples for layer activations of both conv and 
+        non-conv layers
+        """
 
-        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
-        act_type = ACTIVATOR_TYPE.CONV_CTRNN
-        act_args = (shape, int(step_size))
+        layer_act_types = []
+        layer_act_args = []
+        for i, layer_pars in enumerate(nn_parameters):
+            if 'conv' in layer_pars['layer_type']:
+                layer_act_types.append(ACTMAP[act_type])
+                layer_act_args.append((layer_shapes[i+1], *act_args))
+            else:
+                layer_act_types.append(act_type)
+                layer_act_args.append(act_args)
 
-        return self.create_conv_recurrent_layer(prev_layer_shape, num_filters, 
-            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
-            act_type, act_args, internal_weight_array)
+        return layer_act_types, layer_act_args
+
+    def configure_layer_shapes(self, input_shape, nn_parameters):
+        """
+        For a given activation type it sets an internal attribute that
+        can be used by the other layer creation functions
+        """
+
+        layer_shapes = [input_shape]
+        for i, layer_pars in enumerate(nn_parameters):
+            if 'conv' in layer_pars['layer_type']:
+                layer_shapes.append(calc_conv_layer_shape(layer_shapes[i], 
+                layer_pars['num_filters'], layer_pars['stride']))
+            else:
+                layer_shapes.append(np.array([layer_pars['num_internal_nodes']],
+                                    dtype=uint64))
+
+        return layer_shapes
 
     def create_conv_recurrent_layer(self, prev_layer_shape, num_filters, 
-            filter_shape, stride, num_nodes, num_internal_nodes, internal_edge_array, 
-            act_type, act_args, internal_weight_array=None):
+            filter_shape, stride, num_internal_nodes, internal_edge_array, 
+            act_type, act_args):
 
         shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
         back_type = INTEGRATOR_TYPE.CONV
@@ -353,30 +409,33 @@ class NervousSystem:
                     shape, #layer_shape funct outputs dtype=uint64
                     np.array(prev_layer_shape, dtype=uint64,
                     int(stride)))
-
-        if internal_weight_array != None:
-            self_type = INTEGRATOR_TYPE.RESERVOIR
-            self_args = (int(num_internal_nodes),
-                        internal_edge_array,
-                        internal_weight_array)
-
-        if internal_weight_array == None:
-            self_type = INTEGRATOR_TYPE.NETWORK
-            self_args = (int(num_internal_nodes),
-                        internal_edge_array)
+        
+        self_type = INTEGRATOR_TYPE.RECURRENT
+        self_args = (int(num_internal_nodes),
+                    internal_edge_array)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args)
 
-    def create_ctrnn_network_layer(self, num_nodes, num_bipartite_nodes,
-            bipartite_input_edge_array, num_internal_nodes,
-            internal_edge_array, step_size):
+    def create_conv_reservoir_layer(self, prev_layer_shape, num_filters, 
+            filter_shape, stride, num_internal_nodes, internal_edge_array,
+            internal_weight_array, act_type, act_args):
 
-        return self.create_network_layer(num_nodes, num_bipartite_nodes,
-            bipartite_input_edge_array, num_internal_nodes,
-            internal_edge_array, ACTIVATOR_TYPE.CTRNN, (step_size,))
+        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
+        back_type = INTEGRATOR_TYPE.CONV
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=uint64), 
+                    shape, #layer_shape funct outputs dtype=uint64
+                    np.array(prev_layer_shape, dtype=uint64,
+                    int(stride)))
+        self_type = INTEGRATOR_TYPE.RESERVOIR
+        self_args = (int(num_internal_nodes),
+                    internal_edge_array,
+                    internal_weight_array)
 
-    def create_network_layer(self, num_nodes, num_bipartite_nodes,
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+            self_args, act_type, act_args)
+
+    def create_recurrent_layer(self, num_bipartite_nodes,
             bipartite_input_edge_array, num_internal_nodes,
             internal_edge_array, act_type, act_args):
         """
@@ -384,25 +443,16 @@ class NervousSystem:
         act_args should be in the proper tuple format for inputs into the
         activator function
         """
-        back_type = INTEGRATOR_TYPE.NETWORK
+        back_type = INTEGRATOR_TYPE.RECURRENT
         back_args = (int(num_bipartite_nodes),
                     bipartite_input_edge_array)
-        self_type = INTEGRATOR_TYPE.NETWORK
+        self_type = INTEGRATOR_TYPE.RECURRENT
         self_args = (int(num_internal_nodes),
                     internal_edge_array)
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args)
 
-    def create_ctrnn_reservoir_layer(self, num_nodes, num_bipartite_nodes,
-            bipartite_input_edge_array, input_weights, num_internal_nodes,
-            internal_edge_array, internal_weight_array, step_size);
-
-        return self.create_reservoir_layer(num_nodes, num_bipartite_nodes,
-            bipartite_input_edge_array, input_weights, num_internal_nodes,
-            internal_edge_array, internal_weight_array, ACTIVATOR_TYPE.CTRNN,
-            (step_size,))
-
-    def create_reservoir_layer(self, num_nodes, num_bipartite_nodes,
+    def create_reservoir_layer(self, num_bipartite_nodes,
             bipartite_input_edge_array, input_weights, num_internal_nodes,
             internal_edge_array, internal_weight_array, act_type, act_args):
         """
@@ -421,20 +471,6 @@ class NervousSystem:
                     internal_weight_array)
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args)
-
-    def create_spiking_conv_layer(sefl):
-        raise NotImplementedError
-
-    def create_ctrnn_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
-            stride, step_size):
-        """
-        Adds a convolutional layer with defaul CTRNN activator
-        """
-        shape = calc_conv_layer_shape(prev_layer_shape, num_filters, stride)
-        act_type = ACTIVATOR_TYPE.CONV_CTRNN
-        act_args = (shape, int(step_size))
-        return self.create_conv_layer(prev_layer_shape, num_filters, filter_shape, 
-            stride, act_type, act_args)
 
     def create_conv_layer(self, prev_layer_shape, num_filters, filter_shape, 
             stride, act_type, act_args):
@@ -457,14 +493,6 @@ class NervousSystem:
         self_args = tuple()
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args)
-
-    def create_ctrnn_motor_layer(self, size_of_prev_layer, num_outputs, 
-            step_sizesize_of_prev_layer, num_outputs, step_size):
-        
-        act_type = ACTIVATOR_TYPE.CTRNN
-        act_args = (int(step_size),)
-        return self.create_motor_layer(size_of_prev_layer, num_outputs, step_size, 
-                             act_type, act_args)
 
     def create_motor_layer(self, size_of_prev_layer, num_outputs, act_type, act_args):
         """
