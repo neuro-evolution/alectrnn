@@ -248,6 +248,15 @@ class NervousSystem:
         'internal_graph'
         'internal_weights'
 
+    a2a_recurrent layers should have a dictionary with the following keys:
+        'layer_type' = "a2a_recurrent"
+        'num_internal_nodes'
+        'internal_graph'
+
+    a2a_a2a layer should have a dictionary with the following keys:
+        'layer_type' = "a2a_a2a"
+        'num_internal_nodes'
+
     conv_recurrent layers allow the construction of layers that have a conv back
     connection, but recurrent internal connection.
 
@@ -272,10 +281,12 @@ class NervousSystem:
         back_connections:
             INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[bipartite]
             INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
+            INTEGRATOR_TYPE.ALL2ALL
 
         self_connections:
             INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[graph]
             INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
+            INTEGRATOR_TYPE.ALL2ALL
 
         activator:
             ACTIVATOR_TYPE.CTRNN - (step_size)
@@ -354,6 +365,21 @@ class NervousSystem:
                     layer_act_types[i], 
                     layer_act_args[i]))
 
+            elif layer_pars['layer_type'] == 'a2a_recurrent':
+                layers.append(self.create_a2a_recurrent_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_act_types[i], 
+                    layer_act_args[i]))
+
+            elif layer_pars['layer_type'] == 'a2a_a2a':
+                layers.append(self.create_a2a_a2a_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_act_types[i], 
+                    layer_act_args[i]))
+
         # Build motor later
         prev_layer_size = float(np.cumprod(prev_layer_shape))
         layers.append(create_motor_layer(prev_layer_size, 
@@ -398,6 +424,28 @@ class NervousSystem:
                                     dtype=uint64))
 
         return layer_shapes
+
+    def create_a2a_recurrent_layer(self, prev_layer_shape, num_internal_nodes, 
+                             internal_edge_array, act_type, act_args):
+        back_type = INTEGRATOR_TYPE.ALL2ALL
+        back_args = (np.cumprod(prev_layer_shape, dtype=float32), 
+                    int(num_internal_nodes))
+        self_type = INTEGRATOR_TYPE.RECURRENT
+        self_args = (int(num_internal_nodes),
+                    internal_edge_array)
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+            self_args, act_type, act_args)
+
+    def create_a2a_a2a_layer(self, prev_layer_shape, num_internal_nodes, 
+                            act_type, act_args):
+        back_type = INTEGRATOR_TYPE.ALL2ALL
+        back_args = (np.cumprod(prev_layer_shape, dtype=float32), 
+                    int(num_internal_nodes))
+        self_type = INTEGRATOR_TYPE.ALL2ALL
+        self_args = (int(num_internal_nodes), 
+                    int(num_internal_nodes))
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+            self_args, act_type, act_args)
 
     def create_conv_recurrent_layer(self, prev_layer_shape, num_filters, 
             filter_shape, stride, num_internal_nodes, internal_edge_array, 
@@ -529,7 +577,15 @@ def calc_num_pixels(num_pixels, stride):
 
     return 1 + (num_pixels - 1) // stride
 
-########### more classes for some ez default neural nets
+class SimpleCTRNN(NervousSystem):
+
+    def __init__(self, input_shape, num_outputs, num_neurons, step_size):
+        nn_parameters = [{
+            'layer_type' : "a2a_a2a"
+            'num_internal_nodes': num_neurons}]
+        act_type = ACTIVATOR_TYPE.CTRNN
+        act_args = (int(step_size),)
+        super(input_shape, num_outputs, nn_parameters, act_type, act_args)
 
 if __name__ == '__main__':
     """
