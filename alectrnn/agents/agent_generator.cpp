@@ -88,14 +88,16 @@ static PyObject *CreateCtrnnAgent(PyObject *self, PyObject *args,
 
 static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
     PyObject *kwargs) {
-  static char *keyword_list[] = {"ale", "nervous_system", "update_rate", NULL};
+  static char *keyword_list[] = {"ale", "nervous_system", "update_rate", 
+                                  "logging", NULL};
 
   PyObject* ale_capsule;
   PyObject* nervous_system_capsule;
   int update_rate;
+  int logging;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOi", keyword_list,
-      &ale_capsule, &nervous_system_capsule, &update_rate)) {
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOii", keyword_list,
+      &ale_capsule, &nervous_system_capsule, &update_rate, &logging)) {
     std::cerr << "Error parsing Agent arguments" << std::endl;
     return NULL;
   }
@@ -119,8 +121,9 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
       static_cast<nervous_system::NervousSystem<float>*>(PyCapsule_GetPointer(
       nervous_system_capsule, "nervous_system_generator.nn"));
 
+  bool is_logging = static_cast<bool>(logging);
   alectrnn::PlayerAgent *agent = new alectrnn::NervousSystemAgent(
-    ale, nervous_system, update_rate);
+    ale, *nervous_system, update_rate, is_logging);
 
   PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
                                 "agent_generator.agent", DeleteAgent);

@@ -1,17 +1,21 @@
 #include "nervous_system_agent.hpp"
 #include "multi_array.hpp"
+#include "player_agent.hpp"
+#include "../common/screen_preprocessing.hpp"
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
 
+namespace alectrnn {
+
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
-    nervous_system::NervousSystem& neural_net) 
+    nervous_system::NervousSystem<float>& neural_net) 
     : NervousSystemAgent(ale, neural_net, 1, false) {
 
 }
 
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
-    nervous_system::NervousSystem& neural_net, 
-    Index update_rate, bool is_logging) : ale_(ale), neural_net_(neural_net), 
+    nervous_system::NervousSystem<float>& neural_net, 
+    Index update_rate, bool is_logging) : PlayerAgent(ale), neural_net_(neural_net), 
     update_rate_(update_rate), is_logging_(is_logging) {
 
   is_configured_ = false;
@@ -21,7 +25,7 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
         ale_->environment->getScreenWidth());
   full_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
-  downsized_screen_.resize(neural_net_[0]->NumNeurons());
+  downsized_screen_.resize(neural_net_[0].NumNeurons());
 
   if (is_logging_) {
     log_ = nervous_system::StateLogger<float>(neural_net_);
@@ -34,9 +38,8 @@ void NervousSystemAgent::Configure(const float *parameters) {
   // Assumed that parameters is a contiguous array with # elements == par count
   // User must make sure this holds, as the slices only garantee that it won't
   // exceed count
-  const multi_array::ConstArraySlice<TReal>& parameter_slice(
-    parameters, 0, neural_net_.GetParameterCount(), 1);
-  neural_net_.Configure(parameter_slice);
+  neural_net_.Configure(multi_array::ConstArraySlice<float>(
+    parameters, 0, neural_net_.GetParameterCount(), 1));
 }
 
 void NervousSystemAgent::Reset() {
@@ -50,8 +53,8 @@ Action NervousSystemAgent::Act() {
   // Need to downsize the screen
   ResizeGrayScreen(ale_->environment->getScreenWidth(),
                    ale_->environment->getScreenHeight(),
-                   input_screen_width_,
-                   input_screen_height_,
+                   neural_net_[0].shape()[1],//  major input_screen_width_
+                   neural_net_[0].shape()[0],//  minor input_screen_height_
                    full_screen_,
                    downsized_screen_,
                    buffer_screen1_,
@@ -83,3 +86,9 @@ Action NervousSystemAgent::Act() {
   }
   return prefered_action;
 }
+
+const nervous_system::StateLogger<float>& NervousSystemAgent::GetLog() const {
+  return log_;
+}
+
+} // End namespace alectrnn

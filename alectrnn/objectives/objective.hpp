@@ -27,4 +27,4 @@ float CalculateTotalCost(const float* parameters, ALEInterface *ale,
 
 }
 
-#endif /* OBJECTIVES_OBJECTIVE_H_ */
+#endif /* ALECTRNN_OBJECTIVES_OBJECTIVE_H_ */

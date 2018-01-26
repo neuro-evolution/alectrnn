@@ -32,8 +32,9 @@ static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwa
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  NervousSystem* nn = static_cast<NervousSystem*>(PyCapsule_GetPointer(
-      nn_capsule, "nervous_system_generator.nn"));
+  nervous_system::NervousSystem<float>* nn = 
+      static_cast<nervous_system::NervousSystem<float>*>(
+      PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
   int num_params = nn->GetParameterCount();
 
@@ -57,8 +58,9 @@ static PyObject *GetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  NervousSystem* nn = static_cast<NervousSystem*>(PyCapsule_GetPointer(
-      nn_capsule, "nervous_system_generator.nn"));
+  nervous_system::NervousSystem<float>* nn = 
+      static_cast<nervous_system::NervousSystem<float>*>(
+      PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
   int nn_size = nn->size();
 

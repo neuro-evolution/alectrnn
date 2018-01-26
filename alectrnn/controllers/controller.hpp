@@ -12,7 +12,7 @@
 #define ALECTRNN_CONTROLLERS_CONTROLLER_H_
 
 #include <ale_interface.hpp>
-#include "../agents/player_agent.h"
+#include "../agents/player_agent.hpp"
 
 namespace alectrnn {
 

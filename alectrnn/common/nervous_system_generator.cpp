@@ -44,7 +44,7 @@ static PyObject *CreateNervousSystem(PyObject *self, PyObject *args, PyObject *k
     return NULL;
   }
 
-  std::vector<std::size_t> shape = alectrnn::PyArrayToVector(input_shape);
+  std::vector<std::size_t> shape = alectrnn::PyArrayToVector<std::size_t>(input_shape);
   nervous_system::NervousSystem<float>* nervous_system = ParseLayers(shape, layers_tuple);
 
   PyObject* nervous_system_capsule = PyCapsule_New(static_cast<void*>(nervous_system),
@@ -68,7 +68,7 @@ nervous_system::NervousSystem<float>* ParseLayers(std::vector<std::size_t> shape
     nervous_system::Layer<float>* layer = static_cast<nervous_system::Layer<float>*>(
       PyCapsule_GetPointer(layer_capsule, "layer_generator.layer"));
 
-    nervous_system.AddLayer(layer);
+    nervous_system->AddLayer(layer);
   }
 
   return nervous_system;

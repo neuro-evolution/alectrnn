@@ -23,6 +23,8 @@ class StateLogger {
   public:
     typedef std::size_t Index;
 
+    StateLogger() {}
+
     StateLogger(const NervousSystem<TReal>& neural_net, Index num_iter) 
         : time_stamps_(num_iter) {
       fill_count_ = 0;
@@ -40,7 +42,7 @@ class StateLogger {
     }
 
     StateLogger(const NervousSystem<TReal>& neural_net) 
-        : StateLogger(neural_net, num_iter=0) {
+        : StateLogger(neural_net, 0) {
     }
 
     ~StateLogger()=default;

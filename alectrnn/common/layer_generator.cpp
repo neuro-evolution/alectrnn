@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <inttypes.h>
 #include <iostream>
+#include <vector>
 #include "layer_generator.hpp"
 #include "arrayobject.h"
 #include "layer.hpp"
@@ -75,13 +76,13 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   }
 
   // Call parsers -> they create NEW integrators and activators
-  layer_shape = alectrnn::PyArrayToVector<float>(shape);
+  std::vector<std::size_t> layer_shape = alectrnn::PyArrayToVector<std::size_t>(shape);
   nervous_system::Integrator<float>* back_integrator = IntegratorParser(
-    back_integrator_type, back_integrator_args);
+    (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
   nervous_system::Integrator<float>* self_integrator = IntegratorParser(
-    self_integrator_type, self_integrator_args);
+    (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args);
   nervous_system::Activator<float>* activator = ActivatorParser(
-    activator_type, activator_args);
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
 
   // Ownership is transfered to new layer
   nervous_system::Layer<float>* layer = new nervous_system::Layer<float>(
@@ -108,7 +109,7 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
   }
 
   nervous_system::Activator<float>* activator = ActivatorParser(
-    activator_type, activator_args);
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
 
   nervous_system::Layer<float>* layer = new nervous_system::MotorLayer<float>(
     num_outputs, num_inputs, activator);
@@ -122,11 +123,12 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
 
   nervous_system::Activator<float>* new_activator;  
   switch(type) {
-    case nervous_system::IDENTITY_ACTIVATOR:
+    case nervous_system::IDENTITY_ACTIVATOR: {
       new_activator = new nervous_system::IdentityActivator<float>();
       break;
+    }
 
-    case nervous_system::CTRNN_ACTIVATOR:
+    case nervous_system::CTRNN_ACTIVATOR: {
       int num_states;
       float step_size;
       if (!PyArg_ParseTuple(args, "if", &num_states, &step_size)) {
@@ -135,8 +137,9 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       }
       new_activator = new nervous_system::CTRNNActivator<float>(num_states, step_size);
       break;
+    }
 
-    case nervous_system::CONV_CTRNN_ACTIVATOR:
+    case nervous_system::CONV_CTRNN_ACTIVATOR: {
       PyArrayObject* shape;
       float step_size;
       if (!PyArg_ParseTuple(args, "Of", &shape, &step_size)) {
@@ -146,10 +149,12 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       new_activator = new nervous_system::Conv3DCTRNNActivator<float>(
         multi_array::Array<std::size_t,3>(shape->data), step_size);
       break;
+    }
 
-    default:
+    default: {
       std::cerr << "Activator case not supported... exiting." << std::endl;
       assert(0);
+    }
   }
 
   return new_activator;
@@ -159,11 +164,12 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
   nervous_system::Integrator<float>* new_integrator;  
   switch(type) {
-    case nervous_system::NONE_INTEGRATOR:
+    case nervous_system::NONE_INTEGRATOR: {
       new_integrator = new nervous_system::NoneIntegrator<float>();
       break;
+    }
 
-    case nervous_system::ALL2ALL_INTEGRATOR:
+    case nervous_system::ALL2ALL_INTEGRATOR: {
       int num_states;
       int num_prev_states;
       if (!PyArg_ParseTuple(args, "ii", &num_states, &num_prev_states)) {
@@ -173,8 +179,9 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       new_integrator = new nervous_system::All2AllIntegrator<float>(
         num_states, num_prev_states);
       break;
+    }
 
-    case nervous_system::CONV_INTEGRATOR:
+    case nervous_system::CONV_INTEGRATOR: {
       PyArrayObject* filter_shape;
       PyArrayObject* layer_shape;
       PyArrayObject* prev_layer_shape;
@@ -190,8 +197,9 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         multi_array::Array<std::size_t,3>(prev_layer_shape->data),
         stride);
       break;
+    }
 
-    case nervous_system::RECURRENT_INTEGRATOR:
+    case nervous_system::RECURRENT_INTEGRATOR: {
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
@@ -202,8 +210,9 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
+    }
 
-    case nervous_system::RESERVOIR_INTEGRATOR:
+    case nervous_system::RESERVOIR_INTEGRATOR: {
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       PyArrayObject* weights; // Nx1 dimensional array
@@ -216,10 +225,12 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
         alectrnn::PyArrayToSharedMultiArray<float,1>(weights)));
       break;
+    }
 
-    default:
+    default: {
       std::cerr << "Integrator case not supported... exiting." << std::endl;
       assert(0);
+    }
   }
 
   return new_integrator;

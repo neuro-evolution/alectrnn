@@ -10,6 +10,7 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
+#include "multi_array.hpp"
 #include "arrayobject.h"
 #include "nervous_system.hpp"
 #include "agent_handler.hpp"
@@ -40,8 +41,8 @@ static PyObject *GetLayerHistory(PyObject *self, PyObject *args,
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  alectrnn::NervousSystemAgent* agent = static_cast<alectrnn::NervousSystemAgent*>(PyCapsule_GetPointer(
-      agent_capsule, "agent_generator.agent"));
+  alectrnn::NervousSystemAgent* agent = static_cast<alectrnn::NervousSystemAgent*>(
+      PyCapsule_GetPointer(agent_capsule, "agent_generator.agent"));
 
   PyObject* np_history = ConvertLogToPyArray(agent->GetLog().GetLayerHistory(layer_index));
 
@@ -50,26 +51,26 @@ static PyObject *GetLayerHistory(PyObject *self, PyObject *args,
 
 PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& history) {
   // Determine the new shape from the layer shape + the temporal dimension
-  std::vector<std::size_t> shape(1+history[0].ndimensions());
+  std::vector<npy_intp> shape(1+history[0].ndimensions());
   shape[0] = history.size();
   for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii) {
-    shape[iii] = history[0].shape()[iii];
+    shape[iii+1] = history[0].shape()[iii];
   }
 
   // Build and fill python array
-  PyObject* py_array = PyArray_SimpleNew(tensor.ndimensions(), shape.data(), NPY_FLOAT32);
+  PyObject* py_array = PyArray_SimpleNew(shape.size(), shape.data(), NPY_FLOAT32);
   PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
-  NPY_FLOAT32* data = np_array->data;
+  npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
 
   std::vector<std::size_t> strides(shape.size());
-  multi_array::CalculateStrides(shape, strides.data());
+  multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
   for (std::size_t iii = 0; iii < history.size(); ++iii) {
     for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
       data[iii * strides[0] + jjj] = history[iii][jjj];
     }
   }
 
-  return ConvertTensorToPyArray(contiguous_history);
+  return py_array;
 }
 
 static PyMethodDef AgentHandlerMethods[] = {

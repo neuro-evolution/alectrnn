@@ -1353,8 +1353,12 @@ class TensorView {
     }
 };
 
-void CalculateStrides(const std::size_t* shape, std::size_t* strides, 
-    std::size_t ndims) {
+/*
+ * SizeType1 must be castable to SizeType2
+ */
+template<typename SizeType1, typename SizeType2>
+void CalculateStrides(const SizeType1* shape, SizeType2* strides, 
+                      std::size_t ndims) {
   for (std::size_t iii = 0; iii < ndims; iii++) {
     strides[iii] = 1;
     for (std::size_t jjj = iii + 1; jjj < ndims; jjj++) {

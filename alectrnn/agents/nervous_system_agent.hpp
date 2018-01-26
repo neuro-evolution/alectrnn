@@ -19,21 +19,21 @@ class NervousSystemAgent : public PlayerAgent {
   public:
     typedef std::size_t Index;
 
-    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem& neural_net);
-    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem& neural_net, 
+    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem<float>& neural_net);
+    NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem<float>& neural_net, 
         Index update_rate, bool is_logging);
     ~NervousSystemAgent();
 
     void Configure(const float *parameters);
     void Reset();
+    const nervous_system::StateLogger<float>& GetLog() const;
 
   protected:
     Action Act();
-    const nervous_system::StateLogger& GetLog() const;
 
   protected:
-    nervous_system::NervousSystem& neural_net_;
-    nervous_system::StateLogger log_;
+    nervous_system::NervousSystem<float>& neural_net_;
+    nervous_system::StateLogger<float> log_;
     std::vector<std::uint8_t> full_screen_;
     std::vector<float> buffer_screen1_;
     std::vector<float> buffer_screen2_;
