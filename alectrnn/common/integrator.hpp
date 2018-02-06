@@ -128,7 +128,9 @@ class Conv3DIntegrator : public Integrator<TReal> {
     Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape, 
         const multi_array::Array<Index,3>& layer_shape, 
         const multi_array::Array<Index,3>& prev_layer_shape, Index stride)
-        : num_filters_(layer_shape[0]), filter_shape_(filter_shape), stride_(stride),
+        : num_filters_(layer_shape[0]), layer_shape_(layer_shape), 
+        prev_layer_shape_(prev_layer_shape),
+        filter_shape_(filter_shape), stride_(stride),
         filter_parameters_major_({num_filters_}),
         filter_parameters_minor_({num_filters_}),
         channel_weights_({num_filters_}) {
@@ -145,9 +147,20 @@ class Conv3DIntegrator : public Integrator<TReal> {
     ~Conv3DIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+      /*
+       * tar_state needs to have AT LEAST as many elements as required by
+       * layer_shape, but it doesn't not need to have the same shape.
+       * tar_state will be re-interpreted as the same shape as layer_shape
+       * src_state will ALSO be reinterpreted this way
+       */
+      const multi_array::SharedTensor<TReal> src_interpretation(src_state.data(), prev_layer_shape_);
+      assert(src_state.size() >= src_interpretation.size());
+      const multi_array::TensorView<TReal> src_view = src_interpretation.accessor();
 
-      const multi_array::TensorView<TReal> src_view = src_state.accessor();
-      multi_array::TensorView<TReal> tar_view = tar_state.accessor();
+      multi_array::SharedTensor<TReal> tar_interpretation(tar_state.data(), layer_shape_);
+      assert(tar_state.size() >= tar_interpretation.size());
+      multi_array::TensorView<TReal> tar_view = tar_interpretation.accessor();
+
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> major_view(filter_parameters_major_);
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> minor_view(filter_parameters_minor_);
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> channel_view(channel_weights_);
@@ -156,7 +169,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       for (Index iii = 0; iii < num_filters_; iii++) {
         multi_array::TensorView<TReal> tar_image = tar_view[iii];
         // for each input channel
-        for (Index jjj = 0; jjj < src_state.shape()[0]; jjj++) {
+        for (Index jjj = 0; jjj < src_interpretation.shape()[0]; jjj++) {
           // Carry out separable conv on layer of inputs
           const multi_array::TensorView<TReal> src_image = src_view[jjj];
           multi_array::TensorView<TReal> secondpass_image = secondpass_buffer_.accessor();
@@ -164,8 +177,8 @@ class Conv3DIntegrator : public Integrator<TReal> {
           Convolve2D(src_image, secondpass_image, firstpass_image,
                      major_view[iii], minor_view[iii], stride_);
 
-          for (Index kkk = 0; kkk < tar_state.shape()[1]; ++kkk) {
-            for (Index lll = 0; lll < tar_state.shape()[2]; ++lll) {
+          for (Index kkk = 0; kkk < tar_interpretation.shape()[1]; ++kkk) {
+            for (Index lll = 0; lll < tar_interpretation.shape()[2]; ++lll) {
               tar_image[kkk][lll] += secondpass_image[kkk][lll] * channel_weights_[iii][jjj];
             }
           }
@@ -393,6 +406,8 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
   protected:
     Index num_filters_;
+    multi_array::Array<Index, 3> layer_shape_;
+    multi_array::Array<Index, 3> prev_layer_shape_;
     multi_array::Array<Index, 3> filter_shape_;
     Index stride_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> filter_parameters_major_;

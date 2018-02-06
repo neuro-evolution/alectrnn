@@ -11,7 +11,7 @@
 #define AGENTS_AGENT_HANDLER_H_
 
 #include <Python.h>
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 
 PyMODINIT_FUNC PyInit_agent_handler(void);
 PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& history);

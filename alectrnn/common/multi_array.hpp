@@ -82,6 +82,9 @@ template<typename T>
 class Tensor;
 
 template<typename T>
+class SharedTensor;
+
+template<typename T>
 class TensorView;
 // End Forward declare
 
@@ -1129,8 +1132,7 @@ class ConstSlice {
 };
 
 /*
- * Tensor is a MultiArray with untyped dimension. An accessor is created
- * which will check if the casted view dimensions match the tensor dimensions.
+ * Tensor is a MultiArray with untyped dimension.
  */
 template<typename T>
 class Tensor {
@@ -1298,6 +1300,176 @@ class Tensor {
     }
 
     void Fill(const Tensor<T>& other_tensor) {
+      assert(other_tensor.size() == size_);
+      for (Index iii = 0; iii < size_; ++iii) {
+        data_[iii] = other_tensor[iii];
+      }
+    }
+
+  protected:
+    TPtr data_;
+    std::vector<Index> shape_;
+    std::vector<Index> strides_;
+    std::size_t ndims_;
+    std::size_t size_;
+};
+
+/*
+ * A tensor that doesn't own its own data.
+ */
+template<typename T>
+class SharedTensor {
+  public:
+    typedef T* TPtr;
+    typedef std::size_t Index;
+
+    // Default constructor
+    SharedTensor() {
+      ndims_ = 0;
+      size_ = 0;
+      data_ = nullptr;
+    }
+
+    /*
+     * Build 'empty' SharedTensor.
+     */
+    template<typename Index, std::size_t NumDim>
+    SharedTensor(TPtr data, const Array<Index, NumDim> &shape) : shape_(shape.begin(), shape.end()),
+        ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      strides_.resize(ndims_);
+      CalculateStrides();
+    }
+
+    SharedTensor(TPtr data, const std::vector<Index> &shape) : shape_(shape), 
+        ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      strides_.resize(ndims_);
+      CalculateStrides();
+    }
+
+    SharedTensor(TPtr data, const std::initializer_list<Index> &shape) 
+        : shape_(shape), ndims_(shape.size()) {
+      size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
+      data_ = data;
+      strides_.resize(ndims_);
+      CalculateStrides();
+    }
+
+    /*
+     * Copy (doesn't copy data)
+     */
+    SharedTensor(const SharedTensor<T> &other) : data_(other.data_), 
+        shape_(other.shape_), strides_(other.strides_), ndims_(other.ndims_), 
+        size_(other.size_) {
+    }
+
+    SharedTensor(SharedTensor<T> &&other) : shape_(std::move(other.shape_)),
+        strides_(std::move(other.strides_)), ndims_(std::move(other.ndims_)),
+        size_(std::move(other.size_)) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+    }
+
+    void CalculateStrides() {
+      for (Index iii = 0; iii < ndims_; iii++) {
+        strides_[iii] = 1;
+        for (Index jjj = iii + 1; jjj < ndims_; jjj++) {
+          strides_[iii] *= shape_[jjj];
+        }
+      }
+    }
+
+    TPtr data() {
+      return data_;
+    }
+
+    const TPtr data() const {
+      return data_;
+    }
+
+    std::size_t size() const {
+      return size_;
+    }
+
+    std::size_t ndimensions() const {
+      return ndims_;
+    }
+
+    const std::vector<Index>& shape() const {
+      return shape_;
+    }
+
+    const std::vector<Index>& strides() const {
+      return strides_;
+    }
+
+    T& operator[](Index index) {
+      return data_[index]; 
+    }
+
+    const T& operator[](Index index) const {
+      return data_[index];
+    }
+
+    T& at(Index index) {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index]; 
+    }
+
+    const T& at(Index index) const {
+      if (index >= size_) { throw std::out_of_range("index out of range"); }
+      return data_[index];
+    }    
+
+    T& operator()(const std::initializer_list<T>& indices) {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);
+      return data_[flat_index];
+    }
+
+    const T& operator()(const std::initializer_list<T>& indices) const {
+      Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);
+      return data_[flat_index];
+    }
+
+    SharedTensor<T>& operator=(const SharedTensor<T>& other) {
+      data_ = other.data_;
+      shape_ = other.shape_;
+      strides_ = other.strides_;
+      size_ = other.size_;
+      ndims_ = other.ndims_;
+
+      return *this;
+    }
+
+    SharedTensor<T>& operator=(SharedTensor<T>&& other) {
+      data_ = other.data_;
+      other.data_ = nullptr;
+      shape_ = std::move(other.shape_);
+      strides_ = std::move(other.strides_);
+      size_ = std::move(other.size_);
+      ndims_ = std::move(other.ndims_);
+
+      return *this;
+    }
+
+    TensorView<T> accessor() {
+      return {this->data_, this->strides_.data(), this->shape_.data()};
+    }
+
+    const TensorView<T> accessor() const {
+      return {this->data_, this->strides_.data(), this->shape_.data()};
+    }
+
+    void Fill(T value) {
+      for (Index iii = 0; iii < size_; iii++) {
+        data_[iii] = value;
+      }
+    }
+
+    void Fill(const SharedTensor<T>& other_tensor) {
       assert(other_tensor.size() == size_);
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_tensor[iii];

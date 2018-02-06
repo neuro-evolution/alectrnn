@@ -136,7 +136,8 @@ ale_handler_sources = [
 agent_handler_sources = [
     "alectrnn/agents/agent_handler.cpp",
     "alectrnn/agents/player_agent.cpp",
-    "alectrnn/agents/nervous_system_agent.cpp"
+    "alectrnn/agents/nervous_system_agent.cpp",
+    "alectrnn/common/screen_preprocessing.cpp"
 ]
 
 PACKAGE_NAME = 'alectrnn'
