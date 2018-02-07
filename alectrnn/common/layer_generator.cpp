@@ -120,6 +120,11 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
 }
 
 nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE type, PyObject* args) {
+  /*
+   * CONV activators should take a shape argument
+   * Non-conv activators should take a # states argument
+   * Identity is an exception
+   */
 
   nervous_system::Activator<float>* new_activator;  
   switch(type) {

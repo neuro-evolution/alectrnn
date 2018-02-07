@@ -206,9 +206,12 @@ class NervousSystem:
     network. It should be a list of dictionaries.
 
     Activator type and arguments should be the base type and args. For example,
-    act_type = ACTIVATION_TYPE.CTRNN will need act_args = tuple(int(step_size)).
+    act_type = ACTIVATION_TYPE.CTRNN will need act_args = tuple(float(step_size)).
     Shape arguments and activation types for CONV layers will be added 
     automatically.
+
+    Activator types:
+        ACTIVATION_TYPE.CTRNN: (float(step_size),)
 
     Convolutional layers should have a dictionary with the following keys:
         'layer_type' = "conv"
@@ -360,10 +363,10 @@ class NervousSystem:
                     layer_pars['filter_shape'],
                     layer_pars['stride'],
                     layer_pars['num_internal_nodes'],
-                    layer_pars['internal_graph']), 
+                    layer_pars['internal_graph'], 
                     layer_act_types[i], 
                     layer_act_args[i],
-                    layer_shapes[i+1])
+                    layer_shapes[i+1]))
 
             elif layer_pars['layer_type'] == "conv_reservoir":
                 layers.append(self._create_conv_reservoir_layer(
@@ -397,9 +400,9 @@ class NervousSystem:
                     layer_shapes[i+1]))
 
         # Build motor later
-        prev_layer_size = int(np.prod(prev_layer_shape))
+        prev_layer_size = int(np.prod(layer_shapes[-1]))
         layers.append(self._create_motor_layer(prev_layer_size, 
-            num_outputs, act_type, act_args))
+            num_outputs, act_type.value, (prev_layer_size, *act_args)))
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
@@ -418,10 +421,10 @@ class NervousSystem:
         layer_act_args = []
         for i, layer_pars in enumerate(nn_parameters):
             if 'conv' in layer_pars['layer_type']:
-                layer_act_types.append(ACTMAP[act_type])
+                layer_act_types.append(ACTMAP[act_type].value)
                 layer_act_args.append((layer_shapes[i+1], *act_args))
             else:
-                layer_act_types.append(act_type)
+                layer_act_types.append(act_type.value)
                 layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args))
 
         return layer_act_types, layer_act_args
@@ -437,8 +440,8 @@ class NervousSystem:
         for i, layer_pars in enumerate(nn_parameters):
             if 'conv' in layer_pars['layer_type']:
                 interpreted_shapes.append(calc_conv_layer_shape(interpreted_shapes[i], 
-                layer_pars['num_filters'], layer_pars['stride']))
-                if 'num"internal_nodes' in layer_pars:
+                                layer_pars['num_filters'], layer_pars['stride']))
+                if 'num_internal_nodes' in layer_pars:
                     layer_shapes.append(np.array([
                         max(layer_pars['num_internal_nodes'], 
                             np.prod(interpreted_shapes[-1]))],
@@ -457,23 +460,25 @@ class NervousSystem:
     def _create_a2a_recurrent_layer(self, prev_layer_shape, num_internal_nodes, 
                              internal_edge_array, act_type, act_args,
                              layer_shape):
-        back_type = INTEGRATOR_TYPE.ALL2ALL
+        back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
                     int(np.prod(prev_layer_shape)))
-        self_type = INTEGRATOR_TYPE.RECURRENT
+        self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array)
+
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
     def _create_a2a_a2a_layer(self, prev_layer_shape, num_internal_nodes, 
                             act_type, act_args, layer_shape):
-        back_type = INTEGRATOR_TYPE.ALL2ALL
+        back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
                     int(np.prod(prev_layer_shape)))
-        self_type = INTEGRATOR_TYPE.ALL2ALL
+        self_type = INTEGRATOR_TYPE.ALL2ALL.value
         self_args = (int(num_internal_nodes), 
                     int(num_internal_nodes))
+
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
@@ -481,13 +486,13 @@ class NervousSystem:
             num_filters, filter_shape, stride, num_internal_nodes, 
             internal_edge_array, act_type, act_args, layer_shape):
 
-        back_type = INTEGRATOR_TYPE.CONV
+        back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
                     np.array(prev_layer_shape, dtype=np.uint64),
                     int(stride))
         
-        self_type = INTEGRATOR_TYPE.RECURRENT
+        self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array)
 
@@ -499,12 +504,12 @@ class NervousSystem:
             internal_edge_array, internal_weight_array, act_type, act_args,
             layer_shape):
 
-        back_type = INTEGRATOR_TYPE.CONV
+        back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
                     np.array(prev_layer_shape, dtype=np.uint64),
                     int(stride))
-        self_type = INTEGRATOR_TYPE.RESERVOIR
+        self_type = INTEGRATOR_TYPE.RESERVOIR.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array,
                     internal_weight_array)
@@ -514,40 +519,43 @@ class NervousSystem:
 
     def _create_recurrent_layer(self, num_bipartite_nodes,
             bipartite_input_edge_array, num_internal_nodes,
-            internal_edge_array, act_type, act_args):
+            internal_edge_array, act_type, act_args, layer_shape):
         """
         All graphs should be Nx2 with dtype=np.uint64
         act_args should be in the proper tuple format for inputs into the
         activator function
         """
-        back_type = INTEGRATOR_TYPE.RECURRENT
+        back_type = INTEGRATOR_TYPE.RECURRENT.value
         back_args = (int(num_bipartite_nodes),
                     bipartite_input_edge_array)
-        self_type = INTEGRATOR_TYPE.RECURRENT
+        self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array)
+
         return layer_generator.CreateLayer(back_type,
-            back_args, self_type, self_args, act_type, act_args)
+            back_args, self_type, self_args, act_type, act_args, layer_shape)
 
     def _create_reservoir_layer(self, num_bipartite_nodes,
             bipartite_input_edge_array, input_weights, num_internal_nodes,
-            internal_edge_array, internal_weight_array, act_type, act_args):
+            internal_edge_array, internal_weight_array, act_type, act_args,
+            layer_shape):
         """
         All graphs should be Nx2 with dtype=np.uint64
         All weights should be Nx1 with dtype=np.float32
         act_args should be in the proper tuple format for inputs into the
         activator function
         """
-        back_type = INTEGRATOR_TYPE.RESERVOIR
+        back_type = INTEGRATOR_TYPE.RESERVOIR.value
         back_args = (int(num_bipartite_nodes),
                     bipartite_input_edge_array, 
                     input_weights)
-        self_type = INTEGRATOR_TYPE.RESERVOIR
+        self_type = INTEGRATOR_TYPE.RESERVOIR.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array,
                     internal_weight_array)
+
         return layer_generator.CreateLayer(back_type,
-            back_args, self_type, self_args, act_type, act_args)
+            back_args, self_type, self_args, act_type, act_args, layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
             num_filters, filter_shape, stride, act_type, act_args, layer_shape):
@@ -559,14 +567,15 @@ class NervousSystem:
         Final shape, which includes depth, depends on shape of prev layer
         """
 
-        back_type = INTEGRATOR_TYPE.CONV
+        back_type = INTEGRATOR_TYPE.CONV.value
         # Appropriate depth is added to filter shape to build the # 3-element 1D array
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
                     np.array(prev_layer_shape, dtype=np.uint64),
                     int(stride))
-        self_type = INTEGRATOR_TYPE.NONE
+        self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
+
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
@@ -574,7 +583,7 @@ class NervousSystem:
         """
         act_args needs to be in the correct tuple format for the activator
         """
-
+        
         return layer_generator.CreateMotorLayer(
             int(size_of_prev_layer), int(num_outputs), act_type, act_args)
 
@@ -585,7 +594,7 @@ def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
     """
 
     return np.array([num_filters] + calc_image_dimensions(
-                    image_dimensions[1:], stride), dtype=np.uint64)
+                    prev_layer_shape[1:], stride), dtype=np.uint64)
 
 def calc_image_dimensions(prev_image_dimensions, stride):
     """
@@ -611,8 +620,8 @@ class SimpleCTRNN(NervousSystem):
         nn_parameters = [{
             'layer_type' : "a2a_a2a",
             'num_internal_nodes': num_neurons}]
-        act_type = ACTIVATOR_TYPE.CTRNN
-        act_args = (int(step_size),)
+        act_type = ACTIVATOR_TYPE.CTRNN.value
+        act_args = (float(step_size),)
         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
 
 if __name__ == '__main__':

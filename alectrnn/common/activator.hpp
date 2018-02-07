@@ -6,6 +6,9 @@
  * 64 unique params instead of 64xWxH. For single dimensional layers it will
  * then just be a user choice at the layer level whether to pick the uniform
  * Activator or independent one.
+ *
+ * CONV activators should take a shape argument
+ * Non-conv activators should take a # states argument
  */
 
 #ifndef NN_ACTIVATOR_H_
