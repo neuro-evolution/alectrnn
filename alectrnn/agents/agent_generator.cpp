@@ -111,7 +111,7 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
   ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
       ale_capsule, "ale_generator.ale"));
 
-  if (!PyCapsule_IsValid(nervous_system_capsule, "ale_generator.ale"))
+  if (!PyCapsule_IsValid(nervous_system_capsule, "nervous_system_generator.nn"))
   {
     std::cerr << "Invalid pointer to NervousSystem returned from capsule,"
         " or is not a capsule." << std::endl;

@@ -53,7 +53,7 @@ class build_ext(setuptools.command.build_ext.build_ext):
     def run(self):
         try:
             import numpy as np
-            numpy_include_path = np.get_include() + '/numpy'
+            numpy_include_path = np.get_include()# + '/numpy'
             if numpy_include_path not in self.include_dirs:
                 self.include_dirs.append(numpy_include_path)
         except ImportError:

@@ -92,13 +92,10 @@ class AgentHandler(Handler):
 
 class NervousSystemAgentHandler(AgentHandler):
 
-    def __init__(self, ale, nervous_system, update_rate):
+    def __init__(self, ale, nervous_system, update_rate, logging=False):
         super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
-                                 'update_rate': update_rate})
-
-    def create(self):
-        self.handle = agent_generator.CreateNervousSystemAgent(self.ale,
-                                                    **self.handle_parameters)
+                                 'update_rate': update_rate,
+                                 'logging': int(logging)})
 
     def layer_history(self, layer_index):
         """
@@ -583,10 +580,24 @@ class NervousSystem:
         """
         act_args needs to be in the correct tuple format for the activator
         """
-        
+
         return layer_generator.CreateMotorLayer(
             int(size_of_prev_layer), int(num_outputs), act_type, act_args)
 
+    def get_parameter_count(self):
+        """
+        Returns the number of parameters needed to configure the NN
+        """
+
+        return nn_handler.GetParameterCount(self.neural_network)
+
+    def num_layers(self):
+        """
+        Returns the number of parameters needed to configure the NN
+        """
+
+        return nn_handler.GetSize(self.neural_network)
+        
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
     """
     Determines layer shape given previous layer shape and the number of chosen
@@ -620,7 +631,7 @@ class SimpleCTRNN(NervousSystem):
         nn_parameters = [{
             'layer_type' : "a2a_a2a",
             'num_internal_nodes': num_neurons}]
-        act_type = ACTIVATOR_TYPE.CTRNN.value
+        act_type = ACTIVATOR_TYPE.CTRNN
         act_args = (float(step_size),)
         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
 

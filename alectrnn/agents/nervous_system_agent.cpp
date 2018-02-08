@@ -13,12 +13,22 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
 
 }
 
+/*
+ * The neural network's first layer needs to be a 3-dimensional layer where the
+ * first layer is the # of channels and following layers are the height and
+ * width of the screen respectively. If gray-screen is used then there must be
+ * only one channel.
+ */
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
     nervous_system::NervousSystem<float>& neural_net, 
     Index update_rate, bool is_logging) : PlayerAgent(ale), neural_net_(neural_net), 
     update_rate_(update_rate), is_logging_(is_logging) {
 
   is_configured_ = false;
+
+  // If grayscreen input
+  // Check that NN input is correct dim and # channels
+  assert((neural_net_[0].shape().size() == 3) || (neural_net_[0].shape()[0] == 1));
   buffer_screen1_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   buffer_screen2_.resize(ale_->environment->getScreenHeight() *
@@ -26,6 +36,8 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
   full_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   downsized_screen_.resize(neural_net_[0].NumNeurons());
+
+  // TO DO: Colored + luminance input (check use_color_ & nn dim/#channels)
 
   if (is_logging_) {
     log_ = nervous_system::StateLogger<float>(neural_net_);
@@ -53,8 +65,8 @@ Action NervousSystemAgent::Act() {
   // Need to downsize the screen
   ResizeGrayScreen(ale_->environment->getScreenWidth(),
                    ale_->environment->getScreenHeight(),
-                   neural_net_[0].shape()[1],//  major input_screen_width_
-                   neural_net_[0].shape()[0],//  minor input_screen_height_
+                   neural_net_[0].shape()[2],//  major input_screen_width_
+                   neural_net_[0].shape()[1],//  minor input_screen_height_
                    full_screen_,
                    downsized_screen_,
                    buffer_screen1_,
@@ -64,7 +76,7 @@ Action NervousSystemAgent::Act() {
   // The neural network will be updates update_rate_ times before output is read
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
     if (is_logging_) {
-      log_(neural_net_);
+      log_(neural_net_); // TO DO: Add timestamp (for updates faster than framerate)
     }
     neural_net_.Step();
   }

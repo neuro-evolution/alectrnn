@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include "arrayobject.h"
+#include "numpy/arrayobject.h"
 #include "multi_array.hpp"
 #include "capi_tools.hpp"
 

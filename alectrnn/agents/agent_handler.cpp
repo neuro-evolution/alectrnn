@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <iostream>
 #include "multi_array.hpp"
-#include "arrayobject.h"
+#include "numpy/arrayobject.h"
 #include "nervous_system.hpp"
 #include "agent_handler.hpp"
 #include "player_agent.hpp"
@@ -61,7 +61,6 @@ PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& his
   PyObject* py_array = PyArray_SimpleNew(shape.size(), shape.data(), NPY_FLOAT32);
   PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
   npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
-
   std::vector<std::size_t> strides(shape.size());
   multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
   for (std::size_t iii = 0; iii < history.size(); ++iii) {
@@ -69,7 +68,6 @@ PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& his
       data[iii * strides[0] + jjj] = history[iii][jjj];
     }
   }
-
   return py_array;
 }
 
@@ -90,5 +88,6 @@ static struct PyModuleDef AgentHandlerModule = {
 };
 
 PyMODINIT_FUNC PyInit_agent_handler(void) {
+  import_array();
   return PyModule_Create(&AgentHandlerModule);
 }

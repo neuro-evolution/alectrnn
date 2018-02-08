@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include "arrayobject.h"
+#include "numpy/arrayobject.h"
 #include "multi_array.hpp"
 
 namespace alectrnn {

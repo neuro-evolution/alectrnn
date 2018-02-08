@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <ale_interface.hpp>
 #include <iostream>
-#include "arrayobject.h"
+#include "numpy/arrayobject.h"
 #include "objective.hpp"
 #include "../controllers/controller.hpp"
 #include "../agents/player_agent.hpp"

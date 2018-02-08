@@ -33,7 +33,7 @@
 #include <iostream>
 #include <vector>
 #include "layer_generator.hpp"
-#include "arrayobject.h"
+#include "numpy/arrayobject.h"
 #include "layer.hpp"
 #include "graphs.hpp"
 #include "capi_tools.hpp"

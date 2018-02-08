@@ -1503,6 +1503,10 @@ class TensorView {
     const Index* stride = nullptr;
     const Index* shape = nullptr;
 
+    TensorView(T* other_data, const Index* other_stride, const Index* other_shape) 
+        : data(other_data), stride(other_stride), shape(other_shape) {
+    }
+
     TensorView operator[](Index index) {
       return {data + *stride * index, stride + 1, shape + 1};
     }
@@ -1529,8 +1533,7 @@ class TensorView {
  * SizeType1 must be castable to SizeType2
  */
 template<typename SizeType1, typename SizeType2>
-void CalculateStrides(const SizeType1* shape, SizeType2* strides, 
-                      std::size_t ndims) {
+void CalculateStrides(const SizeType1* shape, SizeType2* strides, std::size_t ndims) {
   for (std::size_t iii = 0; iii < ndims; iii++) {
     strides[iii] = 1;
     for (std::size_t jjj = iii + 1; jjj < ndims; jjj++) {

@@ -15,6 +15,8 @@
 #include <cstddef>
 #include <vector>
 #include <cassert>
+#include <numeric>
+#include <functional>
 #include "multi_array.hpp"
 #include "graphs.hpp"
 
@@ -26,8 +28,7 @@ enum INTEGRATOR_TYPE {
   ALL2ALL_INTEGRATOR,
   CONV_INTEGRATOR,
   RECURRENT_INTEGRATOR,
-  RESERVOIR_INTEGRATOR,
-  RESERVOIR_INTEGRATOR_HYBRID
+  RESERVOIR_INTEGRATOR
 };
 
 // Abstract base class
@@ -135,6 +136,13 @@ class Conv3DIntegrator : public Integrator<TReal> {
         filter_parameters_minor_({num_filters_}),
         channel_weights_({num_filters_}) {
 
+      min_src_size_ = std::accumulate(prev_layer_shape_.begin(), 
+        prev_layer_shape_.end(), 1, std::multiplies<TReal>());
+      min_tar_size_ = std::accumulate(layer_shape_.begin(), layer_shape_.end(), 
+        1, std::multiplies<TReal>());
+      // NumDim should be 3 for stride calculation
+      multi_array::CalculateStrides(layer_shape_.data(), layer_strides_.data(), 3);
+      multi_array::CalculateStrides(prev_layer_shape_.data(), prev_layer_strides_.data(), 3);
       assert(filter_shape[0] == prev_layer_shape[0]);
       super_type::parameter_count_ = num_filters_ 
         * (filter_shape_[2] + filter_shape_[1] + filter_shape_[0]);
@@ -151,15 +159,15 @@ class Conv3DIntegrator : public Integrator<TReal> {
        * tar_state needs to have AT LEAST as many elements as required by
        * layer_shape, but it doesn't not need to have the same shape.
        * tar_state will be re-interpreted as the same shape as layer_shape
-       * src_state will ALSO be reinterpreted this way
+       * src_state will be reinterpreted as the same shape as prev_layer_shape
        */
-      const multi_array::SharedTensor<TReal> src_interpretation(src_state.data(), prev_layer_shape_);
-      assert(src_state.size() >= src_interpretation.size());
-      const multi_array::TensorView<TReal> src_view = src_interpretation.accessor();
+      assert(src_state.size() >= min_src_size_);
+      const multi_array::TensorView<TReal> src_view(src_state.data(), 
+        prev_layer_strides_.data(), prev_layer_shape_.data());
 
-      multi_array::SharedTensor<TReal> tar_interpretation(tar_state.data(), layer_shape_);
-      assert(tar_state.size() >= tar_interpretation.size());
-      multi_array::TensorView<TReal> tar_view = tar_interpretation.accessor();
+      assert(tar_state.size() >= min_tar_size_);
+      multi_array::TensorView<TReal> tar_view(tar_state.data(), 
+        layer_strides_.data(), layer_shape_.data());
 
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> major_view(filter_parameters_major_);
       multi_array::ArrayView<multi_array::ConstArraySlice<TReal>, 1> minor_view(filter_parameters_minor_);
@@ -169,7 +177,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       for (Index iii = 0; iii < num_filters_; iii++) {
         multi_array::TensorView<TReal> tar_image = tar_view[iii];
         // for each input channel
-        for (Index jjj = 0; jjj < src_interpretation.shape()[0]; jjj++) {
+        for (Index jjj = 0; jjj < src_view.extent(0); jjj++) {
           // Carry out separable conv on layer of inputs
           const multi_array::TensorView<TReal> src_image = src_view[jjj];
           multi_array::TensorView<TReal> secondpass_image = secondpass_buffer_.accessor();
@@ -177,8 +185,8 @@ class Conv3DIntegrator : public Integrator<TReal> {
           Convolve2D(src_image, secondpass_image, firstpass_image,
                      major_view[iii], minor_view[iii], stride_);
 
-          for (Index kkk = 0; kkk < tar_interpretation.shape()[1]; ++kkk) {
-            for (Index lll = 0; lll < tar_interpretation.shape()[2]; ++lll) {
+          for (Index kkk = 0; kkk < tar_view.extent(1); ++kkk) {
+            for (Index lll = 0; lll < tar_view.extent(2); ++lll) {
               tar_image[kkk][lll] += secondpass_image[kkk][lll] * channel_weights_[iii][jjj];
             }
           }
@@ -410,6 +418,10 @@ class Conv3DIntegrator : public Integrator<TReal> {
     multi_array::Array<Index, 3> prev_layer_shape_;
     multi_array::Array<Index, 3> filter_shape_;
     Index stride_;
+    Index min_src_size_;
+    Index min_tar_size_;
+    multi_array::Array<Index, 3> prev_layer_strides_;
+    multi_array::Array<Index, 3> layer_strides_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> filter_parameters_major_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> filter_parameters_minor_;
     multi_array::MultiArray<multi_array::ConstArraySlice<TReal>, 1> channel_weights_;
