@@ -173,20 +173,51 @@ class ALEHandler(Handler):
         for rom in roms:
             print("\t", rom)
 
-
+# Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
     BIAS=0
     RTAUS=1
     WEIGHT=2
 
-def layout_matching_bounds(parameter_layout, bounds={}):
+def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
-    bounds = key: PARAMETER_TYPE, value: (low, high)
+    parameter_layout = 1D array with # parameter elements coded as PARAMETER_TYPE (int)
+    type_bounds = key: PARAMETER_TYPE, value: (low, high)
     returns a Nx2 np.float32 array
     """
-    pass
+    if coverage_is_complete(parameter_layout, type_bounds):
+        boundaries = np.zeros((len(parameter_layout), 2), dtype=np.float32)
+        for par_type, bounds in type_bounds.items():
+            type_indexes = np.where(parameter_layout == par_type.value)
+            boundaries[type_indexes,0] = bounds[0]
+            boundaries[type_indexes,1] = bounds[1]
+        return boundaries
 
+    else:
+        raise AttributeError("Error: type_bounds does not fully cover the " +
+            "types of parameters in layout or invalid type.")
+
+def coverage_is_complete(parameter_layout, type_bounds):
+    """
+    Returns True if all types in layout are present in type_bounds
+
+    Returns False if type is not a valid PARAMETER_TYPE or if type_bounds
+    doesn't contain all the necessary PARAMETER_TYPEs for the layout.
+    """
+
+    for parameter in parameter_layout:
+        try: # Raises value error if conversion doesn't go through
+            par = PARAMETER_TYPE(parameter)
+        except:
+            return False
+
+        if par not in type_bounds:
+            return False
+
+    return True
+
+# Should keep in sync with ACTIVATOR_TYPE in activator.hpp
 class ACTIVATOR_TYPE(Enum):
     BASE=0
     IDENTITY=1
@@ -195,6 +226,7 @@ class ACTIVATOR_TYPE(Enum):
     IAF=4
     CONV_IAF=5
 
+# Should keep in sync with INTEGRATOR_TYPE in integrator.hpp
 class INTEGRATOR_TYPE(Enum):
     BASE=0
     NONE=1
