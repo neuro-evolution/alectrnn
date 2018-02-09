@@ -19,6 +19,7 @@
 #include <functional>
 #include "multi_array.hpp"
 #include "graphs.hpp"
+#include "parameter_types.hpp"
 
 namespace nervous_system {
 
@@ -28,7 +29,8 @@ enum INTEGRATOR_TYPE {
   ALL2ALL_INTEGRATOR,
   CONV_INTEGRATOR,
   RECURRENT_INTEGRATOR,
-  RESERVOIR_INTEGRATOR
+  RESERVOIR_INTEGRATOR,
+  RESERVOIR_HYBRID
 };
 
 // Abstract base class
@@ -51,6 +53,8 @@ class Integrator {
       return integrator_type_;
     }
 
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const=0;
+
   protected:
     INTEGRATOR_TYPE integrator_type_;
     std::size_t parameter_count_;
@@ -66,6 +70,10 @@ class NoneIntegrator : public Integrator<TReal> {
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
+    }
 };
 
 // Integrator that has All2All connectivity with previous layer
@@ -95,6 +103,14 @@ class All2AllIntegrator : public Integrator<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       assert(parameters.size() == super_type::parameter_count_);
       weights_ = multi_array::ConstArraySlice<TReal>(parameters);
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
     }
 
   protected:
@@ -412,6 +428,14 @@ class Conv3DIntegrator : public Integrator<TReal> {
       }
     }
 
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
+    }
+
   protected:
     Index num_filters_;
     multi_array::Array<Index, 3> layer_shape_;
@@ -463,6 +487,14 @@ class RecurrentIntegrator : public Integrator<TReal> {
       weights_ = parameters.slice(0, super_type::parameter_count_);
     }
 
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
+    }
+
   protected:
     graphs::PredecessorGraph<> network_;
     multi_array::ConstArraySlice<TReal> weights_;
@@ -493,6 +525,10 @@ class ReservoirIntegrator : public Integrator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
+    }
 
   protected:
     graphs::PredecessorGraph<TReal> network_;

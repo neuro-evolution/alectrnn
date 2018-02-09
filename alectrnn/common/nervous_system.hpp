@@ -8,6 +8,7 @@
 #include <initializer_list>
 #include "layer.hpp"
 #include "multi_array.hpp"
+#include "parameter_types.hpp"
 
 namespace nervous_system {
 
@@ -79,6 +80,24 @@ class NervousSystem {
 
     std::size_t GetParameterCount() const {
       return parameter_count_;
+    }
+
+    /*
+     * Returns a coding for the parameters and what order they are expected
+     */
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(parameter_count_);
+      Index parameter_id = 0;
+      for (auto layer_ptr = network_layers_.begin()+1; 
+          layer_ptr != network_layers_.end(); ++layer_ptr) {
+        std::vector<PARAMETER_TYPE> layer_layout = (*layer_ptr)->GetParameterLayout();
+        for (auto layout_ptr = layer_layout.begin();
+            layout_ptr != layer_layout.end(); ++layout_ptr) {
+          layout[parameter_id] = *layout_ptr;
+          ++parameter_id;
+        }
+      }
+      return layout;
     }
 
     const Layer<TReal>& operator[](Index index) const {

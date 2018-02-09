@@ -10,7 +10,6 @@ namespace alectrnn {
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
     nervous_system::NervousSystem<float>& neural_net) 
     : NervousSystemAgent(ale, neural_net, 1, false) {
-
 }
 
 /*

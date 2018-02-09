@@ -24,19 +24,20 @@ float *PyArrayToCArray(PyArrayObject *py_array) {
   return reinterpret_cast<float *>(py_array->data);
 }
 
-PyObject *ConvertTensorToPyArray(const multi_array::Tensor<float>& tensor)
-{
-  std::vector<npy_intp> shape(tensor.ndimensions());
-  for (std::size_t iii = 0; iii < tensor.ndimensions(); ++iii) {
-    shape[iii] = tensor.shape()[iii];
-  }
-  PyObject* py_array = PyArray_SimpleNew(tensor.ndimensions(), shape.data(), NPY_FLOAT32);
-  PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
-  npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
-  for (std::size_t iii = 0; iii < tensor.size(); ++iii) {
-    data[iii] = tensor[iii];
-  }
-  return py_array;
-}
+// Not in same compilation unit as import_array()
+// PyObject *ConvertTensorToPyArray(const multi_array::Tensor<float>& tensor)
+// {
+//   std::vector<npy_intp> shape(tensor.ndimensions());
+//   for (std::size_t iii = 0; iii < tensor.ndimensions(); ++iii) {
+//     shape[iii] = tensor.shape()[iii];
+//   }
+//   PyObject* py_array = PyArray_SimpleNew(tensor.ndimensions(), shape.data(), NPY_FLOAT32);
+//   PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
+//   npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
+//   for (std::size_t iii = 0; iii < tensor.size(); ++iii) {
+//     data[iii] = tensor[iii];
+//   }
+//   return py_array;
+// }
 
 }

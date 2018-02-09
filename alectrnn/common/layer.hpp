@@ -8,6 +8,7 @@
 #include "activator.hpp"
 #include "integrator.hpp"
 #include "multi_array.hpp"
+#include "parameter_types.hpp"
 
 namespace nervous_system {
 
@@ -102,6 +103,33 @@ class Layer {
       return parameter_count_;
     }
 
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(parameter_count_);
+
+      // layout produced in configure order: back->self->act
+      Index order = 0;
+      std::vector<PARAMETER_TYPE> back_layout = back_integrator_->GetParameterLayout();
+      for (auto par_type_ptr = back_layout.begin(); 
+          par_type_ptr != back_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+      std::vector<PARAMETER_TYPE> self_layout = self_integrator_->GetParameterLayout();
+      for (auto par_type_ptr = self_layout.begin(); 
+          par_type_ptr != self_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+      std::vector<PARAMETER_TYPE> act_layout = activation_function_->GetParameterLayout();
+      for (auto par_type_ptr = act_layout.begin(); 
+          par_type_ptr != act_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+
+      return layout;
+    }
+
     std::size_t NumNeurons() const {
       return layer_state_.size();
     }
@@ -166,6 +194,10 @@ class InputLayer : public Layer<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 
     void Reset() { super_type::layer_state_.Fill(0.0); }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      return std::vector<PARAMETER_TYPE>(0);
+    }
 };
 
 template<typename TReal>
@@ -201,6 +233,28 @@ class MotorLayer : public Layer<TReal> {
       super_type::activation_function_->Configure(
         parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
                          super_type::activation_function_->GetParameterCount()));
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+      // layout produced in configure order: back->act
+      Index order = 0;
+      std::vector<PARAMETER_TYPE> back_layout = super_type::back_integrator_->GetParameterLayout();
+      for (auto par_type_ptr = back_layout.begin(); 
+          par_type_ptr != back_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+
+      std::vector<PARAMETER_TYPE> act_layout = super_type::activation_function_->GetParameterLayout();
+      for (auto par_type_ptr = act_layout.begin(); 
+          par_type_ptr != act_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+
+      return layout;
     }
 };
 

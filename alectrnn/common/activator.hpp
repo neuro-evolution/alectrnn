@@ -20,6 +20,7 @@
 #include <limits>
 #include "multi_array.hpp"
 #include "utilities.hpp"
+#include "parameter_types.hpp"
 
 namespace nervous_system {
 
@@ -63,6 +64,13 @@ class Activator {
       return parameter_count_;
     }
 
+    /*
+     * Should return a vector with parameter_types ordered according to
+     * the order they are expected in the parameter slice.
+     * If no parameters are used, the vector should be empty
+     */
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const=0;
+
     ACTIVATOR_TYPE GetActivatorType() const {
       return activator_type_;
     }
@@ -94,6 +102,10 @@ class IdentityActivator : public Activator<TReal> {
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
     }
 
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      return std::vector<PARAMETER_TYPE>(0);
+    }
+
     void Reset() {}
 };
 
@@ -113,6 +125,7 @@ class CTRNNActivator : public Activator<TReal> {
 
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
+      // Loop through all the neurons and apply the CTRNN update equation
       for (Index iii = 0; iii < num_states_; iii++) {
         state[iii] += step_size_ * rtaus_[iii] * 
             (-state[iii] + utilities::sigmoid(biases_[iii] + input_buffer[iii]));
@@ -123,6 +136,17 @@ class CTRNNActivator : public Activator<TReal> {
       assert(parameters.size() == super_type::parameter_count_);
       biases_ = parameters.slice(0, num_states_);
       rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < num_states_; ++iii) {
+        layout[iii] = BIAS;
+      }
+      for (Index iii = num_states_; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = RTAUS;
+      }
+      return layout;
     }
 
     void Reset() {};
@@ -172,6 +196,17 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       assert(parameters.size() == super_type::parameter_count_);
       biases_ = parameters.slice(0, shape_[0]);
       rtaus_ = parameters.slice(parameters.stride() * shape_[0], shape_[0]);
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < shape_[0]; ++iii) {
+        layout[iii] = BIAS;
+      }
+      for (Index iii = shape_[0]; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = RTAUS;
+      }
+      return layout;
     }
 
     void Reset() {};

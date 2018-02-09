@@ -125,8 +125,7 @@ nn_sources = [
 ]
 
 nn_handler_sources = [
-    "alectrnn/common/nervous_system_handler.cpp",
-    "alectrnn/common/capi_tools.cpp"
+    "alectrnn/common/nervous_system_handler.cpp"
 ]
 
 ale_handler_sources = [

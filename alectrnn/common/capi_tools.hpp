@@ -5,6 +5,8 @@
  *      Author: Nathaniel Rodriguez
  *
  * A utility functions for use by other classes or functions.
+ * Make sure to do:  import_array(); for whatever module this is being used
+ * in in order to activate the API.
  */
 
 #ifndef ALECTRNN_COMMON_CAPI_TOOLS_H_
@@ -18,10 +20,12 @@
 #include "numpy/arrayobject.h"
 #include "multi_array.hpp"
 
+#include <iostream>//////////////////////////////////////////////////
+
 namespace alectrnn {
 
 float *PyArrayToCArray(PyArrayObject *py_array);
-PyObject *ConvertTensorToPyArray(const multi_array::Tensor<float>& tensor);
+// PyObject *ConvertTensorToPyArray(const multi_array::Tensor<float>& tensor);
 
 template<typename T>
 std::vector<T> PyArrayToVector(PyArrayObject *py_array) {
@@ -44,7 +48,5 @@ multi_array::SharedMultiArray<T, NumDims> PyArrayToSharedMultiArray(PyArrayObjec
 }
 
 } // End alectrnn namespace
-
-
 
 #endif /* ALECTRNN_COMMON_CAPI_TOOLS_H_ */

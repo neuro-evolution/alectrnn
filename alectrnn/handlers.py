@@ -173,6 +173,20 @@ class ALEHandler(Handler):
         for rom in roms:
             print("\t", rom)
 
+
+class PARAMETER_TYPE(Enum):
+    BIAS=0
+    RTAUS=1
+    WEIGHT=2
+
+def layout_matching_bounds(parameter_layout, bounds={}):
+    """
+    Creates a np array with the bounds for a given parameter layout.
+    bounds = key: PARAMETER_TYPE, value: (low, high)
+    returns a Nx2 np.float32 array
+    """
+    pass
+
 class ACTIVATOR_TYPE(Enum):
     BASE=0
     IDENTITY=1
@@ -598,6 +612,13 @@ class NervousSystem:
 
         return nn_handler.GetSize(self.neural_network)
         
+    def parameter_layout(self):
+        """
+        Returns an np_int array with PARAMETER_TYPE codes
+        """
+
+        return nn_handler.GetParameterLayout(self.neural_network)
+
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
     """
     Determines layer shape given previous layer shape and the number of chosen
