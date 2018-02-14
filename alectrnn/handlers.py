@@ -22,6 +22,7 @@ from pkg_resources import resource_filename
 from enum import Enum
 import numpy as np
 
+
 def generate_rom_dictionary():
     roms_list = resource_listdir("alectrnn", "roms")
     rom_path_list = [ resource_filename("alectrnn", "roms/" + rom) 
@@ -30,9 +31,13 @@ def generate_rom_dictionary():
     return { rom_name_list[i] : rom_path_list[i] 
             for i in range(len(rom_path_list)) }
 
+
 class Handler:
 
-    def __init__(self, handle_type, handle_parameters={}):
+    def __init__(self, handle_type, handle_parameters=None):
+
+        if handle_parameters is None:
+            handle_parameters = {}
 
         self.handle_type = handle_type
         self.handle_parameters = handle_parameters
@@ -44,9 +49,10 @@ class Handler:
     def get(self):
         return self.handle
 
+
 class ObjectiveHandler(Handler):
 
-    def __init__(self, ale, agent, obj_type, obj_parameters={}):
+    def __init__(self, ale, agent, obj_type, obj_parameters=None):
         """
         Objective parameters:
         # Note: should not include agent/ALE/parameters, only configuration pars
@@ -55,6 +61,9 @@ class ObjectiveHandler(Handler):
 
             For "totalcost": none
         """
+        if obj_parameters is None:
+            obj_parameters = {}
+
         super().__init__(obj_type, obj_parameters)
         self.ale = ale
         self.agent = agent
@@ -62,11 +71,12 @@ class ObjectiveHandler(Handler):
     def create(self):
         if self.handle_type == "totalcost":
             self.handle = partial(objective.TotalCostObjective, 
-                                    ale=self.ale, agent=self.agent)
+                                  ale=self.ale, agent=self.agent)
+
 
 class AgentHandler(Handler):
 
-    def __init__(self, ale, agent_type, agent_parameters={}):
+    def __init__(self, ale, agent_type, agent_parameters=None):
         """
         Agent parameters:
           agent_type - "ctrnn"
@@ -76,6 +86,9 @@ class AgentHandler(Handler):
                           input_screen_width, input_screen_height,
                           use_color, step_size)
         """
+        if agent_parameters is None:
+            agent_parameters = {}
+
         super().__init__(agent_type, agent_parameters)
         self.ale = ale
 
@@ -90,12 +103,13 @@ class AgentHandler(Handler):
         else:
             sys.exit("No agent by that name is implemented")
 
+
 class NervousSystemAgentHandler(AgentHandler):
 
     def __init__(self, ale, nervous_system, update_rate, logging=False):
         super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
-                                 'update_rate': update_rate,
-                                 'logging': int(logging)})
+                                                 'update_rate': update_rate,
+                                                 'logging': int(logging)})
 
     def layer_history(self, layer_index):
         """
@@ -105,17 +119,18 @@ class NervousSystemAgentHandler(AgentHandler):
         """
         return agent_handler.GetLayerHistory(self.handle, layer_index)
 
+
 class ALEHandler(Handler):
 
     installed_roms = generate_rom_dictionary()
 
     def __init__(self, rom, ale_seed,
-                color_avg, max_num_frames, max_num_episodes,
-                max_num_frames_per_episode,
-                rom_file="",
-                print_screen=False,
-                display_screen=False,
-                sound=False):
+                 color_avg, max_num_frames, max_num_episodes,
+                 max_num_frames_per_episode,
+                 rom_file="",
+                 print_screen=False,
+                 display_screen=False,
+                 sound=False):
         """
         ALE parameters:
           rom - rom name (specify from list)
@@ -173,11 +188,13 @@ class ALEHandler(Handler):
         for rom in roms:
             print("\t", rom)
 
+
 # Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
     BIAS=0
     RTAUS=1
     WEIGHT=2
+
 
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
@@ -196,7 +213,8 @@ def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
 
     else:
         raise AttributeError("Error: type_bounds does not fully cover the " +
-            "types of parameters in layout or invalid type.")
+                             "types of parameters in layout or invalid type.")
+
 
 def coverage_is_complete(parameter_layout, type_bounds):
     """
@@ -217,6 +235,7 @@ def coverage_is_complete(parameter_layout, type_bounds):
 
     return True
 
+
 # Should keep in sync with ACTIVATOR_TYPE in activator.hpp
 class ACTIVATOR_TYPE(Enum):
     BASE=0
@@ -225,6 +244,7 @@ class ACTIVATOR_TYPE(Enum):
     CONV_CTRNN=3
     IAF=4
     CONV_IAF=5
+
 
 # Should keep in sync with INTEGRATOR_TYPE in integrator.hpp
 class INTEGRATOR_TYPE(Enum):
@@ -235,8 +255,10 @@ class INTEGRATOR_TYPE(Enum):
     RECURRENT=4
     RESERVOIR=5
 
+
 ACTMAP = { ACTIVATOR_TYPE.IAF : ACTIVATOR_TYPE.CONV_IAF,
            ACTIVATOR_TYPE.CTRNN : ACTIVATOR_TYPE.CONV_CTRNN }
+
 
 class NervousSystem:
     """
@@ -358,9 +380,9 @@ class NervousSystem:
         layers = []
         # interpreted shapes are for some back integrators which need
         # to know how to interpret the layer for convolution
-        interpreted_shapes, layer_shapes = self.configure_layer_shapes(
+        interpreted_shapes, layer_shapes = self._configure_layer_shapes(
                                             input_shape, nn_parameters)
-        layer_act_types, layer_act_args = self.configure_layer_activations(
+        layer_act_types, layer_act_args = self._configure_layer_activations(
                                             layer_shapes, nn_parameters,
                                             act_type, act_args)
 
@@ -369,7 +391,6 @@ class NervousSystem:
                 layers.append(self._create_conv_layer(
                     interpreted_shapes[i], 
                     interpreted_shapes[i+1],
-                    layer_pars['num_filters'], 
                     layer_pars['filter_shape'], 
                     layer_pars['stride'], 
                     layer_act_types[i], 
@@ -402,7 +423,6 @@ class NervousSystem:
                 layers.append(self._create_conv_recurrent_layer(
                     interpreted_shapes[i],
                     interpreted_shapes[i+1],
-                    layer_pars['num_filters'],
                     layer_pars['filter_shape'],
                     layer_pars['stride'],
                     layer_pars['num_internal_nodes'],
@@ -415,7 +435,6 @@ class NervousSystem:
                 layers.append(self._create_conv_reservoir_layer(
                     interpreted_shapes[i],
                     interpreted_shapes[i+1],
-                    layer_pars['num_filters'],
                     layer_pars['filter_shape'],
                     layer_pars['stride'],
                     layer_pars['num_internal_nodes'],
@@ -451,7 +470,7 @@ class NervousSystem:
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
 
-    def configure_layer_activations(self, layer_shapes, nn_parameters, 
+    def _configure_layer_activations(self, layer_shapes, nn_parameters,
                                     act_type, act_args):
         """
         outputs the necessary tuples for layer activations of both conv and 
@@ -472,10 +491,13 @@ class NervousSystem:
 
         return layer_act_types, layer_act_args
 
-    def configure_layer_shapes(self, input_shape, nn_parameters):
+    def _configure_layer_shapes(self, input_shape, nn_parameters):
         """
         For a given activation type it sets an internal attribute that
         can be used by the other layer creation functions
+
+        for conv layers the interpreted_shape will take into account the
+        'num_filters' parameter
         """
 
         interpreted_shapes = [input_shape]
@@ -505,10 +527,10 @@ class NervousSystem:
                              layer_shape):
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
-                    int(np.prod(prev_layer_shape)))
+                     int(np.prod(prev_layer_shape)))
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
-                    internal_edge_array)
+                     internal_edge_array)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
@@ -517,45 +539,45 @@ class NervousSystem:
                             act_type, act_args, layer_shape):
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
-                    int(np.prod(prev_layer_shape)))
+                     int(np.prod(prev_layer_shape)))
         self_type = INTEGRATOR_TYPE.ALL2ALL.value
         self_args = (int(num_internal_nodes), 
-                    int(num_internal_nodes))
+                     int(num_internal_nodes))
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
-            num_filters, filter_shape, stride, num_internal_nodes, 
+            filter_shape, stride, num_internal_nodes,
             internal_edge_array, act_type, act_args, layer_shape):
 
         back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
-                    interpreted_shape, #layer_shape funct outputs dtype=np.uint64
-                    np.array(prev_layer_shape, dtype=np.uint64),
-                    int(stride))
+                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride))
         
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
-                    internal_edge_array)
+                     internal_edge_array)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
     def _create_conv_reservoir_layer(self, prev_layer_shape, interpreted_shape,
-            num_filters, filter_shape, stride, num_internal_nodes, 
+            filter_shape, stride, num_internal_nodes,
             internal_edge_array, internal_weight_array, act_type, act_args,
             layer_shape):
 
         back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
-                    interpreted_shape, #layer_shape funct outputs dtype=np.uint64
-                    np.array(prev_layer_shape, dtype=np.uint64),
-                    int(stride))
+                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride))
         self_type = INTEGRATOR_TYPE.RESERVOIR.value
         self_args = (int(num_internal_nodes),
-                    internal_edge_array,
-                    internal_weight_array)
+                     internal_edge_array,
+                     internal_weight_array)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
@@ -601,7 +623,7 @@ class NervousSystem:
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
-            num_filters, filter_shape, stride, act_type, act_args, layer_shape):
+            filter_shape, stride, act_type, act_args, layer_shape):
         """
         act_args needs to be in the correct tuple format with properly
         typed numpy arrays for any arguments
@@ -651,6 +673,7 @@ class NervousSystem:
 
         return nn_handler.GetParameterLayout(self.neural_network)
 
+
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
     """
     Determines layer shape given previous layer shape and the number of chosen
@@ -659,6 +682,7 @@ def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
 
     return np.array([num_filters] + calc_image_dimensions(
                     prev_layer_shape[1:], stride), dtype=np.uint64)
+
 
 def calc_image_dimensions(prev_image_dimensions, stride):
     """
@@ -670,6 +694,7 @@ def calc_image_dimensions(prev_image_dimensions, stride):
     return [ calc_num_pixels(image_dimension, stride) 
                 for image_dimension in prev_image_dimensions ]
 
+
 def calc_num_pixels(num_pixels, stride):
     """
     Converts the current number of pixels to the number there will be given
@@ -677,6 +702,7 @@ def calc_num_pixels(num_pixels, stride):
     """
 
     return 1 + (num_pixels - 1) // stride
+
 
 class SimpleCTRNN(NervousSystem):
 
@@ -687,6 +713,7 @@ class SimpleCTRNN(NervousSystem):
         act_type = ACTIVATOR_TYPE.CTRNN
         act_args = (float(step_size),)
         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
+
 
 if __name__ == '__main__':
     """

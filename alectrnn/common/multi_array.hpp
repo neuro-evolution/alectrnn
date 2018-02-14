@@ -13,12 +13,12 @@
  * The MultiArray class is just a container for a contiguous array, which will
  * be represented as a multi-dimensional array. It requires a shape to construct
  *
- * The ArraySlice class is a 1D slice along an axis of some data. It recieves a
+ * The ArraySlice class is a 1D slice along an axis of some data. It receives a
  * pointer to the data and requires a start, size, and stride to determine which 
  * elements to access. 
  *
  * The Slice class is also a 1D slice, however it uses start/stop/stride to 
- * deterine which elements to access.
+ * determine which elements to access.
  *
  * Slices can make strict subslices of themselves using the slice() method
  * which builds a subslice relative to the data the slice can access. E.g.

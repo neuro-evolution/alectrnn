@@ -13,13 +13,14 @@
 *.sublime*
 .project
 .cproject
+CMakeLists.txt
+/.settings/
+/.idea/
 
 # remove cache files
 /*__pycache__
 
 # remove misc folders
 /alectrnn/alelib/
-/.settings/
-/.idea/
 /alectrnn/build/
 /alectrnn_debug/
