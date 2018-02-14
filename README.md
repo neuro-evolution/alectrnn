@@ -1,4 +1,4 @@
-Written for Python 3 using gcc 5.4. A C++14 compiler required.
+Written for Python 3 using g++ 5.4. A C++14 compiler required.
 
 Can be install with pip. Requires ALE (and it's accompanying dependencies) to work as well as numpy. Both will be installed as dependencies via pip:
 
