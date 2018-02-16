@@ -623,7 +623,7 @@ class NervousSystem:
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
-            filter_shape, stride, act_type, act_args, layer_shape):
+                           filter_shape, stride, act_type, act_args, layer_shape):
         """
         act_args needs to be in the correct tuple format with properly
         typed numpy arrays for any arguments

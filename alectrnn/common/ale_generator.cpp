@@ -12,9 +12,9 @@
  */
 
 #include <Python.h>
-#include "ale_generator.hpp"
 #include <ale_interface.hpp>
 #include <iostream>
+#include "ale_generator.hpp"
 
 static void DeleteALE(PyObject *ale_capsule) {
   delete (ALEInterface *)PyCapsule_GetPointer(ale_capsule, "ale_generator.ale");
