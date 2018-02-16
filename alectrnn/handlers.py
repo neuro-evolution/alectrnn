@@ -196,12 +196,28 @@ class PARAMETER_TYPE(Enum):
     WEIGHT=2
 
 
+def draw_uniform_initial_guess(rng, boundary_array):
+    """
+    Uses a numpy RandomState to draw a uniform set of initial values between
+    the specified bounds.
+    :param rng: numpy RandomState object
+    :param boundary_array: Nx2 np.float32 array
+    :return: 1-D array of size N and dtype np.float32
+    """
+
+    initial_guess = np.zeros(len(boundary_array))
+    for iii, (low, high) in enumerate(boundary_array):
+        initial_guess[iii] = rng.uniform(low, high)
+
+    return initial_guess
+
+
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
-    parameter_layout = 1D array with # parameter elements coded as PARAMETER_TYPE (int)
-    type_bounds = key: PARAMETER_TYPE, value: (low, high)
-    returns a Nx2 np.float32 array
+    :param parameter_layout: 1D array with # parameter elements coded as PARAMETER_TYPE (int)
+    :param type_bounds: key is PARAMETER_TYPE, value is (low, high)
+    :return: a Nx2 np.float32 array
     """
     if coverage_is_complete(parameter_layout, type_bounds):
         boundaries = np.zeros((len(parameter_layout), 2), dtype=np.float32)
@@ -364,7 +380,9 @@ class NervousSystem:
     def __init__(self, input_shape, num_outputs, nn_parameters,
                  act_type, act_args):
         """
-        input_shape - shape of input into the NN
+        input_shape - shape of input into the NN (should be 3D) 1st dim is
+                      channels, second is height, then width. Will be cast
+                      as dtype np.uint64 automatically
         num_outputs - the size of the motor layer
         nn_parameters - list of dictionaries. One for each layer.
         Input layers are added by the NervousSystem itself by default.
@@ -705,8 +723,20 @@ def calc_num_pixels(num_pixels, stride):
 
 
 class SimpleCTRNN(NervousSystem):
-
+    """
+    A CTRNN with all-2-all input to network connections and all-2-all network
+    to motor layer connections
+    """
     def __init__(self, input_shape, num_outputs, num_neurons, step_size):
+        """
+        :param input_shape: shape of input into the NN (should be 3D) 1st dim is
+            channels, second is height, then width. Will be cast
+            as dtype np.uint64 automatically.
+        :param num_outputs: number of neural outputs, for ALE this will be the
+            # controller inputs
+        :param num_neurons: size of the network
+        :param step_size: integration step size during activation
+        """
         nn_parameters = [{
             'layer_type' : "a2a_a2a",
             'num_internal_nodes': num_neurons}]
