@@ -7,6 +7,7 @@ import subprocess
 import sys
 import os
 
+
 def run_ale_install_script(with_sdl):
     """
     Downloads and installs ALE to installation directory
@@ -17,6 +18,7 @@ def run_ale_install_script(with_sdl):
         build_libs_cmd = ['bash', 'alectrnn/ale_install.sh']
     if subprocess.call(build_libs_cmd) != 0:
         sys.exit("Failed to build ALE dependencies")
+
 
 class install(setuptools.command.install.install):
     user_options = setuptools.command.install.install.user_options \
@@ -33,6 +35,7 @@ class install(setuptools.command.install.install):
         run_ale_install_script(self.with_sdl)
         setuptools.command.install.install.run(self)
 
+
 class develop(setuptools.command.develop.develop):
     user_options = setuptools.command.develop.develop.user_options \
                     + [("with-sdl", None, "Enable SDL in ALE")]
@@ -48,6 +51,7 @@ class develop(setuptools.command.develop.develop):
         run_ale_install_script(self.with_sdl)
         setuptools.command.develop.develop.run(self)
 
+
 class build_ext(setuptools.command.build_ext.build_ext):
     """build_ext command for use when numpy headers are needed."""
     def run(self):
@@ -61,6 +65,7 @@ class build_ext(setuptools.command.build_ext.build_ext):
 
         # Call original build_ext command
         setuptools.command.build_ext.build_ext.run(self)
+
 
 # Remove setuptools dumb c warnings
 import distutils.sysconfig
@@ -236,8 +241,8 @@ setup(name=PACKAGE_NAME,
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
       ext_modules=[ale_module, agent_module, objective_module, 
-                    layer_module, nn_module, nn_handler_module,
-                    ale_handler, agent_handler],
+                   layer_module, nn_module, nn_handler_module,
+                   ale_handler, agent_handler],
       package_data={PACKAGE_NAME: [
         'roms/*.bin', 
         'alelib/bin/ale',

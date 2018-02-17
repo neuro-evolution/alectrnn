@@ -10,7 +10,7 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 #include "numpy/arrayobject.h"
 #include "nervous_system.hpp"
 #include "agent_handler.hpp"

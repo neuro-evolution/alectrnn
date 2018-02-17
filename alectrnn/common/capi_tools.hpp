@@ -20,8 +20,6 @@
 #include "numpy/arrayobject.h"
 #include "multi_array.hpp"
 
-#include <iostream>//////////////////////////////////////////////////
-
 namespace alectrnn {
 
 float *PyArrayToCArray(PyArrayObject *py_array);

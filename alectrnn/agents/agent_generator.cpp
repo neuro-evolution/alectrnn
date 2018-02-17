@@ -23,7 +23,7 @@
 #include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
-#include "nervous_system.hpp"
+#include "../common/nervous_system.hpp"
 #include "agent_generator.hpp"
 #include "player_agent.hpp"
 // Add includes to agents you wish to add below:

@@ -1,6 +1,6 @@
 #include "nervous_system_agent.hpp"
-#include "multi_array.hpp"
 #include "player_agent.hpp"
+#include "../common/multi_array.hpp"
 #include "../common/screen_preprocessing.hpp"
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
