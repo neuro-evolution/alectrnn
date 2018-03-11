@@ -91,9 +91,8 @@ include_dirs += [
 ]
 
 # Libraries
-lib_path = os.path.join(cwd, "alectrnn","alelib", "lib")
-library_dirs = []
-library_dirs.append(lib_path)
+lib_path = os.path.join(cwd, "alectrnn", "alelib", "lib")
+library_dirs = [lib_path]
 ALE_LIB = os.path.join(lib_path, "libale.so")
 main_link_args = [ALE_LIB]
 main_libraries = ['ale']

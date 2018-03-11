@@ -74,10 +74,10 @@ Action NervousSystemAgent::Act() {
   neural_net_.SetInput(downsized_screen_);
   // The neural network will be updates update_rate_ times before output is read
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
+    neural_net_.Step();
     if (is_logging_) {
       log_(neural_net_); // TO DO: Add timestamp (for updates faster than framerate)
     }
-    neural_net_.Step();
   }
 
   // Read values from last X neurons, X==LastNeuronIndex - Action#

@@ -481,8 +481,10 @@ class NervousSystem:
 
         # Build motor later
         prev_layer_size = int(np.prod(layer_shapes[-1]))
-        layers.append(self._create_motor_layer(prev_layer_size, 
-            num_outputs, act_type.value, (prev_layer_size, *act_args)))
+        layers.append(self._create_motor_layer(num_outputs,
+                                               prev_layer_size,
+                                               act_type.value,
+                                               (prev_layer_size, *act_args)))
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
