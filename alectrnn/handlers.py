@@ -664,13 +664,13 @@ class NervousSystem:
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
-    def _create_motor_layer(self, size_of_prev_layer, num_outputs, act_type, act_args):
+    def _create_motor_layer(self, num_outputs, size_of_prev_layer, act_type, act_args):
         """
         act_args needs to be in the correct tuple format for the activator
         """
 
         return layer_generator.CreateMotorLayer(
-            int(size_of_prev_layer), int(num_outputs), act_type, act_args)
+            int(num_outputs), int(size_of_prev_layer), act_type, act_args)
 
     def get_parameter_count(self):
         """
