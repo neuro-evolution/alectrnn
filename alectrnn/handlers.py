@@ -484,14 +484,14 @@ class NervousSystem:
         layers.append(self._create_motor_layer(num_outputs,
                                                prev_layer_size,
                                                act_type.value,
-                                               (prev_layer_size, *act_args)))
+                                               (num_outputs, *act_args)))
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
 
     def _configure_layer_activations(self, layer_shapes, nn_parameters,
-                                    act_type, act_args):
+                                     act_type, act_args):
         """
         outputs the necessary tuples for layer activations of both conv and 
         non-conv layers
@@ -527,9 +527,16 @@ class NervousSystem:
                 interpreted_shapes.append(calc_conv_layer_shape(interpreted_shapes[i], 
                                 layer_pars['num_filters'], layer_pars['stride']))
                 if 'num_internal_nodes' in layer_pars:
+                    interpreted_size = np.prod(interpreted_shapes[-1])
+                    if layer_pars['num_internal_nodes'] < interpreted_size:
+                        print("Warning: Layer defined by:", layer_pars,
+                              "requires more neurons to match interpreted shape"
+                              " setting to interpreted size."
+                              " Integration may result in disconnected"
+                              " components.")
                     layer_shapes.append(np.array([
                         max(layer_pars['num_internal_nodes'], 
-                            np.prod(interpreted_shapes[-1]))],
+                            interpreted_size)],
                         dtype=np.uint64))
                 else:
                     layer_shapes.append(np.array([np.prod(interpreted_shapes[-1])],
@@ -551,7 +558,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
                      internal_edge_array)
-
+        assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
@@ -563,7 +570,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.ALL2ALL.value
         self_args = (int(num_internal_nodes), 
                      int(num_internal_nodes))
-
+        assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
@@ -591,7 +598,7 @@ class NervousSystem:
 
         back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
-                     interpreted_shape, #layer_shape funct outputs dtype=np.uint64
+                     interpreted_shape, # layer_shape funct outputs dtype=np.uint64
                      np.array(prev_layer_shape, dtype=np.uint64),
                      int(stride))
         self_type = INTEGRATOR_TYPE.RESERVOIR.value
@@ -616,7 +623,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (int(num_internal_nodes),
                     internal_edge_array)
-
+        assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
@@ -632,13 +639,13 @@ class NervousSystem:
         """
         back_type = INTEGRATOR_TYPE.RESERVOIR.value
         back_args = (int(num_bipartite_nodes),
-                    bipartite_input_edge_array, 
-                    input_weights)
+                     bipartite_input_edge_array,
+                     input_weights)
         self_type = INTEGRATOR_TYPE.RESERVOIR.value
         self_args = (int(num_internal_nodes),
-                    internal_edge_array,
-                    internal_weight_array)
-
+                     internal_edge_array,
+                     internal_weight_array)
+        assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
@@ -655,9 +662,9 @@ class NervousSystem:
         back_type = INTEGRATOR_TYPE.CONV.value
         # Appropriate depth is added to filter shape to build the # 3-element 1D array
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
-                    interpreted_shape, #layer_shape funct outputs dtype=np.uint64
-                    np.array(prev_layer_shape, dtype=np.uint64),
-                    int(stride))
+                     interpreted_shape, # layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride))
         self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
 
@@ -669,6 +676,7 @@ class NervousSystem:
         act_args needs to be in the correct tuple format for the activator
         """
 
+        assert(act_args[0] == num_outputs)
         return layer_generator.CreateMotorLayer(
             int(num_outputs), int(size_of_prev_layer), act_type, act_args)
 

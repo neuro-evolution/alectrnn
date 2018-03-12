@@ -7,6 +7,12 @@
  * Between layers, the sources of the connections correspond to the nodes
  * of the previous layer, while the destination corresponds with nodes in the
  * current layer.
+ *
+ * Integrators don't actually have to know the real size/shape of the previous
+ * layer. Any size/shape can be given so long as the # elements is less than
+ * then number in the previous layer so that non-existent elements are not
+ * accessed. The integrator will create its own view into the previous layer
+ * with the shape provided it, regardless of whether that layer has that shape.
  */
 
 #ifndef NN_INTEGRATOR_H_

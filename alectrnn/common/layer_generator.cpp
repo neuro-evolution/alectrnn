@@ -247,13 +247,10 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 static PyMethodDef LayerMethods[] = {
   { "CreateLayer", (PyCFunction) CreateLayer,
           METH_VARARGS | METH_KEYWORDS,
-          "Returns a handle to a Layer\nArguments: (back_integrator, "
-                  "back_integrator_args, self_integrator, self_integrator_args,"
-                  " activator_type, activator_args, shape"},
+          "Returns a handle to a Layer"},
   { "CreateMotorLayer", (PyCFunction) CreateMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
-          "Returns a handle to a MotorLayer\nArguments: "
-                  "(num_outputs, num_inputs, activator_type, activator_args)"},
+          "Returns a handle to a MotorLayer"},
       //Additional layers here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };
