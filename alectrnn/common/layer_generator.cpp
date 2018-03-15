@@ -27,9 +27,8 @@
 
 #include <Python.h>
 #include <cassert>
-#include <ale_interface.hpp>
 #include <cstddef>
-#include <inttypes.h>
+#include <cinttypes>
 #include <iostream>
 #include <vector>
 #include "layer_generator.hpp"

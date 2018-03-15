@@ -7,7 +7,6 @@
  */
 
 #include <Python.h>
-#include <ale_interface.hpp>
 #include <cstddef>
 #include <iostream>
 #include "../common/multi_array.hpp"
