@@ -211,7 +211,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
           for (Index kkk = 0; kkk < tar_view.extent(1); ++kkk) {
             for (Index lll = 0; lll < tar_view.extent(2); ++lll) {
               tar_image[kkk][lll] += secondpass_image[kkk][lll] * channel_weights_[iii][jjj];
-              tar_image[kkk][lll] = utilities::BoundState(tar_image[kkk][lll]());
+              tar_image[kkk][lll] = utilities::BoundState<TReal>(tar_image[kkk][lll]);
             }
           }
         }
