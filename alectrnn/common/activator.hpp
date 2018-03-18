@@ -189,7 +189,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
               + utilities::sigmoid(biases_[filter] 
               + input_accessor[filter][iii][jjj]));
             state_accessor[filter][iii][jjj] = utilities::BoundState(
-                state_accessor[filter][iii][jjj]);
+                state_accessor[filter][iii][jjj]());
           }
         }
       }
