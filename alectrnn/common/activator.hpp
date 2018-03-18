@@ -127,8 +127,8 @@ class CTRNNActivator : public Activator<TReal> {
                     const multi_array::Tensor<TReal>& input_buffer) {
       // Loop through all the neurons and apply the CTRNN update equation
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] += step_size_ * rtaus_[iii] * 
-            (-state[iii] + utilities::sigmoid(biases_[iii] + input_buffer[iii]));
+        state[iii] += utilities::BoundState(step_size_ * rtaus_[iii] *
+            (-state[iii] + utilities::sigmoid(biases_[iii] + input_buffer[iii])));
       }
     }
 
@@ -182,11 +182,11 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       for (Index filter = 0; filter < shape_[0]; filter++) {
         for (Index iii = 0; iii < shape_[1]; iii++) {
           for (Index jjj = 0; jjj < shape_[2]; jjj++) {
-            state_accessor[filter][iii][jjj] += step_size_ 
+            state_accessor[filter][iii][jjj] += utilities::BoundState(step_size_
               * rtaus_[filter]
               * (-state_accessor[filter][iii][jjj] 
               + utilities::sigmoid(biases_[filter] 
-              + input_accessor[filter][iii][jjj]));
+              + input_accessor[filter][iii][jjj])));
           }
         }
       }
@@ -224,49 +224,56 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
  * Sub-threshold activity is recorded in a local tensor, while the Layer
  * state only holds spikes.
  */
-// template<typename TReal>
-// class IafActivator : public Activator<TReal> {
-    // typedef Activator<TReal> super_type;
-    // typedef Index std::size_t;
-//   public:
-
-//     IafActivator(std::size_t num_states, TReal step_size) : 
-//         num_states_(num_states), step_size_(step_size) {
-//       // peak, refract, range, rtaus_, and reset
-//       parameter_count_ = 2 + num_states * 3;
-//       activator_type_ = IAF_ACTIVATOR;
-//       last_spike_time_.resize(num_states_);
-//       subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
-//     }
-
-//     ~IafActivator()=default;
-
-//     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
-      
-//     }
-
-//     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-
-//     }
-
-//     void Reset() {
-//       for (Index iii = 0; iii < num_states_; iii++) {
-//         last_spike_time_[iii] = std::numeric_limits<TReal>::max();
-//         subthreshold_state_[iii] = 0;
-//       }
-//     }
-
-//   protected:
-//     multi_array::ConstArraySlice<TReal> range_;
-//     multi_array::ConstArraySlice<TReal> rtaus_;
-//     multi_array::ConstArraySlice<TReal> reset_;
-//     TReal peak_;
-//     TReal refractory_period_;
-//     TReal step_size_;
-//     std::vector<TReal> last_spike_time_;
-//     multi_array::Tensor<TReal> subthreshold_state_;
-//     std::size_t num_states_;
-// };
+//template<typename TReal>
+//class IafActivator : public Activator<TReal> {
+//    typedef Activator<TReal> super_type;
+//    typedef Index std::size_t;
+//  public:
+//
+//    IafActivator(std::size_t num_states, TReal step_size) :
+//        num_states_(num_states), step_size_(step_size) {
+//      // peak, refract, range, rtaus_, and reset
+//      parameter_count_ = 2 + num_states * 3;
+//      activator_type_ = IAF_ACTIVATOR;
+//      last_spike_time_.resize(num_states_);
+//      subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
+//    }
+//
+//    ~IafActivator()=default;
+//
+//    void operator()(multi_array::Tensor<TReal>& state,
+//                    const multi_array::Tensor<TReal>& input_buffer) {
+//      utilities::BoundState
+//    }
+//
+//    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+//
+//    }
+//
+//    void Reset() {
+//      for (Index iii = 0; iii < num_states_; iii++) {
+//        last_spike_time_[iii] = std::numeric_limits<TReal>::max();
+//        subthreshold_state_[iii] = 0;
+//      }
+//    }
+//
+//  protected:
+//    /* The threshold is range_ + reset_ */
+//    multi_array::ConstArraySlice<TReal> range_;
+//    /* rtaus_ is the inverse of the time-constant */
+//    multi_array::ConstArraySlice<TReal> rtaus_;
+//    /* The resting state voltage is reset_ */
+//    multi_array::ConstArraySlice<TReal> reset_;
+//    /* The action potential voltage is peak_ + range_ + reset_ */
+//    multi_array::ConstArraySlice<TReal> peak_;
+//    /* The neuron can spike again after refractory_period_ * (1 / step_size_) steps */
+//    multi_array::ConstArraySlice<TReal> refractory_period_; //uh oh... need int, but only got real
+//    TReal step_size_;
+//
+//    std::vector<TReal> refractory_steps_;
+//    multi_array::Tensor<TReal> subthreshold_state_;
+//    std::size_t num_states_;
+//};
 
 } // End nervous_system namespace
 

@@ -21,6 +21,7 @@ from pkg_resources import resource_listdir
 from pkg_resources import resource_filename
 from enum import Enum
 import numpy as np
+import json
 
 
 def generate_rom_dictionary():
@@ -107,6 +108,7 @@ class AgentHandler(Handler):
 class NervousSystemAgentHandler(AgentHandler):
 
     def __init__(self, ale, nervous_system, update_rate, logging=False):
+        self._logging = logging
         super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
                                                  'update_rate': update_rate,
                                                  'logging': int(logging)})
@@ -117,7 +119,10 @@ class NervousSystemAgentHandler(AgentHandler):
         and # elements = # states in that layer.
         It will be of dtype=np.float32
         """
-        return agent_handler.GetLayerHistory(self.handle, layer_index)
+        if self._logging:
+            return agent_handler.GetLayerHistory(self.handle, layer_index)
+        else:
+            raise AssertionError("Error: Logging not active, no history table")
 
 
 class ALEHandler(Handler):
@@ -188,6 +193,57 @@ class ALEHandler(Handler):
         for rom in roms:
             print("\t", rom)
 
+
+def load_ALEHandler(json_filename):
+    """
+    creates an ale handler from parameters in the json file
+    json file should be created from python dumps that will be read in
+    as a dictionary with expected keys.
+    Top level key should be ale_parameters
+    :param json_filename: a json filename to be loaded
+    :return: an ale_handler
+    """
+
+    configuration = json.load(open(json_filename, 'r'))
+    return ALEHandler(**configuration['ale_parameters'])
+
+
+def load_ObjectiveHandler(json_filename):
+    """
+    creates an objective handler from parameters in the json file
+    json file should be created from python dumps and will expect a top
+    level key of objective_parameters
+    :param json_filename: a json filename to be loaded
+    :return: an objective handler
+    """
+
+    configuration = json.load(open(json_filename, 'r'))
+    return ObjectiveHandler(**configuration['objective_parameters'])
+
+
+def load_AgentHandler(json_filename):
+    """
+    creates an agent handler from parameters in the json file. The json
+    file should be created from python dumps and will expect a top level
+    key of agent_parameters
+    :param json_filename: a json filename to be loaded
+    :return: an agent handler
+    """
+
+    configuration = json.load(open(json_filename, 'r'))
+    return AgentHandler()
+
+######### Handlers need other handlers, so we need to add those arguments
+####### to the agent and objective above. Also add the NN handler
+##### but we won't use those directly, instead use this function below
+#### it will load everything in the correct order
+def load_game_configuration(json_filename):
+    """
+
+    :param json_filename:
+    :return:
+    """
+    pass
 
 # Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
