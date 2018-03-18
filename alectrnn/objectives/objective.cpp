@@ -16,6 +16,7 @@
 #include <memory>
 #include <cstdint>
 #include <cstddef>
+#include <cassert>
 #include <ale_interface.hpp>
 #include <iostream>
 #include "numpy/arrayobject.h"
@@ -51,6 +52,11 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
   alectrnn::PlayerAgent* player_agent =
       static_cast<alectrnn::PlayerAgent*>(PyCapsule_GetPointer(agent_capsule,
           "agent_generator.agent"));
+
+  // Check data type of array match float
+  PyArray_Descr* array_type = PyArray_DTYPE(py_parameter_array);
+  assert(array_type->type == NPY_FLOAT32);
+
   float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
   float total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));
@@ -75,6 +81,7 @@ static struct PyModuleDef ObjectiveModule = {
 };
 
 PyMODINIT_FUNC PyInit_objective(void) {
+  import_array();
   return PyModule_Create(&ObjectiveModule);
 }
 

@@ -162,6 +162,8 @@ class CTRNNActivator : public Activator<TReal> {
 /*
  * A uniform version of the CTRNN_ACTIVATOR activator. All neurons in same filter
  * will share parameters. The first index of the layer is the # filters
+ * NOTE: WE should change this so that it takes a function so we don't have
+ * to write this over and over again for each activator
  */
 template<typename TReal>
 class Conv3DCTRNNActivator : public Activator<TReal> {

@@ -89,7 +89,7 @@ class Layer {
 
       activation_function_->Configure(
         parameters.slice(parameters.stride() * back_integrator_->GetParameterCount() 
-                         + self_integrator_->GetParameterCount(), 
+                         + parameters.stride() * self_integrator_->GetParameterCount(),
                          activation_function_->GetParameterCount()));
     }
 

@@ -47,7 +47,7 @@ NervousSystemAgent::~NervousSystemAgent() {}
 
 void NervousSystemAgent::Configure(const float *parameters) {
   // Assumed that parameters is a contiguous array with # elements == par count
-  // User must make sure this holds, as the slices only garantee that it won't
+  // User must make sure this holds, as the slices only guarantee that it won't
   // exceed count
   neural_net_.Configure(multi_array::ConstArraySlice<float>(
     parameters, 0, neural_net_.GetParameterCount(), 1));
@@ -81,8 +81,8 @@ Action NervousSystemAgent::Act() {
   }
 
   // Read values from last X neurons, X==LastNeuronIndex - Action#
-  Action prefered_action(PLAYER_A_NOOP);
-  float prefered_output(std::numeric_limits<float>::lowest());
+  Action preferred_action(PLAYER_A_NOOP);
+  float preferred_output(std::numeric_limits<float>::lowest());
   Action last_action(PLAYER_A_NOOP);
   float last_output(std::numeric_limits<float>::lowest());
   const multi_array::Tensor<float>& output = neural_net_.GetOutput();
@@ -90,12 +90,12 @@ Action NervousSystemAgent::Act() {
     last_output = output[iii];
     last_action = available_actions_[iii];
 
-    if (prefered_output < last_output) {
-      prefered_output = last_output;
-      prefered_action = last_action;
+    if (preferred_output < last_output) {
+      preferred_output = last_output;
+      preferred_action = last_action;
     }
   }
-  return prefered_action;
+  return preferred_action;
 }
 
 const nervous_system::StateLogger<float>& NervousSystemAgent::GetLog() const {

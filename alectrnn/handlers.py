@@ -261,7 +261,7 @@ def draw_uniform_initial_guess(rng, boundary_array):
     :return: 1-D array of size N and dtype np.float32
     """
 
-    initial_guess = np.zeros(len(boundary_array))
+    initial_guess = np.zeros(len(boundary_array), dtype=np.float32)
     for iii, (low, high) in enumerate(boundary_array):
         initial_guess[iii] = rng.uniform(low, high)
 
