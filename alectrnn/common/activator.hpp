@@ -127,8 +127,9 @@ class CTRNNActivator : public Activator<TReal> {
                     const multi_array::Tensor<TReal>& input_buffer) {
       // Loop through all the neurons and apply the CTRNN update equation
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] += utilities::BoundState(step_size_ * rtaus_[iii] *
-            (-state[iii] + utilities::sigmoid(biases_[iii] + input_buffer[iii])));
+        state[iii] += step_size_ * rtaus_[iii] * (-state[iii] +
+            utilities::sigmoid(biases_[iii] + input_buffer[iii]));
+        state[iii] = utilities::BoundState(state[iii]);
       }
     }
 
@@ -182,11 +183,13 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       for (Index filter = 0; filter < shape_[0]; filter++) {
         for (Index iii = 0; iii < shape_[1]; iii++) {
           for (Index jjj = 0; jjj < shape_[2]; jjj++) {
-            state_accessor[filter][iii][jjj] += utilities::BoundState(step_size_
+            state_accessor[filter][iii][jjj] += step_size_
               * rtaus_[filter]
               * (-state_accessor[filter][iii][jjj] 
               + utilities::sigmoid(biases_[filter] 
-              + input_accessor[filter][iii][jjj])));
+              + input_accessor[filter][iii][jjj]));
+            state_accessor[filter][iii][jjj] = utilities::BoundState(
+                state_accessor[filter][iii][jjj]);
           }
         }
       }

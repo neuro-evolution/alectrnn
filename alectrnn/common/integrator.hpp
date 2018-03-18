@@ -210,8 +210,8 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
           for (Index kkk = 0; kkk < tar_view.extent(1); ++kkk) {
             for (Index lll = 0; lll < tar_view.extent(2); ++lll) {
-              tar_image[kkk][lll] += utilities::BoundState(
-                  secondpass_image[kkk][lll] * channel_weights_[iii][jjj]);
+              tar_image[kkk][lll] += secondpass_image[kkk][lll] * channel_weights_[iii][jjj];
+              tar_image[kkk][lll] = utilities::BoundState(tar_image[kkk][lll]);
             }
           }
         }
@@ -482,8 +482,8 @@ class RecurrentIntegrator : public Integrator<TReal> {
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += utilities::BoundState(
-              src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id]);
+          tar_state[node] += src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id];
+          tar_state[node] = utilities::BoundState(tar_state[node]);
           ++edge_id;
         }
       }
@@ -526,9 +526,9 @@ class ReservoirIntegrator : public Integrator<TReal> {
       assert(tar_state.size() == network_.NumNodes());
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += utilities::BoundState(
-              src_state.at(network_.Predecessors(node)[iii].source)
-                          * network_.Predecessors(node)[iii].weight);
+          tar_state[node] += src_state.at(network_.Predecessors(node)[iii].source)
+                          * network_.Predecessors(node)[iii].weight;
+          tar_state[node] = utilities::BoundState(tar_state[node]);
         }
       }
     }
