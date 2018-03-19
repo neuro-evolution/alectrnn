@@ -12,14 +12,6 @@
 
 namespace nervous_system {
 
-enum LAYER_TYPE {
-  BASE_LAYER,
-  CONV_LAYER,
-  RECURENT_LAYER,
-  RESERVOIR_LAYER,
-  MOTOR_LAYER
-};
-
 /*
  * Layers take ownership of the integrators and activations functions they use.
  * This is necessary as the Layer will be the only remaining access point to 
