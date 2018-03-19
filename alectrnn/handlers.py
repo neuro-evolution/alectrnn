@@ -356,7 +356,9 @@ class NervousSystem:
         'num_filters'
         'stride'
 
-    Reservoir layers should have a dictionary with the following keys:
+    Reservoir layers have an untrained set of connections determined the
+    input graph. The back connections are determined by the input graph.
+    Both must specify weights. Should have a dictionary with the following keys:
         'layer_type' = "reservoir"
         'num_input_graph_nodes' = N
         'input_graph' = Nx2, dtype=np.uint64 bipartite edge graph
@@ -365,14 +367,18 @@ class NervousSystem:
         'internal_graph' = Mx2, dtype=np.uint64 edge array
         'internal_weights' = Mx1, dtype=np.float32 array
 
-    Recurrent layers should have a dictionary with the following keys:
+    Recurrent layers define the connections, but not the weights of the internal
+    and back connections. All connections are trained.
+    Should have a dictionary with the following keys:
         'layer_type' = "recurrent"
         'num_input_graph_nodes' = N
         'input_graph' = Nx2, dtype=np.uint64 bipartite edge graph
         'num_internal_nodes' = M
         'internal_graph' = Mx2, dtype=np.uint64 edge array
 
-    conv_recurrent layers should have a dictionary with the following keys:
+    conv_recurrent layers have a convolutional input into the layer, but also
+    have internal connections determined in the same way as the recurrent layer.
+    Should have a dictionary with the following keys:
         'layer_type' = "conv_recurrent"
         'filter_shape'
         'num_filters'
@@ -380,7 +386,9 @@ class NervousSystem:
         'num_internal_nodes'
         'internal_graph'
 
-    conv_reservoir layers should have a dictionary with the following keys:
+    conv_reservoir layers have a convolutional input into the layer, but also
+    have internal connections determined in the same way as the reservoir layer.
+    Should have a dictionary with the following keys:
         'layer_type' = "conv_reservoir"
         'filter_shape'
         'num_filters'
@@ -389,13 +397,22 @@ class NervousSystem:
         'internal_graph'
         'internal_weights'
 
-    a2a_recurrent layers should have a dictionary with the following keys:
+    a2a_recurrent layers have full input from the previous layer, but internal
+    connections are determined in the same way as the recurrent layer.
+    Should have a dictionary with the following keys:
         'layer_type' = "a2a_recurrent"
         'num_internal_nodes'
         'internal_graph'
 
-    a2a_a2a layer should have a dictionary with the following keys:
+    a2a_a2a layer has fully connected back and internal connections.
+    Should have a dictionary with the following keys:
         'layer_type' = "a2a_a2a"
+        'num_internal_nodes'
+
+    a2a_ff layer has fully connected back connections and no internal connections.
+    It is the same as a standard feed-forward layer.
+    Should have a dictionary with the following keys:
+        'layer_type' = "a2a_ff"
         'num_internal_nodes'
 
     conv_recurrent layers allow the construction of layers that have a conv back
@@ -535,6 +552,14 @@ class NervousSystem:
                     layer_act_args[i],
                     layer_shapes[i+1]))
 
+            elif layer_pars['layer_type'] == 'a2a_ff':
+                layers.append(self._create_a2a_ff_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1]))
+
         # Build motor later
         prev_layer_size = int(np.prod(layer_shapes[-1]))
         layers.append(self._create_motor_layer(num_outputs,
@@ -629,6 +654,17 @@ class NervousSystem:
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
+
+    def _create_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
+                             act_type, act_args, layer_shape):
+        back_type = INTEGRATOR_TYPE.ALL2ALL.value
+        back_args = (int(num_internal_nodes),
+                     int(np.prod(prev_layer_shape)))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+                                self_args, act_type, act_args, layer_shape)
 
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
             filter_shape, stride, num_internal_nodes,
