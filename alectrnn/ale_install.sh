@@ -12,13 +12,37 @@ INSTALL_DIR="$BASE_DIR/alelib"
 ALE_PACKAGE_URL="https://github.com/neuro-evolution/arcade-learning-environment/archive/master.zip"
 PACKAGE_FILE_NAME="master.zip"
 
-# Download and extract
-if [ ! -x "$PACKAGE_FILE_NAME" ]; then
-  wget -O $PACKAGE_FILE_NAME $ALE_PACKAGE_URL
+SDL_FLAG="OFF"
+LOCAL_LIB="OFF"
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    -s|--with-sdl)
+    SDL_FLAG="ON"
+    ;;
+    -l|--lib-path)
+    LIBPATH="$2"
+    LOCAL_LIB="ON"
+    shift
+    ;;
+    *) break
+  esac
+  shift
+done
+
+if [ "$LOCAL_LIB" == "ON" ]; then
+  echo "Using local ALE..."
+  echo "copying from $LIBPATH"
+  cp -r "$LIBPATH" "arcade-learning-environment-master"
+elif [ "$LOCAL_LIB" == "OFF" ]; then
+  # Download and extract
+  if [ ! -x "$PACKAGE_FILE_NAME" ]; then
+    wget -O $PACKAGE_FILE_NAME $ALE_PACKAGE_URL
+  fi
+  echo "extracting files . . . "
+  unzip "$BASE_DIR/master.zip"
+  rm -f "$BASE_DIR/master.zip"
 fi
-echo "extracting files . . . "
-unzip "$BASE_DIR/master.zip"
-rm -f "$BASE_DIR/master.zip"
 
 # Install ALE
 if [ ! -d "$INSTALL_DIR" ]; then
@@ -30,18 +54,6 @@ if [ ! -d "build" ]; then
   mkdir "build"
 fi
 cd "build"
-
-SDL_FLAG="OFF"
-while [[ $# -gt 0 ]]; do
-  key="$1"
-  case $key in 
-    -s|--with-sdl)
-    SDL_FLAG="ON"
-    ;;
-    *) break
-  esac
-  shift
-done
 
 if [ "$SDL_FLAG" == "OFF" ]; then
   echo "Installing without SDL..."

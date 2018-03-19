@@ -17,3 +17,5 @@ pip install --install-option="--with-sdl" git+https://github.com/neuro-evolution
 ```
 
 This library is based on float (single precision values). If using with numpy, make sure to use dtype=float32 instead of the default float64
+
+Note: the --install-option="--lib-path=/path/to/ale-master" can allow compilation using a local download of the ALE source code.

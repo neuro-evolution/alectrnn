@@ -8,47 +8,59 @@ import sys
 import os
 
 
-def run_ale_install_script(with_sdl):
+def run_ale_install_script(with_sdl, lib_path):
     """
     Downloads and installs ALE to installation directory
     """
-    if with_sdl:
+    if with_sdl and lib_path:
+        build_libs_cmd = ['bash', 'alectrnn/ale_install.sh', '--with-sdl',
+                          '--lib-path', lib_path]
+    elif with_sdl:
         build_libs_cmd = ['bash', 'alectrnn/ale_install.sh', '--with-sdl']
+
+    elif lib_path:
+        build_libs_cmd = ['bash', 'alectrnn/ale_install.sh',
+                          '--lib-path', lib_path]
     else:
         build_libs_cmd = ['bash', 'alectrnn/ale_install.sh']
+
     if subprocess.call(build_libs_cmd) != 0:
         sys.exit("Failed to build ALE dependencies")
 
 
 class install(setuptools.command.install.install):
     user_options = setuptools.command.install.install.user_options \
-                    + [("with-sdl", None, "Enable SDL in ALE")]
+                    + [("with-sdl", None, "Enable SDL in ALE"),
+                       ("lib-path=", None, "Install ALE from path")]
 
     def initialize_options(self):
         setuptools.command.install.install.initialize_options(self)
         self.with_sdl = None
+        self.lib_path = None
 
     def finalize_options(self):
         setuptools.command.install.install.finalize_options(self)
 
     def run(self): 
-        run_ale_install_script(self.with_sdl)
+        run_ale_install_script(self.with_sdl, self.lib_path)
         setuptools.command.install.install.run(self)
 
 
 class develop(setuptools.command.develop.develop):
     user_options = setuptools.command.develop.develop.user_options \
-                    + [("with-sdl", None, "Enable SDL in ALE")]
+                    + [("with-sdl", None, "Enable SDL in ALE"),
+                       ("lib-path=", None, "Install ALE from path")]
 
     def initialize_options(self):
         setuptools.command.develop.develop.initialize_options(self)
         self.with_sdl = None
+        self.lib_path = None
 
     def finalize_options(self):
         setuptools.command.develop.develop.finalize_options(self)
 
     def run(self):
-        run_ale_install_script(self.with_sdl)
+        run_ale_install_script(self.with_sdl, self.lib_path)
         setuptools.command.develop.develop.run(self)
 
 
