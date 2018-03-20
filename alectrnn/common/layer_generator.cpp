@@ -75,7 +75,7 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   }
 
   // Call parsers -> they create NEW integrators and activators
-  std::vector<std::size_t> layer_shape = alectrnn::PyArrayToVector<std::size_t>(shape);
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
   nervous_system::Integrator<float>* back_integrator = IntegratorParser(
     (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
   nervous_system::Integrator<float>* self_integrator = IntegratorParser(
@@ -150,8 +150,14 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
         std::cerr << "Error parsing Activator arguments" << std::endl;
         assert(0);
       }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      assert(num_shape_elements == 3);
+
       new_activator = new nervous_system::Conv3DCTRNNActivator<float>(
-        multi_array::Array<std::size_t,3>(shape->data), step_size);
+        multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
+        shape)), step_size);
       break;
     }
 
@@ -195,10 +201,22 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
+
+      // Make sure the numpy arrays are the correct size
+      npy_intp num_filter_elements = PyArray_SIZE(filter_shape);
+      assert(num_filter_elements == 3);
+      npy_intp num_layer_elements = PyArray_SIZE(layer_shape);
+      assert(num_layer_elements == 3);
+      npy_intp num_prev_layer_elements = PyArray_SIZE(prev_layer_shape);
+      assert(num_prev_layer_elements == 3);
+
       new_integrator = new nervous_system::Conv3DIntegrator<float>(
-        multi_array::Array<std::size_t,3>(filter_shape->data),
-        multi_array::Array<std::size_t,3>(layer_shape->data),
-        multi_array::Array<std::size_t,3>(prev_layer_shape->data),
+        multi_array::Array<std::size_t,3>(
+        alectrnn::uInt64PyArrayToCArray(filter_shape)),
+        multi_array::Array<std::size_t,3>(
+        alectrnn::uInt64PyArrayToCArray(layer_shape)),
+        multi_array::Array<std::size_t,3>(
+        alectrnn::uInt64PyArrayToCArray(prev_layer_shape)),
         stride);
       break;
     }
@@ -210,6 +228,13 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
+
+      // Make sure numpy array has correct shape
+      int edge_list_ndims = PyArray_NDIM(edge_list);
+      assert(edge_list_ndims == 2);
+      npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
+      assert(edge_list_shape[0] == num_nodes && edge_list_shape[1] == 2);
+
       new_integrator = new nervous_system::RecurrentIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
@@ -219,11 +244,22 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
     case nervous_system::RESERVOIR_INTEGRATOR: {
       int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
-      PyArrayObject* weights; // Nx1 dimensional array
+      PyArrayObject* weights; // N element array
       if (!PyArg_ParseTuple(args, "iOO", &num_nodes, &edge_list, &weights)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         assert(0);
       }
+
+      // Make sure numpy arrays have correct shape
+      int edge_list_ndims = PyArray_NDIM(edge_list);
+      assert(edge_list_ndims == 2);
+      npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
+      assert(edge_list_shape[0] == num_nodes && edge_list_shape[1] == 2);
+      int weights_ndims = PyArray_NDIM(weights);
+      assert(weights_ndims == 1);
+      npy_intp* weights_shape = PyArray_SHAPE(weights);
+      assert(weights_shape[0] == num_nodes);
+
       new_integrator = new nervous_system::ReservoirIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
         num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
@@ -263,5 +299,6 @@ static struct PyModuleDef LayerModule = {
 };
 
 PyMODINIT_FUNC PyInit_layer_generator(void) {
+  import_array();
   return PyModule_Create(&LayerModule);
 }

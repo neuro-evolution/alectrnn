@@ -89,6 +89,36 @@ class TensorView;
 // End Forward declare
 
 template<typename T, std::size_t NumElem>
+bool operator==(const std::vector<T> &lhs, const Array<T,NumElem> &rhs) {
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  else {
+    for (std::size_t iii = 0; iii < lhs.size(); ++iii) {
+      if (lhs[iii] != rhs[iii]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+template<typename T, std::size_t NumElem>
+bool operator==(const Array<T,NumElem> &lhs, const std::vector<T> &rhs) {
+  return rhs == lhs;
+};
+
+template<typename T, std::size_t NumElem>
+bool operator!=(const Array<T,NumElem> &lhs, const std::vector<T> &rhs) {
+  return !(lhs == rhs);
+};
+
+template<typename T, std::size_t NumElem>
+bool operator!=(const std::vector<T> &lhs, const Array<T,NumElem> &rhs) {
+  return !(lhs == rhs);
+};
+
+template<typename T, std::size_t NumElem>
 class Array {
   public:
     typedef std::size_t Index;
@@ -101,10 +131,11 @@ class Array {
       data_ = new T[NumElem];
     }
 
-    template<typename TPtr>
-    Array(const TPtr array) : Array() {
+    // Constructor for copying and casting other c-style array data
+    template<typename OtherPtr>
+    Array(const OtherPtr array) : Array() {
       for (Index iii = 0; iii < NumElem; iii++) {
-        data_[iii] = array[iii];
+        data_[iii] = static_cast<T>(array[iii]);
       }
     }
     
@@ -117,12 +148,14 @@ class Array {
       std::copy(list.begin(), list.end(), this->begin());
     }
 
+    // Copy constructor
     Array(const Array<T,NumElem> &other) : Array() {
       for (Index iii = 0; iii < NumElem; iii++) {
         data_[iii] = other[iii];
       } 
     }
 
+    // Move constructor
     Array(Array<T,NumElem> &&other) : data_( other.data_ ) {
       other.data_ = nullptr;
     }
@@ -188,7 +221,20 @@ class Array {
     const_iterator end() const {
       return &data_[NumElem];
     }
- 
+
+    bool operator==(const Array<T, NumElem> &other) const {
+      for (Index iii = 0; iii < NumElem; iii++) {
+        if (data_[iii] != other[iii]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    bool operator!=(const Array<T, NumElem> &other) const {
+      return !(*this == other);
+    }
+
   protected:
     TPtr data_;
 };
@@ -434,6 +480,7 @@ class MultiArray {
 
     /*
      * Generates array from existing data and takes ownership of data
+     * Use with caution. Prefer using SharedMultiArray.
      */
     MultiArray(TPtr data, const std::vector<Index> &shape) 
         : shape_(shape) {
@@ -557,6 +604,24 @@ class MultiArray {
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_array[iii];
       }
+    }
+
+    bool operator==(const MultiArray<T,NumDim>& other) const {
+      if (other.size() != size_) {
+        return false;
+      }
+      else {
+        for (Index iii = 0; iii < size_; iii++) {
+          if (data_[iii] != other.data_[iii]) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    bool operator!=(const MultiArray<T,NumDim>& other) const {
+      return !(*this == other);
     }
 
   protected:
@@ -706,6 +771,24 @@ class SharedMultiArray {
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_array[iii];
       }
+    }
+
+    bool operator==(const SharedMultiArray<T,NumDim>& other) const {
+      if (other.size() != size_) {
+        return false;
+      }
+      else {
+        for (Index iii = 0; iii < size_; iii++) {
+          if (data_[iii] != other.data_[iii]) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    bool operator!=(const SharedMultiArray<T,NumDim>& other) const {
+      return !(*this == other);
     }
 
   protected:
@@ -1304,6 +1387,27 @@ class Tensor {
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_tensor[iii];
       }
+    }
+
+    bool operator==(const Tensor<T>& other) const {
+      if (other.size() != size_) {
+        return false;
+      }
+      else if (other.shape() != shape_) {
+        return false;
+      }
+      else {
+        for (Index iii = 0; iii < size_; iii++) {
+          if (data_[iii] != other.data_[iii]) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    bool operator!=(const Tensor<T>& other) const {
+      return !(*this == other);
     }
 
   protected:

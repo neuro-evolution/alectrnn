@@ -58,7 +58,6 @@ void NervousSystemAgent::Reset() {
 }
 
 Action NervousSystemAgent::Act() {
-
   // Need to get the screen
   ale_->getScreenGrayscale(full_screen_);
   // Need to downsize the screen
@@ -70,7 +69,6 @@ Action NervousSystemAgent::Act() {
                    downsized_screen_,
                    buffer_screen1_,
                    buffer_screen2_);
-
   neural_net_.SetInput(downsized_screen_);
   // The neural network will be updates update_rate_ times before output is read
   for (std::size_t iii = 0; iii < update_rate_; iii++) {

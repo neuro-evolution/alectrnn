@@ -13,6 +13,7 @@
 #define ALECTRNN_COMMON_CAPI_TOOLS_H_
 
 #include <Python.h>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -23,26 +24,37 @@
 namespace alectrnn {
 
 float *PyArrayToCArray(PyArrayObject *py_array);
-// PyObject *ConvertTensorToPyArray(const multi_array::Tensor<float>& tensor);
+std::uint64_t* uInt64PyArrayToCArray(PyArrayObject *py_array);
 
+/* PyArray data has to be reinterpret cased to a corresponding c-type
+ * before it can be safely casted and copied to the vector.
+ * T should be any numerical type. */
 template<typename T>
-std::vector<T> PyArrayToVector(PyArrayObject *py_array) {
+std::vector<T> uInt64PyArrayToVector(PyArrayObject *py_array) {
+  // type check before reinterpret
+  PyArray_Descr* array_type = PyArray_DTYPE(py_array);
+  assert(array_type->type == NPY_UINT64);
+
   std::size_t num_elements = 1;
+  assert(py_array->nd >= 0);
   for (std::size_t iii = 0; iii < py_array->nd; ++iii) {
     num_elements *= py_array->dimensions[iii];
   }
   std::vector<T> vec(num_elements);
-  T* data_array = reinterpret_cast<T*>(py_array->data);
+  std::uint64_t* data_array = reinterpret_cast<std::uint64_t*>(py_array->data);
   for (std::size_t iii = 0; iii < num_elements; ++iii) {
-    vec[iii] = data_array[iii];
+    vec[iii] = static_cast<T>(data_array[iii]);
   }
   return vec;
 }
 
 template<typename T, std::size_t NumDims>
 multi_array::SharedMultiArray<T, NumDims> PyArrayToSharedMultiArray(PyArrayObject *py_array) {
-  return multi_array::SharedMultiArray<T, NumDims>((T *) py_array->data, 
-    multi_array::Array<std::size_t, NumDims>(py_array->dimensions));
+  /* The python data has to be reinterpret casted to the corresponding c-type
+   * while Array will allocate new memory in the desired type */
+  return multi_array::SharedMultiArray<T, NumDims>(reinterpret_cast<T*>(py_array->data),
+    multi_array::Array<std::size_t, NumDims>(reinterpret_cast<std::uint64_t*>(
+                                             py_array->dimensions)));
 }
 
 } // End alectrnn namespace

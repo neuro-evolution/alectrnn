@@ -125,6 +125,7 @@ class CTRNNActivator : public Activator<TReal> {
 
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
+      assert((state.size() == num_states_) && (input_buffer.size() == num_states_));
       // Loop through all the neurons and apply the CTRNN update equation
       for (Index iii = 0; iii < num_states_; iii++) {
         state[iii] += step_size_ * rtaus_[iii] * (-state[iii] +
@@ -179,6 +180,8 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     ~Conv3DCTRNNActivator()=default;
 
     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+
+      assert((state.shape() == shape_) && (input_buffer.shape() == shape_));
       multi_array::TensorView<TReal> state_accessor = state.accessor();
       const multi_array::TensorView<TReal> input_accessor = input_buffer.accessor();
 

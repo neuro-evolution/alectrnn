@@ -70,6 +70,7 @@ class Layer {
      * The activation_function and Integrator function
      */
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
       assert(parameters.size() == parameter_count_);
 
       back_integrator_->Configure(
@@ -96,6 +97,7 @@ class Layer {
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+
       std::vector<PARAMETER_TYPE> layout(parameter_count_);
 
       // layout produced in configure order: back->self->act

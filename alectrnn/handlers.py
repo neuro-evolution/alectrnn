@@ -362,10 +362,10 @@ class NervousSystem:
         'layer_type' = "reservoir"
         'num_input_graph_nodes' = N
         'input_graph' = Nx2, dtype=np.uint64 bipartite edge graph
-        'input_weights' = Nx1, dtype=np.float32
+        'input_weights' = N element, dtype=np.float32
         'num_internal_nodes' = M
         'internal_graph' = Mx2, dtype=np.uint64 edge array
-        'internal_weights' = Mx1, dtype=np.float32 array
+        'internal_weights' = M element, dtype=np.float32 array
 
     Recurrent layers define the connections, but not the weights of the internal
     and back connections. All connections are trained.
@@ -474,7 +474,8 @@ class NervousSystem:
         interpreted_shapes, layer_shapes = self._configure_layer_shapes(
                                             input_shape, nn_parameters)
         layer_act_types, layer_act_args = self._configure_layer_activations(
-                                            layer_shapes, nn_parameters,
+                                            layer_shapes, interpreted_shapes,
+                                            nn_parameters,
                                             act_type, act_args)
 
         for i, layer_pars in enumerate(nn_parameters):
@@ -559,6 +560,8 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1]))
+            else:
+                raise NotImplementedError
 
         # Build motor later
         prev_layer_size = int(np.prod(layer_shapes[-1]))
@@ -571,8 +574,8 @@ class NervousSystem:
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
 
-    def _configure_layer_activations(self, layer_shapes, nn_parameters,
-                                     act_type, act_args):
+    def _configure_layer_activations(self, layer_shapes, interpreted_shapes,
+                                     nn_parameters, act_type, act_args):
         """
         outputs the necessary tuples for layer activations of both conv and 
         non-conv layers
@@ -583,9 +586,9 @@ class NervousSystem:
         layer_act_types = []
         layer_act_args = []
         for i, layer_pars in enumerate(nn_parameters):
-            if 'conv' in layer_pars['layer_type']:
+            if layer_pars['layer_type'] == 'conv':
                 layer_act_types.append(ACTMAP[act_type].value)
-                layer_act_args.append((layer_shapes[i+1], *act_args))
+                layer_act_args.append((interpreted_shapes[i+1], *act_args))
             else:
                 layer_act_types.append(act_type.value)
                 layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args))
@@ -759,9 +762,8 @@ class NervousSystem:
                      int(stride))
         self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
-
         return layer_generator.CreateLayer(back_type,
-            back_args, self_type, self_args, act_type, act_args, layer_shape)
+            back_args, self_type, self_args, act_type, act_args, interpreted_shape)
 
     def _create_motor_layer(self, num_outputs, size_of_prev_layer, act_type, act_args):
         """
