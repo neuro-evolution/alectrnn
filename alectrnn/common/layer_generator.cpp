@@ -26,7 +26,7 @@
  */
 
 #include <Python.h>
-#include <cassert>
+#include <stdexcept>
 #include <cstddef>
 #include <cinttypes>
 #include <iostream>
@@ -137,7 +137,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       float step_size;
       if (!PyArg_ParseTuple(args, "if", &num_states, &step_size)) {
         std::cerr << "Error parsing Activator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("CTRNN_Activator couldn't parse tuple");
       }
       new_activator = new nervous_system::CTRNNActivator<float>(num_states, step_size);
       break;
@@ -148,12 +148,15 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       float step_size;
       if (!PyArg_ParseTuple(args, "Of", &shape, &step_size)) {
         std::cerr << "Error parsing Activator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("CONV CTRNN_Activator couldn't parse tuple");
       }
 
       // Make sure the numpy array is the correct size
       npy_intp num_shape_elements = PyArray_SIZE(shape);
-      assert(num_shape_elements == 3);
+      if (num_shape_elements != 3) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " CONV CTRNN ACTIVATOR (needs 3)");
+      }
 
       new_activator = new nervous_system::Conv3DCTRNNActivator<float>(
         multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
@@ -163,7 +166,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
 
     default: {
       std::cerr << "Activator case not supported... exiting." << std::endl;
-      assert(0);
+      throw std::invalid_argument("Not an activator");
     }
   }
 
@@ -184,7 +187,8 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       int num_prev_states;
       if (!PyArg_ParseTuple(args, "ii", &num_states, &num_prev_states)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("ALL2ALL Integrator failed to parse"
+                                    " tuples");
       }
       new_integrator = new nervous_system::All2AllIntegrator<float>(
         num_states, num_prev_states);
@@ -199,16 +203,25 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       if (!PyArg_ParseTuple(args, "OOOi", &filter_shape,
         &layer_shape, &prev_layer_shape, &stride)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("CONV_INTEGRATOR failed to parse tuples");
       }
 
       // Make sure the numpy arrays are the correct size
       npy_intp num_filter_elements = PyArray_SIZE(filter_shape);
-      assert(num_filter_elements == 3);
+      if (num_filter_elements != 3) {
+        std::cerr << "num of filter elements: " << num_filter_elements << std::endl;
+        throw std::invalid_argument("filter has wrong number of elements (needs 3)");
+      }
       npy_intp num_layer_elements = PyArray_SIZE(layer_shape);
-      assert(num_layer_elements == 3);
+      if (num_layer_elements != 3) {
+        std::cerr << "num of layer elements: " << num_layer_elements << std::endl;
+        throw std::invalid_argument("layer has wrong number of elements (needs 3)");
+      }
       npy_intp num_prev_layer_elements = PyArray_SIZE(prev_layer_shape);
-      assert(num_prev_layer_elements == 3);
+      if (num_prev_layer_elements != 3) {
+        std::cerr << "num of prev layer elements: " << num_prev_layer_elements << std::endl;
+        throw std::invalid_argument("prev layer has wrong number of elements (needs 3)");
+      }
 
       new_integrator = new nervous_system::Conv3DIntegrator<float>(
         multi_array::Array<std::size_t,3>(
@@ -226,14 +239,21 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       PyArrayObject* edge_list; // Nx2 dimensional array
       if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("RECCURENT INTEGRATOR ERROR");
       }
 
       // Make sure numpy array has correct shape
       int edge_list_ndims = PyArray_NDIM(edge_list);
-      assert(edge_list_ndims == 2);
+      if (edge_list_ndims != 2) {
+        std::cerr << "edge list dimensions: " << edge_list_ndims << std::endl;
+        throw std::invalid_argument("edge list has invalid # of dimensions (needs 2)");
+      }
       npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
-      assert(edge_list_shape[0] == num_nodes && edge_list_shape[1] == 2);
+      if (edge_list_shape[1] != 2) {
+        std::cerr << "edge list shape[1]: " << edge_list_shape[1] << std::endl;
+        std::cerr << "edge list shape[1]: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list is the wrong size");
+      }
 
       new_integrator = new nervous_system::RecurrentIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
@@ -247,18 +267,33 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       PyArrayObject* weights; // N element array
       if (!PyArg_ParseTuple(args, "iOO", &num_nodes, &edge_list, &weights)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
-        assert(0);
+        throw std::invalid_argument("FAILURE IN RESERVOIR INTEGRATOR");
       }
 
       // Make sure numpy arrays have correct shape
       int edge_list_ndims = PyArray_NDIM(edge_list);
-      assert(edge_list_ndims == 2);
+      if (edge_list_ndims != 2) {
+        std::cerr << "edge list ndims: " << edge_list_ndims << std::endl;
+        std::cerr << "edge list ndims: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list has wrong dimensions");
+      }
       npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
-      assert(edge_list_shape[0] == num_nodes && edge_list_shape[1] == 2);
+      if (edge_list_shape[1] != 2) {
+        std::cerr << "edge list shape[1]: " << edge_list_shape[1] << std::endl;
+        std::cerr << "edge list shape[1]: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list has wrong shape");
+      }
       int weights_ndims = PyArray_NDIM(weights);
-      assert(weights_ndims == 1);
+      if (weights_ndims != 1) {
+        throw std::invalid_argument("weights needs to be a 1D array");
+      }
+
       npy_intp* weights_shape = PyArray_SHAPE(weights);
-      assert(weights_shape[0] == num_nodes);
+      if (weights_shape[0] != edge_list_shape[0]) {
+        std::cerr << "edge list shape[0]: " << edge_list_shape[0] << std::endl;
+        std::cerr << "edge list shape[0]: REQUIRES " << weights_shape[0] << std::endl;
+        throw std::invalid_argument("Need same number of weights as edges");
+      }
 
       new_integrator = new nervous_system::ReservoirIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
@@ -269,7 +304,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
     default: {
       std::cerr << "Integrator case not supported... exiting." << std::endl;
-      assert(0);
+      throw std::invalid_argument("Unsupported integrator value");
     }
   }
 

@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <cassert>
+#include <stdexcept>
 #include "numpy/arrayobject.h"
 #include "multi_array.hpp"
 #include "capi_tools.hpp"
@@ -22,15 +22,19 @@
 namespace alectrnn {
 
 float *PyArrayToCArray(PyArrayObject *py_array) {
-  PyArray_Descr* array_type = PyArray_DTYPE(py_array);
-  assert(array_type->type == NPY_FLOAT32);
+  int array_type = PyArray_TYPE(py_array);
+  if (array_type != NPY_FLOAT32) {
+    throw std::invalid_argument("Numpy array must be of type npy_float32");
+  }
   return reinterpret_cast<float *>(py_array->data);
 }
 
 std::uint64_t* uInt64PyArrayToCArray(PyArrayObject *py_array) {
   // Check that type is actually uint64 before reinterpret
-  PyArray_Descr* array_type = PyArray_DTYPE(py_array);
-  assert(array_type->type == NPY_UINT64);
+  int array_type = PyArray_TYPE(py_array);
+  if (array_type != NPY_UINT64) {
+    throw std::invalid_argument("Numpy array must be of type npy_uint64");
+  }
   return reinterpret_cast<std::uint64_t*>(py_array->data);
 }
 

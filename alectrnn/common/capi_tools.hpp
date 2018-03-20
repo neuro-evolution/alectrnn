@@ -13,7 +13,8 @@
 #define ALECTRNN_COMMON_CAPI_TOOLS_H_
 
 #include <Python.h>
-#include <cassert>
+#include <stdexcept>
+#include <iostream>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -32,11 +33,17 @@ std::uint64_t* uInt64PyArrayToCArray(PyArrayObject *py_array);
 template<typename T>
 std::vector<T> uInt64PyArrayToVector(PyArrayObject *py_array) {
   // type check before reinterpret
-  PyArray_Descr* array_type = PyArray_DTYPE(py_array);
-  assert(array_type->type == NPY_UINT64);
+  int array_type = PyArray_TYPE(py_array);
+  if (array_type != NPY_UINT64) {
+    std::cerr << " Numpy array type: " << array_type << std::endl;
+    std::cerr << " Required type: " << NPY_UINT64 << std::endl;
+    throw std::invalid_argument("Numpy array of wrong type. Requires npy_uint64");
+  }
 
   std::size_t num_elements = 1;
-  assert(py_array->nd >= 0);
+  if (!(py_array->nd >= 0)) {
+    throw std::invalid_argument("Numpy array shouldn't have negative dimensions");
+  }
   for (std::size_t iii = 0; iii < py_array->nd; ++iii) {
     num_elements *= py_array->dimensions[iii];
   }

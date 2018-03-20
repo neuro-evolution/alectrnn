@@ -3,7 +3,7 @@
 #define NN_NERVOUS_SYSTEM_H_
 
 #include <cstddef>
-#include <cassert>
+#include <stdexcept>
 #include <vector>
 #include <initializer_list>
 #include "layer.hpp"
@@ -44,7 +44,10 @@ class NervousSystem {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == parameter_count_);
+      if (parameters.size() != parameter_count_) {
+        throw std::invalid_argument("NervousSystem received parameters with"
+                                    " the wrong number of elements");
+      }
       Index slice_start(0);
       for (auto layer_ptr = network_layers_.begin()+1; 
           layer_ptr != network_layers_.end(); ++layer_ptr) {

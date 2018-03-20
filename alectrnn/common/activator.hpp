@@ -16,8 +16,9 @@
 
 #include <vector>
 #include <cstddef>
-#include <cassert>
+#include <stdexcept>
 #include <limits>
+#include <iostream>
 #include "multi_array.hpp"
 #include "utilities.hpp"
 #include "parameter_types.hpp"
@@ -50,7 +51,7 @@ class Activator {
 
     /*
      * When given a set of parameters, it will use them to set the 
-     * Must provide an assert statement that requires # given parameters
+     * Must provide an throw statement that requires # given parameters
      * to == parameter_count
      */
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0;
@@ -125,7 +126,13 @@ class CTRNNActivator : public Activator<TReal> {
 
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
-      assert((state.size() == num_states_) && (input_buffer.size() == num_states_));
+      if (!((state.size() == num_states_) && (input_buffer.size() == num_states_))) {
+        std::cerr << "state size: " << state.size() << std::endl;
+        std::cerr << "input size: " << input_buffer.size() << std::endl;
+        std::cerr << "activator size: " << num_states_ << std::endl;
+        throw std::invalid_argument("Incompatible states. State and input"
+                                    " must be the same size as activator");
+      }
       // Loop through all the neurons and apply the CTRNN update equation
       for (Index iii = 0; iii < num_states_; iii++) {
         state[iii] += step_size_ * rtaus_[iii] * (-state[iii] +
@@ -135,7 +142,12 @@ class CTRNNActivator : public Activator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == super_type::parameter_count_);
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Number of parameters must equal parameter"
+                                    " count");
+      }
       biases_ = parameters.slice(0, num_states_);
       rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
     }
@@ -181,7 +193,15 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
 
     void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
 
-      assert((state.shape() == shape_) && (input_buffer.shape() == shape_));
+      if (!((state.shape() == shape_) && (input_buffer.shape() == shape_))) {
+        std::cerr << "Activator incompatible with state: " <<
+                  (state.shape() != shape_) << std::endl;
+        std::cerr << "Activator incompatible with input: " <<
+                  (input_buffer.shape() != shape_) << std::endl;
+        throw std::invalid_argument("ConvCTRNN State, input, and activator must"
+                                    " all be the same shape");
+      }
+
       multi_array::TensorView<TReal> state_accessor = state.accessor();
       const multi_array::TensorView<TReal> input_accessor = input_buffer.accessor();
 
@@ -201,7 +221,12 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == super_type::parameter_count_);
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Parameter array must have the same"
+                                    " number of elements as the count");
+      }
       biases_ = parameters.slice(0, shape_[0]);
       rtaus_ = parameters.slice(parameters.stride() * shape_[0], shape_[0]);
     }

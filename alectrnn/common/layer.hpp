@@ -3,8 +3,9 @@
 
 #include <vector>
 #include <cstddef>
-#include <cassert>
+#include <stdexcept>
 #include <initializer_list>
+#include <iostream>
 #include "activator.hpp"
 #include "integrator.hpp"
 #include "multi_array.hpp"
@@ -71,7 +72,11 @@ class Layer {
      */
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
 
-      assert(parameters.size() == parameter_count_);
+      if (parameters.size() != parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters given.");
+      }
 
       back_integrator_->Configure(
         parameters.slice(0, back_integrator_->GetParameterCount()));
@@ -221,7 +226,11 @@ class MotorLayer : public Layer<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(super_type::parameter_count_ == parameters.size());
+      if (super_type::parameter_count_ != parameters.size()) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters given");
+      }
       super_type::back_integrator_->Configure(
         parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
       super_type::activation_function_->Configure(

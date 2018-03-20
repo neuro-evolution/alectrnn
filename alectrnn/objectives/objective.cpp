@@ -16,7 +16,6 @@
 #include <memory>
 #include <cstdint>
 #include <cstddef>
-#include <cassert>
 #include <ale_interface.hpp>
 #include <iostream>
 #include "numpy/arrayobject.h"

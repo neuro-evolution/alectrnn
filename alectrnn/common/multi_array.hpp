@@ -38,7 +38,6 @@
 #define MULTI_ARRAY_H_
 
 #include <cstddef>
-#include <cassert>
 #include <vector>
 #include <stdexcept>
 #include <initializer_list>
@@ -46,7 +45,6 @@
 #include <numeric>
 #include <functional>
 #include <algorithm>
-#include <stdexcept>
 
 namespace multi_array {
 
@@ -600,7 +598,9 @@ class MultiArray {
 
     template<std::size_t OtherNumDim>
     void Fill(const MultiArray<T, OtherNumDim>& other_array) {
-      assert(other_array.size() == size_);
+      if (other_array.size() != size_) {
+        throw std::invalid_argument("Can't fill multiarray, incompatible sizes");
+      }
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_array[iii];
       }
@@ -767,7 +767,9 @@ class SharedMultiArray {
 
     template<std::size_t OtherNumDim>
     void Fill(const SharedMultiArray<T, OtherNumDim>& other_array) {
-      assert(other_array.size() == size_);
+      if (other_array.size() != size_) {
+        throw std::invalid_argument("Can't fill SharedMultiArray, incompatible sizes");
+      }
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_array[iii];
       }
@@ -855,14 +857,18 @@ class ArraySlice {
 
     ArraySlice<T> slice(Index start, Index size) {
       // Check for boundary violations
-      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
+      if (!((start_ + start + stride_ * size) <= (start_ + stride_ * size_))) {
+        throw std::out_of_range("ArraySlice violates boundary conditions");
+      }
 
       return ArraySlice<T>(this->data(), start_ + start, size, stride_);
     }
 
     const ArraySlice<T> slice(Index start, Index size) const {
       // Check for boundary violations
-      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
+      if (!((start_ + start + stride_ * size) <= (start_ + stride_ * size_))) {
+        throw std::out_of_range("ArraySlice violates boundary conditions");
+      }
 
       return ArraySlice<T>(this->data(), start_ + start, size, stride_); 
     }
@@ -967,7 +973,9 @@ class ConstArraySlice {
 
     ConstArraySlice<T> slice(Index start, Index size) const {
       // Check for boundary violations
-      assert((start_ + start + stride_ * size) <= (start_ + stride_ * size_));
+      if (!((start_ + start + stride_ * size) <= (start_ + stride_ * size_))) {
+        throw std::out_of_range("ConstArraySlice out of bounds");
+      }
 
       return ConstArraySlice<T>(this->data(), start_ + start, size, stride_); 
     }
@@ -1065,14 +1073,18 @@ class Slice {
 
     Slice<T> slice(Index start, Index stop) {
       // Check for boundary violations
-      assert((stop + start_) <= stop_);
+      if (!((stop + start_) <= stop_)) {
+        throw std::out_of_range("Slice out of bounds");
+      }
 
       return Slice<T>(this->data(), start + start_, stop + start_, stride_);
     }
 
     const Slice<T> slice(Index start, Index stop) const {
       // Check for boundary violations
-      assert((stop + start_) <= stop_);
+      if (!((stop + start_) <= stop_)) {
+        throw std::out_of_range("Slice out of bounds");
+      }
 
       return Slice<T>(this->data(), start + start_, stop + start_, stride_); 
     }
@@ -1171,7 +1183,9 @@ class ConstSlice {
 
     ConstSlice<T> slice(Index start, Index stop) const {
       // Check for boundary violations
-      assert((stop + start_) <= stop_);
+      if (!((stop + start_) <= stop_)) {
+        throw std::out_of_range("ConstSlice out of bounds.");
+      }
 
       return ConstSlice<T>(this->data(), start + start_, stop + start_, stride_);
     }
@@ -1383,7 +1397,9 @@ class Tensor {
     }
 
     void Fill(const Tensor<T>& other_tensor) {
-      assert(other_tensor.size() == size_);
+      if (other_tensor.size() != size_) {
+        throw std::invalid_argument("Can't fill tensor, incompatible sizes");
+      }
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_tensor[iii];
       }
@@ -1574,7 +1590,9 @@ class SharedTensor {
     }
 
     void Fill(const SharedTensor<T>& other_tensor) {
-      assert(other_tensor.size() == size_);
+      if (other_tensor.size() != size_) {
+        throw std::invalid_argument("Can't fill tensors, incompatible sizes");
+      }
       for (Index iii = 0; iii < size_; ++iii) {
         data_[iii] = other_tensor[iii];
       }

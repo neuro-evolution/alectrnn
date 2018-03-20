@@ -20,7 +20,8 @@
 
 #include <cstddef>
 #include <vector>
-#include <cassert>
+#include <stdexcept>
+#include <iostream>
 #include <numeric>
 #include <functional>
 #include "multi_array.hpp"
@@ -95,7 +96,15 @@ class All2AllIntegrator : public Integrator<TReal> {
     }
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      assert((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_));
+      if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
+        std::cerr << "src state size: " << src_state.size() << std::endl;
+        std::cerr << "prev state size: " << num_prev_states_ << std::endl;
+        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+        std::cerr << "state size: " << num_states_ << std::endl;
+        throw std::invalid_argument("src state size and prev state size "
+                                    "must be equal. tar state size and state"
+                                    " size must be equal");
+      }
       Index weight_id = 0;
       for (Index iii = 0; iii < tar_state.size(); ++iii) {
         TReal cumulative_sum = 0.0;
@@ -108,7 +117,11 @@ class All2AllIntegrator : public Integrator<TReal> {
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == super_type::parameter_count_);
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
       weights_ = multi_array::ConstArraySlice<TReal>(parameters);
     }
 
@@ -166,7 +179,12 @@ class Conv3DIntegrator : public Integrator<TReal> {
       // NumDim should be 3 for stride calculation
       multi_array::CalculateStrides(layer_shape_.data(), layer_strides_.data(), 3);
       multi_array::CalculateStrides(prev_layer_shape_.data(), prev_layer_strides_.data(), 3);
-      assert(filter_shape[0] == prev_layer_shape[0]);
+      if (filter_shape[0] != prev_layer_shape[0]) {
+        std::cerr << "first filter shape: " << filter_shape[0] << std::endl;
+        std::cerr << "first prev layer shape: " << prev_layer_shape[0] << std::endl;
+        throw std::invalid_argument("First dimensions must be equal.");
+      }
+
       super_type::parameter_count_ = num_filters_ 
         * (filter_shape_[2] + filter_shape_[1] + filter_shape_[0]);
       super_type::integrator_type_ = CONV_INTEGRATOR;
@@ -184,11 +202,15 @@ class Conv3DIntegrator : public Integrator<TReal> {
        * tar_state will be re-interpreted as the same shape as layer_shape
        * src_state will be reinterpreted as the same shape as prev_layer_shape
        */
-      assert(src_state.size() >= min_src_size_);
+      if (!(src_state.size() >= min_src_size_)) {
+        throw std::invalid_argument("Src state too small for integrator");
+      }
       const multi_array::TensorView<TReal> src_view(src_state.data(), 
         prev_layer_strides_.data(), prev_layer_shape_.data());
 
-      assert(tar_state.size() >= min_tar_size_);
+      if (!(tar_state.size() >= min_tar_size_)) {
+        throw std::invalid_argument("tar state too small for integrator");
+      }
       multi_array::TensorView<TReal> tar_view(tar_state.data(), 
         layer_strides_.data(), layer_shape_.data());
 
@@ -418,7 +440,11 @@ class Conv3DIntegrator : public Integrator<TReal> {
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
 
-      assert(parameters.size() == super_type::parameter_count_);
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
       multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> major_view(filter_parameters_major_);
       multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> minor_view(filter_parameters_minor_);
       multi_array::ArrayView< multi_array::ConstArraySlice<TReal>, 1> channel_view(channel_weights_);
@@ -478,7 +504,12 @@ class RecurrentIntegrator : public Integrator<TReal> {
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       
-      assert(tar_state.size() == network_.NumNodes());
+      if (tar_state.size() != network_.NumNodes()) {
+        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+        std::cerr << "network size: " << network_.NumNodes() << std::endl;
+        throw std::invalid_argument("tar state must have the same number of "
+                                    "nodes as the network");
+      }
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
@@ -487,11 +518,18 @@ class RecurrentIntegrator : public Integrator<TReal> {
           ++edge_id;
         }
       }
-      assert(edge_id == network_.NumEdges());
+      if (edge_id != network_.NumEdges()) {
+        throw std::runtime_error("Miss match between number of edges and the"
+                                 " number integrated");
+      }
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      assert(parameters.size() == super_type::parameter_count_);
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
       weights_ = parameters.slice(0, super_type::parameter_count_);
     }
 
@@ -523,7 +561,12 @@ class ReservoirIntegrator : public Integrator<TReal> {
     ~ReservoirIntegrator()=default;
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      assert(tar_state.size() == network_.NumNodes());
+      if (tar_state.size() != network_.NumNodes()) {
+        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+        std::cerr << "network size: " << network_.NumNodes() << std::endl;
+        throw std::invalid_argument("tar state must have the same number of "
+                                    "nodes as the network");
+      }
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
           tar_state[node] += src_state.at(network_.Predecessors(node)[iii].source)

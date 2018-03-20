@@ -4,6 +4,7 @@
 #include "../common/screen_preprocessing.hpp"
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
+#include <stdexcept>
 
 namespace alectrnn {
 
@@ -27,7 +28,11 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
 
   // If grayscreen input
   // Check that NN input is correct dim and # channels
-  assert((neural_net_[0].shape().size() == 3) || (neural_net_[0].shape()[0] == 1));
+  if (!((neural_net_[0].shape().size() == 3) || (neural_net_[0].shape()[0] == 1))) {
+    throw std::invalid_argument("NervousSystemAgent received screen input "
+                                "dimensions that do not match available inputs."
+                                " e.g. 3 and 1");
+  }
   buffer_screen1_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   buffer_screen2_.resize(ale_->environment->getScreenHeight() *
