@@ -51,6 +51,8 @@ class PlayerAgent {
 
     /*
      * Resets the agent's internal variables for a new set of episode runs
+     * Make sure PlayerAgent::Reset() gets called in any derived class to ensure
+     * that the frames and episode numbers are reset.
      */
     virtual void Reset();
 
