@@ -59,6 +59,7 @@ void NervousSystemAgent::Configure(const float *parameters) {
 }
 
 void NervousSystemAgent::Reset() {
+  PlayerAgent::Reset();
   neural_net_.Reset();
 }
 
