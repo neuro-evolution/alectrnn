@@ -352,6 +352,7 @@ class NervousSystem:
 
     Activator types:
         ACTIVATION_TYPE.CTRNN: (float(step_size),)
+        ACTIVATION_TYPE.IAF: (float(step_size), float(peak), float(reset))
 
     Convolutional layers should have a dictionary with the following keys:
         'layer_type' = "conv"

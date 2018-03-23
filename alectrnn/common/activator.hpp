@@ -30,7 +30,8 @@ enum ACTIVATOR_TYPE {
   IDENTITY_ACTIVATOR,
   CTRNN_ACTIVATOR,
   CONV_CTRNN_ACTIVATOR,
-  IAF_ACTIVATOR
+  IAF_ACTIVATOR,
+  CONV_IAF_ACTIVATOR
 };
 
 template<typename TReal>
@@ -265,6 +266,9 @@ class IafActivator : public Activator<TReal> {
 
     IafActivator(std::size_t num_states, TReal step_size, TReal peak, TReal reset) :
         num_states_(num_states), step_size_(step_size), peak_(peak), reset_(reset) {
+      if (peak_ <= reset_) {
+        throw std::invalid_argument("Peak needs to be greater than reset voltage");
+      }
       // refract, range, rtaus_, and resistance
       super_type::parameter_count_ = num_states * 4;
       super_type::activator_type_ = IAF_ACTIVATOR;
@@ -379,6 +383,152 @@ class IafActivator : public Activator<TReal> {
     /* The resting state voltage is reset_ */
     TReal reset_;
     std::vector<TReal> last_spike_time_;
+    // alpha == the pre-computed product of rtaus and step_size_ and -1
+    std::vector<TReal> alpha_;
+    // vthresh == the pre-computed reset threshold (reset_ + range_)
+    std::vector<TReal> vthresh_;
+    multi_array::Tensor<TReal> subthreshold_state_;
+};
+
+/* The convolutional version of the IafActivator */
+template <typename TReal>
+class Conv3DIafActivator : public Activator<TReal> {
+    typedef Activator<TReal> super_type;
+    typedef std::size_t Index;
+  public:
+
+    Conv3DIafActivator(const multi_array::Array<Index, 3>& shape,
+                       TReal step_size, TReal peak, TReal reset) :
+    shape_(shape), step_size_(step_size), peak_(peak), reset_(reset) {
+
+      if (peak_ <= reset_) {
+        throw std::invalid_argument("Peak needs to be greater than reset voltage");
+      }
+      // refract, range, rtaus_, and resistance
+      super_type::parameter_count_ = shape_[0] * 4;
+      super_type::activator_type_ = CONV_IAF_ACTIVATOR;
+
+      subthreshold_state_ = multi_array::Tensor<TReal>(shape_);
+      last_spike_time_ = multi_array::Tensor<TReal>(shape_);
+      alpha_.resize(shape_[0]);
+      vthresh_.resize(shape_[0]);
+      Reset();
+    }
+
+    ~Conv3DIafActivator()=default;
+
+    void operator()(multi_array::Tensor<TReal>& state,
+                    const multi_array::Tensor<TReal>& input_buffer) {
+      if (!((state.shape() == shape_) && (input_buffer.shape() == shape_))) {
+        std::cerr << "Activator incompatible with state: " <<
+                  (state.shape() != shape_) << std::endl;
+        std::cerr << "Activator incompatible with input: " <<
+                  (input_buffer.shape() != shape_) << std::endl;
+        throw std::invalid_argument("Conv IAF State, input, and activator must"
+                                    " all be the same shape");
+      }
+
+      multi_array::TensorView<TReal> state_accessor = state.accessor();
+      const multi_array::TensorView<TReal> input_accessor = input_buffer.accessor();
+      multi_array::TensorView<TReal> subthreshold_accessor = subthreshold_state_.accessor();
+      multi_array::TensorView<TReal> spike_time_accessor = last_spike_time_.accessor();
+
+      for (Index filter = 0; filter < shape_[0]; filter++) {
+        for (Index iii = 0; iii < shape_[1]; iii++) {
+          for (Index jjj = 0; jjj < shape_[2]; jjj++) {
+            // update refractory state:
+            // increment the time since last spike by the simulation step_size
+            spike_time_accessor[filter][iii][jjj] += step_size_;
+
+            // if a spike can occur unclamp state and check for action potential
+            if (spike_time_accessor[filter][iii][jjj] > refractory_period_[filter]) {
+              // evaluates the equation: -rtaus * dT * (u - u_reset) + R * I)
+              subthreshold_accessor[filter][iii][jjj] +=
+                alpha_[filter] * (subthreshold_accessor[filter][iii][jjj] - reset_)
+                + resistance_[filter] * input_accessor[filter][iii][jjj];
+              subthreshold_accessor[filter][iii][jjj] =
+                utilities::BoundState<TReal>(subthreshold_accessor[filter][iii][jjj]);
+
+              /* check for action potential and reset last spike time if a
+               * spike occurred. Also reset the membrane potential */
+              if (subthreshold_accessor[filter][iii][jjj] > vthresh_[filter]) {
+                state_accessor[filter][iii][jjj] = peak_;
+                subthreshold_accessor[filter][iii][jjj] = reset_;
+                spike_time_accessor[filter][iii][jjj] = 0.0;
+              }
+              else {
+                state_accessor[filter][iii][jjj] = 0.0;
+              }
+            }
+            else {
+              state_accessor[filter][iii][jjj] = 0.0;
+            }
+          }
+        }
+      }
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Number of parameters must equal parameter"
+                                    " count");
+      }
+
+      range_ = parameters.slice(0, shape_[0]);
+      rtaus_ = parameters.slice(parameters.stride() * shape_[0], shape_[0]);
+      refractory_period_ = parameters.slice(2 * parameters.stride() * shape_[0], shape_[0]);
+      resistance_ = parameters.slice(3 * parameters.stride() * shape_[0], shape_[0]);
+
+      Reset();
+      // Need to update the precomputed parameters
+      for (Index iii = 0; iii < shape_[0]; ++iii) {
+        alpha_[iii] = -step_size_ * rtaus_[iii];
+        vthresh_[iii] = reset_ + range_[iii];
+      }
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < shape_[0]; ++iii) {
+        layout[iii] = RANGE;
+      }
+      for (Index iii = shape_[0]; iii < 2*shape_[0]; ++iii) {
+        layout[iii] = RTAUS;
+      }
+      for (Index iii = 2*shape_[0]; iii < 3*shape_[0]; ++iii) {
+        layout[iii] = REFRACTORY;
+      }
+      for (Index iii = 3*shape_[0]; iii < 4*shape_[0]; ++iii) {
+        layout[iii] = RESISTANCE;
+      }
+      return layout;
+    }
+
+    void Reset() {
+      for (Index iii = 0; iii < subthreshold_state_.size(); ++iii) {
+        last_spike_time_[iii] = std::numeric_limits<TReal>::max();
+        subthreshold_state_[iii] = 0.0;
+      }
+    }
+
+  protected:
+    multi_array::Array<Index, 3> shape_;
+    /* The threshold is range_ + reset_ */
+    multi_array::ConstArraySlice<TReal> range_;
+    /* rtaus_ is the inverse of the time-constant */
+    multi_array::ConstArraySlice<TReal> rtaus_;
+    /* The neuron can spike again after refractory_period_ / step_size_ steps
+     * will allow spiking asap based on step-size */
+    multi_array::ConstArraySlice<TReal> refractory_period_;
+    /* The input resistance of the neuron */
+    multi_array::ConstArraySlice<TReal> resistance_;
+    TReal step_size_;
+    TReal peak_;
+    /* The resting state voltage is reset_ */
+    TReal reset_;
+    multi_array::Tensor<TReal> last_spike_time_;
     // alpha == the pre-computed product of rtaus and step_size_ and -1
     std::vector<TReal> alpha_;
     // vthresh == the pre-computed reset threshold (reset_ + range_)

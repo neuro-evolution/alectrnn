@@ -164,6 +164,47 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
     }
 
+    case nervous_system::IAF_ACTIVATOR: {
+      int num_states;
+      float step_size;
+      float peak;
+      float reset;
+      if (!PyArg_ParseTuple(args, "ifff", &num_states, &step_size,
+                            &peak, &reset)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("IAF Activator couldn't parse tuple");
+      }
+
+      new_activator = new nervous_system::IafActivator<float>(
+        num_states, step_size, peak, reset);
+      break;
+    }
+
+    case nervous_system::CONV_IAF_ACTIVATOR: {
+      PyArrayObject* shape;
+      int num_states;
+      float step_size;
+      float peak;
+      float reset;
+      if (!PyArg_ParseTuple(args, "Oifff", &shape, &num_states, &step_size,
+                            &peak, &reset)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("IAF Activator couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if (num_shape_elements != 3) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " CONV IAF ACTIVATOR (needs 3)");
+      }
+
+      new_activator = new nervous_system::Conv3DIafActivator<float>(
+        multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
+        shape)), step_size, peak, reset);
+      break;
+    }
+
     default: {
       std::cerr << "Activator case not supported... exiting." << std::endl;
       throw std::invalid_argument("Not an activator");
