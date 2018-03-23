@@ -247,9 +247,12 @@ def load_game_configuration(json_filename):
 
 # Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
-    BIAS=0
-    RTAUS=1
-    WEIGHT=2
+    BIAS = 0
+    RTAUS = 1
+    WEIGHT = 2
+    RANGE = 3  # difference between reset value and threshold for IF models
+    REFRACTORY = 4  # refractory period for IF models
+    RESISTANCE = 5  # resistance for IF models
 
 
 def draw_uniform_initial_guess(rng, boundary_array):
