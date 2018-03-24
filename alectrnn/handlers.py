@@ -26,11 +26,11 @@ import json
 
 def generate_rom_dictionary():
     roms_list = resource_listdir("alectrnn", "roms")
-    rom_path_list = [ resource_filename("alectrnn", "roms/" + rom) 
-                        for rom in roms_list if ".bin" in rom ]
-    rom_name_list = [ rom[:-4] for rom in roms_list if ".bin" in rom ]
-    return { rom_name_list[i] : rom_path_list[i] 
-            for i in range(len(rom_path_list)) }
+    rom_path_list = [resource_filename("alectrnn", "roms/" + rom) 
+                      for rom in roms_list if ".bin" in rom]
+    rom_name_list = [rom[:-4] for rom in roms_list if ".bin" in rom]
+    return {rom_name_list[i] : rom_path_list[i] 
+            for i in range(len(rom_path_list))}
 
 
 class Handler:
@@ -40,15 +40,33 @@ class Handler:
         if handle_parameters is None:
             handle_parameters = {}
 
-        self.handle_type = handle_type
-        self.handle_parameters = handle_parameters
-        self.handle = None
+        self._handle_type = handle_type
+        self._handle_parameters = handle_parameters
+        self._handle = None
+        self._handle_exists = False
 
     def create(self):
         raise NotImplementedError
 
-    def get(self):
-        return self.handle
+    @property
+    def handle_type(self):
+        return self._handle_type
+
+    @handle_type.setter
+    def handle_type(self, value):
+        raise AttributeError("Not allowed to change type once set")
+
+    @property
+    def handle(self):
+        if not self._handle_exists:
+            raise AttributeError("Error: Handle hasn't been created yet. Call "
+                                 "the created method first.")
+        else:
+            return self._handle
+
+    @handle.setter
+    def handle(self, value):
+        raise AttributeError("Not allowed to set the handle")
 
 
 class ObjectiveHandler(Handler):
@@ -70,9 +88,10 @@ class ObjectiveHandler(Handler):
         self.agent = agent
 
     def create(self):
-        if self.handle_type == "totalcost":
-            self.handle = partial(objective.TotalCostObjective, 
-                                  ale=self.ale, agent=self.agent)
+        if self._handle_type == "totalcost":
+            self._handle = partial(objective.TotalCostObjective, 
+                                   ale=self.ale, agent=self.agent)
+            self._handle_exists = True
 
 
 class AgentHandler(Handler):
@@ -95,14 +114,15 @@ class AgentHandler(Handler):
 
     def create(self):
         # Create Agent handle
-        if self.handle_type == "ctrnn":
-            self.handle = agent_generator.CreateCtrnnAgent(self.ale, 
-                                                        **self.handle_parameters)
-        elif self.handle_type == "nervous_system":
-            self.handle = agent_generator.CreateNervousSystemAgent(self.ale, 
-                                                        **self.handle_parameters)
+        if self._handle_type == "ctrnn":
+            self._handle = agent_generator.CreateCtrnnAgent(self.ale, 
+                                                        **self._handle_parameters)
+        elif self._handle_type == "nervous_system":
+            self._handle = agent_generator.CreateNervousSystemAgent(self.ale, 
+                                                        **self._handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
+        self._handle_exists = True
 
 
 class NervousSystemAgentHandler(AgentHandler):
@@ -120,7 +140,7 @@ class NervousSystemAgentHandler(AgentHandler):
         It will be of dtype=np.float32
         """
         if self._logging:
-            return agent_handler.GetLayerHistory(self.handle, layer_index)
+            return agent_handler.GetLayerHistory(self._handle, layer_index)
         else:
             raise AssertionError("Error: Logging not active, no history table")
 
@@ -169,9 +189,23 @@ class ALEHandler(Handler):
         self.max_num_frames_per_episode = max_num_frames_per_episode
         self.print_screen = print_screen
 
+    def seed(self, integer):
+        """
+        This function destroys the current handle object and makes a new ALE
+        instance using the new seed.
+        :param integer: an integer value
+        :return: None
+        """
+
+        if self._handle_exists:
+            self.ale_seed = integer
+            self.create()
+        else:
+            self.ale_seed = integer
+
     def create(self):
         # Create ALE handle
-        self.handle = ale_generator.CreatALE(
+        self._handle = ale_generator.CreatALE(
             rom=self.rom_path, 
             seed=self.ale_seed, 
             display_screen=self.display_screen, 
@@ -181,9 +215,10 @@ class ALEHandler(Handler):
             max_num_episodes=self.max_num_episodes,
             max_num_frames_per_episode=self.max_num_frames_per_episode,
             print_screen=self.print_screen)
+        self._handle_exists = True
 
     def action_set_size(self):
-        return ale_handler.NumOutputs(ale=self.handle)
+        return ale_handler.NumOutputs(ale=self._handle)
 
     @classmethod
     def print_available_roms(cls):
@@ -233,17 +268,19 @@ def load_AgentHandler(json_filename):
     configuration = json.load(open(json_filename, 'r'))
     return AgentHandler()
 
-######### Handlers need other handlers, so we need to add those arguments
-####### to the agent and objective above. Also add the NN handler
-##### but we won't use those directly, instead use this function below
-#### it will load everything in the correct order
+
 def load_game_configuration(json_filename):
     """
 
     :param json_filename:
     :return:
     """
-    pass
+    # TODO: Handlers need other handlers, so we need to add those arguments
+    # to the agent and objective above. Also add the NN handler
+    # but we won't use those directly, instead use this function below
+    # it will load everything in the correct order
+    raise NotImplementedError
+
 
 # Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
