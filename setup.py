@@ -247,7 +247,8 @@ setup(name=PACKAGE_NAME,
       description='A wrapper for a ctrnn implementation of ALE',
       url='https://github.com/neuro-evolution/alectrnn.git',
       install_requires=[
-          'numpy'
+          'numpy',
+          'matplotlib'
       ],
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,

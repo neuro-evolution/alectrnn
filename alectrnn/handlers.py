@@ -128,7 +128,6 @@ class AgentHandler(Handler):
 class NervousSystemAgentHandler(AgentHandler):
 
     def __init__(self, ale, nervous_system, update_rate, logging=False):
-        self._logging = logging
         super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
                                                  'update_rate': update_rate,
                                                  'logging': int(logging)})
@@ -139,10 +138,28 @@ class NervousSystemAgentHandler(AgentHandler):
         and # elements = # states in that layer.
         It will be of dtype=np.float32
         """
-        if self._logging:
+        if self._handle_parameters['logging']:
             return agent_handler.GetLayerHistory(self._handle, layer_index)
         else:
             raise AssertionError("Error: Logging not active, no history table")
+
+    @property
+    def logging(self):
+        return self._handle_parameters['logging']
+
+    @logging.setter
+    def logging(self, is_logging):
+        """
+        Toggles the logging of the agent. Requires that the agent get re-made
+        if the value changes
+        :param is_logging: a boolean
+        :return: None
+        """
+        if self._handle_parameters['logging'] != is_logging:
+            self._handle_parameters['logging'] = is_logging
+
+            if not self._handle_exists:
+                self.create()
 
 
 class ALEHandler(Handler):

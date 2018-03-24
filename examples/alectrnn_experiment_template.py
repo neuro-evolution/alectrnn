@@ -20,6 +20,7 @@ python alectrnn_experiment_template.py
 
 from evostrat import BoundedRandNumTableES
 from alectrnn import handlers
+from alectrnn import analysis_tools
 import numpy as np
 import cProfile
 
@@ -141,11 +142,37 @@ if rank == 0:
 ################################################################################
 # Evaluate
 ################################################################################
-frames = 18000
-trials = 30
-new_seed = 32535743
-ale_evaluation_handle = ale_handle
+# # In the google paper, they ran for 5min (18000 frames) for 30 games
+# frames = 18000
+# trials = 30
+# new_seed = 32535743
+# ale_handle.seed(new_seed)
+#
+# # get best
+# es = BoundedRandNumTableES.load(script_name + ".es")
+# # run for number of trials
+# costs = [obj_handle.handle(es.best) for i in range(trials)]
+# print("costs: ", costs)
+# print("mean cost: ", np.mean(costs))
 
 ################################################################################
 # Record neural activity
 ################################################################################
+# get best
+es = BoundedRandNumTableES.load(script_name + ".es")
+agent_handle.logging = True
+print("running obj")
+print("cost: ", obj_handle.handle(es.best))
+
+for layer_index in range(nn_handle.num_layers()):
+    print("layer...", layer_index)
+    history = agent_handle.layer_history(layer_index)
+    print("\t has shape: ", history.shape)
+    if layer_index == 0:
+        analysis_tools.animate_input(history, (88, 88), script_name)
+    elif layer_index == (nn_handle.num_layers() - 1):
+        analysis_tools.plot_output(history, script_name)
+    else:
+        analysis_tools.plot_internal_state_distribution(history, layer_index,
+                                                        script_name)
+        analysis_tools.plot_internal_states(history, layer_index, script_name)
