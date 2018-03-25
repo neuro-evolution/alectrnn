@@ -13,6 +13,7 @@
  */
 
 #include "player_agent.hpp"
+#include "../common/screen_logger.hpp"
 #include <ale_interface.hpp>
 
 namespace alectrnn {

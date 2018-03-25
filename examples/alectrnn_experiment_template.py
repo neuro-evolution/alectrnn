@@ -154,6 +154,7 @@ if rank == 0:
 # costs = [obj_handle.handle(es.best) for i in range(trials)]
 # print("costs: ", costs)
 # print("mean cost: ", np.mean(costs))
+# print("total cost: ", np.sum(costs))
 
 ################################################################################
 # Record neural activity

@@ -143,6 +143,17 @@ class NervousSystemAgentHandler(AgentHandler):
         else:
             raise AssertionError("Error: Logging not active, no history table")
 
+    def screen_history(self):
+        """
+        :return: A numpy array with the history of the color screen of the
+            emulator. First dimension is time, followed by HxWx3, where the
+            elements are ordered as RGB. dtype=np.float32
+        """
+        if self._handle_parameters['logging']:
+            return agent_handler.GetScreenHistory(self._handle)
+        else:
+            raise AssertionError("Error: Logging not active, no screen history")
+
     @property
     def logging(self):
         return self._handle_parameters['logging']

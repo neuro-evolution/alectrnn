@@ -17,8 +17,35 @@
 // Add includes to agents you wish to add below:
 #include "nervous_system_agent.hpp"
 
+static PyObject *GetScreenHistory(PyObject *self, PyObject *args,
+                                  PyObject *kwargs) {
+
+  static char *keyword_list[] = {"agent", NULL};
+
+  PyObject *agent_capsule;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list,
+                                   &agent_capsule)){
+    std::cerr << "Error parsing GetScreenHistory arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(agent_capsule, "agent_generator.agent"))
+  {
+    std::cerr << "Invalid pointer to Agent returned from capsule,"
+    " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  alectrnn::PlayerAgent* agent = static_cast<alectrnn::PlayerAgent*>(
+  PyCapsule_GetPointer(agent_capsule, "agent_generator.agent"));
+
+  PyObject* np_history = ConvertLogToPyArray(agent->GetScreenLog().GetHistory());
+
+  return np_history;
+}
+
 /*
- * Create a new py_function for each Agent type to handle
+ * Returns the layer history from a NervousSystemAgent
  */
 static PyObject *GetLayerHistory(PyObject *self, PyObject *args,
     PyObject *kwargs) {
@@ -73,7 +100,10 @@ PyObject *ConvertLogToPyArray(const std::vector<multi_array::Tensor<float>>& his
 static PyMethodDef AgentHandlerMethods[] = {
   { "GetLayerHistory", (PyCFunction) GetLayerHistory,
           METH_VARARGS | METH_KEYWORDS,
-          "Returns PyArray to agent state history"},
+          "Returns PyArray of agent state history"},
+  { "GetScreenHistory", (PyCFunction) GetScreenHistory,
+    METH_VARARGS | METH_KEYWORDS,
+    "Returns PyArray of ALE screen history" },
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

@@ -1,10 +1,10 @@
+#include <stdexcept>
 #include "nervous_system_agent.hpp"
 #include "player_agent.hpp"
 #include "../common/multi_array.hpp"
 #include "../common/screen_preprocessing.hpp"
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
-#include <stdexcept>
 
 namespace alectrnn {
 
@@ -28,24 +28,33 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
 
   // If grayscreen input
   // Check that NN input is correct dim and # channels
-  if (!((neural_net_[0].shape().size() == 3) || (neural_net_[0].shape()[0] == 1))) {
+  if (!((neural_net_[0].shape().size() == 4) || (neural_net_[0].shape()[0] == 1))) {
     throw std::invalid_argument("NervousSystemAgent received screen input "
                                 "dimensions that do not match available inputs."
-                                " e.g. 3 and 1");
+                                " e.g. 4 and 1");
   }
+
   buffer_screen1_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   buffer_screen2_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
-  full_screen_.resize(ale_->environment->getScreenHeight() *
+  grey_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
   downsized_screen_.resize(neural_net_[0].NumNeurons());
 
   // TO DO: Colored + luminance input (check use_color_ & nn dim/#channels)
+  // ALE color axis: HxWx3
+  // Luminance == ale->getScreenGrayscale
+  // End shape will be HxWx4 -> needs to be reshaped to 4xHxW for NN
 
   if (is_logging_) {
     log_ = nervous_system::StateLogger<float>(neural_net_);
   }
+
+  color_screen_.resize(3 * ale_->environment->getScreenHeight()
+                       * ale_->environment->getScreenWidth());
+  screen_log_ = ScreenLogger<float>({ale_->environment->getScreenHeight(),
+                                     ale_->environment->getScreenWidth(), 3});
 }
 
 NervousSystemAgent::~NervousSystemAgent() {}
@@ -65,13 +74,19 @@ void NervousSystemAgent::Reset() {
 
 Action NervousSystemAgent::Act() {
   // Need to get the screen
-  ale_->getScreenGrayscale(full_screen_);
+  ale_->getScreenGrayscale(grey_screen_);
+
+  if (is_logging_) {
+    ale->getScreenRGB(color_screen_);
+    screen_log_(color_screen_);
+  }
+
   // Need to downsize the screen
   ResizeGrayScreen(ale_->environment->getScreenWidth(),
                    ale_->environment->getScreenHeight(),
                    neural_net_[0].shape()[2],//  major input_screen_width_
                    neural_net_[0].shape()[1],//  minor input_screen_height_
-                   full_screen_,
+                   grey_screen_,
                    downsized_screen_,
                    buffer_screen1_,
                    buffer_screen2_);
@@ -80,7 +95,7 @@ Action NervousSystemAgent::Act() {
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
     neural_net_.Step();
     if (is_logging_) {
-      log_(neural_net_); // TO DO: Add timestamp (for updates faster than framerate)
+      log_(neural_net_);
     }
   }
 
@@ -104,6 +119,10 @@ Action NervousSystemAgent::Act() {
 
 const nervous_system::StateLogger<float>& NervousSystemAgent::GetLog() const {
   return log_;
+}
+
+const ScreenLogger<float>& NervousSystemAgent::GetScreenLog() const {
+  return screen_log_;
 }
 
 } // End namespace alectrnn
