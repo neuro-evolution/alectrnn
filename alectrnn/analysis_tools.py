@@ -9,8 +9,17 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
-def animate_screen():
-    pass
+def animate_screen(screen_history, prefix="test"):
+
+    fig = plt.figure()
+    ims = []
+    for frame in screen_history:
+        im = plt.imshow(frame, animated=True)
+        ims.append([im])
+
+    ani = animation.ArtistAnimation(fig, ims, interval=17, blit=True,
+                                    repeat_delay=1000)
+    ani.save(prefix + '_screen_animation.mp4')
 
 
 def animate_input(first_layer_state, input_shape, prefix="test"):
