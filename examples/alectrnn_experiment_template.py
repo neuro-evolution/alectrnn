@@ -30,7 +30,7 @@ import cProfile
 ################################################################################
 # Create ALE environment
 rom = "atlantis"
-ale_handle = handlers.ALEHandler(rom=rom, ale_seed=20, color_avg=True,
+ale_handle = handlers.ALEHandler(rom=rom, ale_seed=12, color_avg=True,
                                  max_num_frames=5000, max_num_episodes=2,
                                  max_num_frames_per_episode=5000)
 ale_handle.create()
@@ -64,7 +64,7 @@ nn_handle = handlers.NervousSystem(input_shape=[1, 88, 88],
 agent_handle = handlers.NervousSystemAgentHandler(ale=ale_handle.handle,
                                                   nervous_system=nn_handle.neural_network,
                                                   update_rate=1,
-                                                  logging=False)
+                                                  logging=True)
 agent_handle.create()
 
 # Create objective
@@ -77,53 +77,53 @@ obj_handle.create()
 # Name save file
 num_pars = nn_handle.get_parameter_count()
 par_layout = nn_handle.parameter_layout()
-script_name = rom + "_npar" + str(num_pars) + "_pop240_google"
+script_name = rom + "_npar" + str(num_pars) + "_pop7_google"
 
 ################################################################################
 # Initiate evolutionary run (requires Experiment parameters)
 ################################################################################
-# Define bounds
-type_bounds = {handlers.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
-               handlers.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
-               handlers.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
-bounds = handlers.boundary_array_for_parameter_layout(par_layout, type_bounds)
-
-# Initial guess
-rng = np.random.RandomState(1)
-guess_bounds = {handlers.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
-                handlers.PARAMETER_TYPE.RTAUS: (0.001, 10.0),
-                handlers.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
-guess_range = handlers.boundary_array_for_parameter_layout(par_layout,
-                                                           guess_bounds)
-initial_guess = handlers.draw_uniform_initial_guess(rng, guess_range)
-del guess_range
-del par_layout
-
-# Start profiler
-alectrnn_profiler = cProfile.Profile()
-alectrnn_profiler.enable()
-
-es = BoundedRandNumTableES(xo=initial_guess,
-                           step_size=1.0,
-                           bounds=bounds,
-                           objective=obj_handle.handle,
-                           seed=6,
-                           verbose=True,
-                           rand_num_table_size=20000000)
-del initial_guess
-
-# Run evolution
-es(50)
-es.save(script_name + ".es")
-
-# Record results
-alectrnn_profiler.disable()
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
-if rank == 0:
-    alectrnn_profiler.print_stats(sort='cumtime')
+# # Define bounds
+# type_bounds = {handlers.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
+#                handlers.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
+#                handlers.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
+# bounds = handlers.boundary_array_for_parameter_layout(par_layout, type_bounds)
+#
+# # Initial guess
+# rng = np.random.RandomState(1)
+# guess_bounds = {handlers.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
+#                 handlers.PARAMETER_TYPE.RTAUS: (0.001, 10.0),
+#                 handlers.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
+# guess_range = handlers.boundary_array_for_parameter_layout(par_layout,
+#                                                            guess_bounds)
+# initial_guess = handlers.draw_uniform_initial_guess(rng, guess_range)
+# del guess_range
+# del par_layout
+#
+# # Start profiler
+# alectrnn_profiler = cProfile.Profile()
+# alectrnn_profiler.enable()
+#
+# es = BoundedRandNumTableES(xo=initial_guess,
+#                            step_size=1.0,
+#                            bounds=bounds,
+#                            objective=obj_handle.handle,
+#                            seed=7,
+#                            verbose=True,
+#                            rand_num_table_size=20000000)
+# del initial_guess
+#
+# # Run evolution
+# es(5)
+# es.save(script_name + ".es")
+#
+# # Record results
+# alectrnn_profiler.disable()
+# from mpi4py import MPI
+# comm = MPI.COMM_WORLD
+# size = comm.Get_size()
+# rank = comm.Get_rank()
+# if rank == 0:
+#     alectrnn_profiler.print_stats(sort='cumtime')
 
 ################################################################################
 # Load and continue evolution (requires Experiment parameters) (optional)
@@ -143,14 +143,17 @@ if rank == 0:
 ################################################################################
 # # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
-# trials = 30
-# new_seed = 32535743
-# ale_handle.seed(new_seed)
+# trials = 5
+# new_seed = 32535742
+# ale_handle.seed(new_seed) #TODO: Figure out if reset... resets the rng
 #
 # # get best
 # es = BoundedRandNumTableES.load(script_name + ".es")
+# costs = []
 # # run for number of trials
-# costs = [obj_handle.handle(es.best) for i in range(trials)]
+# for i in range(trials):
+#     costs.append(obj_handle.handle(es.best))
+#     print("trial", i, "complete")
 # print("costs: ", costs)
 # print("mean cost: ", np.mean(costs))
 # print("total cost: ", np.sum(costs))
@@ -160,7 +163,7 @@ if rank == 0:
 ################################################################################
 # get best
 es = BoundedRandNumTableES.load(script_name + ".es")
-agent_handle.logging = True
+# agent_handle.logging = True
 print("running obj")
 print("cost: ", obj_handle.handle(es.best))
 
@@ -180,5 +183,5 @@ for layer_index in range(nn_handle.num_layers()):
 ################################################################################
 # Plot parameter distributions
 ################################################################################
-es = BoundedRandNumTableES.load(script_name + ".es")
-analysis_tools.plot_parameter_distributions(es.best, par_layout)
+# es = BoundedRandNumTableES.load(script_name + ".es")
+# analysis_tools.plot_parameter_distributions(es.best, par_layout)

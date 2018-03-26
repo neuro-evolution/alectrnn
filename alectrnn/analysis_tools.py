@@ -105,7 +105,7 @@ def animate_input(first_layer_state, input_shape, prefix="test"):
     :return: None
     """
     # TODO: make another anim for color/lumin after color is implemented (may need reshape)
-    if input_shape[0] != 1:
+    if input_shape[1] != 1:
         raise NotImplementedError("Currently only makes animations for "
                                   "greyscale")
 

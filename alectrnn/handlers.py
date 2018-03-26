@@ -196,9 +196,7 @@ class NervousSystemAgentHandler(AgentHandler):
         """
         if self._handle_parameters['logging'] != is_logging:
             self._handle_parameters['logging'] = is_logging
-
-            if not self._handle_exists:
-                self.create()
+            self.create()
 
 
 class ALEHandler(Handler):
