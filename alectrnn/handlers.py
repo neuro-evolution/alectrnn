@@ -312,6 +312,7 @@ def load_game_configuration(json_filename):
 
 # Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
+    __order__ = 'BIAS RTAUS WEIGHT RANGE REFRACTORY RESISTANCE'
     BIAS = 0
     RTAUS = 1
     WEIGHT = 2

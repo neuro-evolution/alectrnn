@@ -4,9 +4,78 @@ Various functions for plotting and analyzing the output of the neural networks
 (requires ffmpeg for animations)
 """
 
+from alectrnn import handlers
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import matplotlib.animation as animation
+
+
+def ecdf(data):
+    """
+    Generates an empirical cumulative distribution function from data
+    :param data: a 1D array of data
+    :return: sorted data, cdf
+    """
+    data = np.sort(data)
+    size = float(len(data))
+    all_unique = not(any(data[:-1] == data[1:]))
+    if all_unique:
+        cdf = np.array([i / size for i in range(0,len(data))])
+    else:
+        cdf = np.searchsorted(data, data,side='left')/size
+        unique_data, unique_indices = np.unique(data, return_index=True)
+        data=unique_data
+        cdf = cdf[unique_indices]
+
+    return data, cdf
+
+
+def eccdf(data):
+    """
+    Generates an empirical complementary cumulative distribution function
+    :param data: a 1D array of data
+    :return: sorted data, ccdf
+    """
+    sorted_data, cdf = ecdf(data)
+    return sorted_data, 1. - cdf
+
+
+def plot_ccdf(data, xlabel='', x_log=False, y_log=False, savefile=True,
+              prefix='test', marker='o', linestyle='-', color='b',
+              **kwargs):
+    """
+    Plots the CCDF of a given 1D array of data
+    :param data: 1D array of data
+    :param xlabel: label for x-axis
+    :param x_log: True/false log x-axes
+    :param y_log: True/false log y-axes
+    :param savefile: True/false (if false, image is displayed)
+    :param prefix: prefix for savefile name
+    :param marker: marker argument for plt
+    :param linestyle: marker argument for plt
+    :param color: marker argument for plt
+    :param kwargs: Any other plt.plot key word arguments
+    :return: None
+    """
+    x, y = eccdf(data)
+    plt.clf()
+    plt.plot(x, y, marker=marker, linestyle=linestyle, color=color, **kwargs)
+    if x_log: plt.xscale('log')
+    if y_log: plt.yscale('log')
+    plt.ylabel('CCDF')
+    plt.xlabel(xlabel)
+    if savefile:
+        plt.savefig(prefix + '.png', dpi=300)
+        plt.clf()
+        plt.close()
+
+
+def generate_color(index, loop_size=12, colormap=cm.Set1):
+    """
+    """
+
+    return colormap((index%12 + index/12)*256 / loop_size)
 
 
 def animate_screen(screen_history, prefix="test"):
@@ -121,6 +190,34 @@ def plot_output(last_layer_state, prefix="test"):
     plt.savefig(prefix + "_output.pdf")
     plt.clf()
     plt.close()
+
+
+def plot_parameter_distributions(parameters, parameter_layout, prefix="test",
+                                 x_log=False, y_log=False, marker='o',
+                                 linestyle='-', color='b', **kwargs):
+    """
+    Makes plots for the distributions of the parameters from the model.
+    :param parameters: the parameter array (size N).
+    :param parameter_layout: the int code for what type the parameters
+        are (size N).
+    :param prefix: prefix for output file name
+    :param x_log: True/False log x-axes
+    :param y_log: True/False log y-axes
+    :param marker: plt.plot marker style (see matplotlib docs for options)
+    :param linestyle: plt.plot linestyle (see matplotlib docs for options)
+    :param color: plt.plot color (see matplotlib docs for options)
+    :param kwargs: Any other key word arguments for plt.plot
+    :return: None
+    """
+
+    for par_type in handlers.PARAMETER_TYPE:
+        type_indices = np.where(parameter_layout == par_type.value)[0]
+        if len(type_indices != 0):
+            type_parameters = np.ma.array(parameters, mask=type_indices)
+            type_prefix = prefix + "_type-" + par_type.name
+            plot_ccdf(type_parameters, xlabel=par_type.name, prefix=type_prefix,
+                      x_log=x_log, y_log=y_log, marker=marker,
+                      linestyle=linestyle, color=color, **kwargs)
 
 
 if __name__ == "__main__":

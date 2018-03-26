@@ -76,14 +76,13 @@ obj_handle.create()
 
 # Name save file
 num_pars = nn_handle.get_parameter_count()
+par_layout = nn_handle.parameter_layout()
 script_name = rom + "_npar" + str(num_pars) + "_pop240_google"
 
 ################################################################################
 # Initiate evolutionary run (requires Experiment parameters)
 ################################################################################
 # Define bounds
-num_pars = nn_handle.get_parameter_count()
-par_layout = nn_handle.parameter_layout()
 type_bounds = {handlers.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
                handlers.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
                handlers.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
