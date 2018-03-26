@@ -25,6 +25,10 @@ import json
 
 
 def generate_rom_dictionary():
+    """
+    Determines what roms are available
+    :return: A dictionary keyed by rom name and valued by path
+    """
     roms_list = resource_listdir("alectrnn", "roms")
     rom_path_list = [resource_filename("alectrnn", "roms/" + rom) 
                       for rom in roms_list if ".bin" in rom]
@@ -34,9 +38,15 @@ def generate_rom_dictionary():
 
 
 class Handler:
-
+    """
+    Parent class for the various Handlers. Holds parameters and defines a
+    few functions for accessing the Python Capsules (handle).
+    """
     def __init__(self, handle_type, handle_parameters=None):
-
+        """
+        :param handle_type: the type of handler being created
+        :param handle_parameters: a dictionary of parameters needed for its creation
+        """
         if handle_parameters is None:
             handle_parameters = {}
 
@@ -46,6 +56,11 @@ class Handler:
         self._handle_exists = False
 
     def create(self):
+        """
+        Should create the handle by calling the appropriate c-function and
+        return nothing. Should also set the self._handle_exists flag to True
+        :return: None
+        """
         raise NotImplementedError
 
     @property
@@ -70,7 +85,9 @@ class Handler:
 
 
 class ObjectiveHandler(Handler):
-
+    """
+    Subclass of handler meant to create and manage the c++ objective function.
+    """
     def __init__(self, ale, agent, obj_type, obj_parameters=None):
         """
         Objective parameters:
@@ -95,16 +112,19 @@ class ObjectiveHandler(Handler):
 
 
 class AgentHandler(Handler):
-
+    """
+    Handler subclass meant for dealing with ALE agents
+    """
     def __init__(self, ale, agent_type, agent_parameters=None):
         """
         Agent parameters:
-          agent_type - "ctrnn"
+          agent_type - "ctrnn", "nervous_system"
           agent_parameters - dictionary of keyword arguments for the agent
 
             For "ctrnn": (num_neurons, num_sensor_neurons,
                           input_screen_width, input_screen_height,
                           use_color, step_size)
+            For "nervous_system": (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
             agent_parameters = {}
@@ -113,6 +133,10 @@ class AgentHandler(Handler):
         self.ale = ale
 
     def create(self):
+        """
+        Creates the handle:
+        Currently supports "ctrnn" and "nervous_system"
+        """
         # Create Agent handle
         if self._handle_type == "ctrnn":
             self._handle = agent_generator.CreateCtrnnAgent(self.ale, 
@@ -126,7 +150,11 @@ class AgentHandler(Handler):
 
 
 class NervousSystemAgentHandler(AgentHandler):
-
+    """
+    Subclass of AgentHandler for easy creation and handling of NervousSystem
+    agents, which have several distinct methods (e.g. layer_history and
+    screen_history).
+    """
     def __init__(self, ale, nervous_system, update_rate, logging=False):
         super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
                                                  'update_rate': update_rate,
@@ -174,7 +202,10 @@ class NervousSystemAgentHandler(AgentHandler):
 
 
 class ALEHandler(Handler):
-
+    """
+    Handles the arcade-learning-environment. Starts up an ALE environment on
+    creation.
+    """
     installed_roms = generate_rom_dictionary()
 
     def __init__(self, rom, ale_seed,
@@ -294,12 +325,11 @@ def load_AgentHandler(json_filename):
     """
 
     configuration = json.load(open(json_filename, 'r'))
-    return AgentHandler()
+    raise NotImplementedError
 
 
 def load_game_configuration(json_filename):
     """
-
     :param json_filename:
     :return:
     """
@@ -310,8 +340,11 @@ def load_game_configuration(json_filename):
     raise NotImplementedError
 
 
-# Should keep in sync with PARAMETER_TYPE in parameter_types.hpp
 class PARAMETER_TYPE(Enum):
+    """
+    Class for specifying parameter types. Should match those in the C++ code:
+    parameter_types.hpp
+    """
     __order__ = 'BIAS RTAUS WEIGHT RANGE REFRACTORY RESISTANCE'
     BIAS = 0
     RTAUS = 1
@@ -377,8 +410,11 @@ def coverage_is_complete(parameter_layout, type_bounds):
     return True
 
 
-# Should keep in sync with ACTIVATOR_TYPE in activator.hpp
 class ACTIVATOR_TYPE(Enum):
+    """
+    Class for distinguishing the various types of neural activators
+    Should keep in sync with ACTIVATOR_TYPE in activator.hpp
+    """
     BASE=0
     IDENTITY=1
     CTRNN=2
@@ -387,8 +423,11 @@ class ACTIVATOR_TYPE(Enum):
     CONV_IAF=5
 
 
-# Should keep in sync with INTEGRATOR_TYPE in integrator.hpp
 class INTEGRATOR_TYPE(Enum):
+    """
+    Class for distinguishing the various types of neural integrators
+    Should keep in sync with INTEGRATOR_TYPE in integrator.hpp
+    """
     BASE=0
     NONE=1
     ALL2ALL=2
@@ -556,8 +595,7 @@ class NervousSystem:
                     layer_pars['filter_shape'], 
                     layer_pars['stride'], 
                     layer_act_types[i], 
-                    layer_act_args[i],
-                    layer_shapes[i+1]))
+                    layer_act_args[i]))
 
             elif layer_pars['layer_type'] == "recurrent":
                 layers.append(self._create_recurrent_layer(
@@ -706,6 +744,19 @@ class NervousSystem:
     def _create_a2a_recurrent_layer(self, prev_layer_shape, num_internal_nodes, 
                              internal_edge_array, act_type, act_args,
                              layer_shape):
+        """
+        Creates a recurrent layer with internal connections defined by
+        the input graph and all-to-all connections with the previous layer.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
                      int(np.prod(prev_layer_shape)))
@@ -718,6 +769,17 @@ class NervousSystem:
 
     def _create_a2a_a2a_layer(self, prev_layer_shape, num_internal_nodes, 
                             act_type, act_args, layer_shape):
+        """
+        Creates a layer with all-to-all internal and back connections.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
                      int(np.prod(prev_layer_shape)))
@@ -730,6 +792,18 @@ class NervousSystem:
 
     def _create_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
                              act_type, act_args, layer_shape):
+        """
+        Creates a layer with all-to-all back connections, but not internal
+        connections.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
         back_args = (int(num_internal_nodes),
                      int(np.prod(prev_layer_shape)))
@@ -742,7 +816,22 @@ class NervousSystem:
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
             filter_shape, stride, num_internal_nodes,
             internal_edge_array, act_type, act_args, layer_shape):
-
+        """
+        Creates a layer with convolutional back connections and self-connections
+        defined by the input graph.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
         back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
                      interpreted_shape, #layer_shape funct outputs dtype=np.uint64
@@ -760,6 +849,25 @@ class NervousSystem:
             filter_shape, stride, num_internal_nodes,
             internal_edge_array, internal_weight_array, act_type, act_args,
             layer_shape):
+        """
+        Creates a layer with convolutional back connections and a randomly
+        connected and weight internal connections.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections
+        :param internal_weight_array: weights for the graph
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
 
         back_type = INTEGRATOR_TYPE.CONV.value
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64), 
@@ -778,9 +886,20 @@ class NervousSystem:
             bipartite_input_edge_array, num_internal_nodes,
             internal_edge_array, act_type, act_args, layer_shape):
         """
-        All graphs should be Nx2 with dtype=np.uint64
-        act_args should be in the proper tuple format for inputs into the
-        activator function
+        Creates a recurrent layer with graphs specifying back and self
+        connections.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param num_bipartite_nodes: number of nodes in bipartite graph
+        :param bipartite_input_edge_array: array for back-connections (Nx2)
+            dtype=np.uint64
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections (Nx2)
+            dtype=np.uint64
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
         """
         back_type = INTEGRATOR_TYPE.RECURRENT.value
         back_args = (int(num_bipartite_nodes),
@@ -797,10 +916,20 @@ class NervousSystem:
             internal_edge_array, internal_weight_array, act_type, act_args,
             layer_shape):
         """
-        All graphs should be Nx2 with dtype=np.uint64
-        All weights should be Nx1 with dtype=np.float32
-        act_args should be in the proper tuple format for inputs into the
-        activator function
+        Layer with internal and back connection and weights specified by
+        the input graphs.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param num_bipartite_nodes: number of nodes in bigraph
+        :param bipartite_input_edge_array: Nx2 dtype=np.uint64 graph
+        :param input_weights: N dtype=np.float32 array
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections Nx2 np.uint64
+        :param internal_weight_array: weights for graph N dtype=np.float32
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
         """
         back_type = INTEGRATOR_TYPE.RESERVOIR.value
         back_args = (int(num_bipartite_nodes),
@@ -815,13 +944,23 @@ class NervousSystem:
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
-                           filter_shape, stride, act_type, act_args, layer_shape):
+                           filter_shape, stride, act_type, act_args):
         """
+        Creates a layer with convolutional back connections and no self
+        connections.
         act_args needs to be in the correct tuple format with properly
         typed numpy arrays for any arguments
-
         filter_shape = 2 element array/list with filter dimenstions
         Final shape, which includes depth, depends on shape of prev layer
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :return: python capsule with pointer to the layer
         """
 
         back_type = INTEGRATOR_TYPE.CONV.value
@@ -837,6 +976,9 @@ class NervousSystem:
 
     def _create_motor_layer(self, num_outputs, size_of_prev_layer, act_type, act_args):
         """
+        Generates a motor layer for the neural network, which will represent
+        the output of the network. It is fully connected to whatever layer
+        precedes it.
         act_args needs to be in the correct tuple format for the activator
         """
 
