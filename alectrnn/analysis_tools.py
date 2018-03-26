@@ -10,7 +10,12 @@ import matplotlib.animation as animation
 
 
 def animate_screen(screen_history, prefix="test"):
-
+    """
+    Animates the ALE screen. Requires ffmpeg.
+    :param screen_history: A HxWx3 numpy array (float or unint)
+    :param prefix: prefix for output file name
+    :return: None
+    """
     fig = plt.figure()
     ims = []
     for frame in screen_history:
@@ -23,6 +28,13 @@ def animate_screen(screen_history, prefix="test"):
 
 
 def animate_input(first_layer_state, input_shape, prefix="test"):
+    """
+    Animates the input frame for the neural network. Requires ffmpeg.
+    :param first_layer_state: numpy array of states for the input layer
+    :param input_shape: shape of layer (currently only supports 1xHxW)
+    :param prefix: prefix for output file name
+    :return: None
+    """
     # TODO: make another anim for color/lumin after color is implemented (may need reshape)
     if input_shape[0] != 1:
         raise NotImplementedError("Currently only makes animations for "
@@ -41,7 +53,13 @@ def animate_input(first_layer_state, input_shape, prefix="test"):
 
 
 def plot_internal_states(layer_state, index, prefix="test"):
-
+    """
+    Makes a time series plot of all the neurons in a given layer
+    :param layer_state: a Tx(L) matrix, where L is the shape of the layer
+    :param index: the layer index (for labelling)
+    :param prefix: prefix for output file name
+    :return: None
+    """
     plt.clf()
 
     for neuron_states in layer_state.T:
@@ -53,7 +71,13 @@ def plot_internal_states(layer_state, index, prefix="test"):
 
 
 def plot_internal_state_distribution(layer_state, index, prefix="test"):
-
+    """
+    Makes a time series plot of the max/min/median/90%/10% quartile ranges
+    :param layer_state: a Tx(L) matrix, where L is the shape of the layer
+    :param index: the layer index (for labelling)
+    :param prefix: prefix for output file name
+    :return: None
+    """
     plt.clf()
 
     mins = []
@@ -84,11 +108,14 @@ def plot_internal_state_distribution(layer_state, index, prefix="test"):
 
 
 def plot_output(last_layer_state, prefix="test"):
-
+    """
+    Time series plot of the trajectory of output states.
+    :param last_layer_state: matrix of output layer
+    :param prefix: prefix for output file name
+    :return: None
+    """
     plt.clf()
     for i, output in enumerate(last_layer_state.T):
-        # print(output.shape)
-        # print(output)
         plt.plot(output, label="output: " + str(i))
 
     plt.savefig(prefix + "_output.pdf")
