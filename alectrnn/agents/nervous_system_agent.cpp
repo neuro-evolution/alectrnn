@@ -77,7 +77,7 @@ Action NervousSystemAgent::Act() {
   ale_->getScreenGrayscale(grey_screen_);
 
   if (is_logging_) {
-    ale->getScreenRGB(color_screen_);
+    ale_->getScreenRGB(color_screen_);
     screen_log_(color_screen_);
   }
 

@@ -176,3 +176,9 @@ for layer_index in range(nn_handle.num_layers()):
         analysis_tools.plot_internal_state_distribution(history, layer_index,
                                                         script_name)
         analysis_tools.plot_internal_states(history, layer_index, script_name)
+
+################################################################################
+# Plot parameter distributions
+################################################################################
+es = BoundedRandNumTableES.load(script_name + ".es")
+analysis_tools.plot_parameter_distributions(es.best, par_layout)

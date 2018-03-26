@@ -56,12 +56,6 @@ class PlayerAgent {
      */
     virtual void Reset();
 
-    /*
-     * Function that logs states or environment
-     * Can be called with Act
-     */
-    virtual void Log()=0;
-
   protected:
     virtual Action Act()=0;
     void EndGame();

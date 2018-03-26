@@ -23,7 +23,7 @@ class ScreenLogger {
                 : screen_shape_(screen_shape), time_stamps_(num_iter) {
       fill_count_ = 0;
       // Allocate space for the screens
-      history_->resize(num_iter);
+      history_.resize(num_iter);
 
       // Allocate space for states
       for (Index iii = 0; iii < history_.size(); ++iii) {
@@ -32,7 +32,7 @@ class ScreenLogger {
     }
 
     ScreenLogger(const std::vector<Index> screen_shape)
-                : StateLogger(screen_shape, 0) {
+                : ScreenLogger(screen_shape, 0) {
     }
 
     ~ScreenLogger()=default;

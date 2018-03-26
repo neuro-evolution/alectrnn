@@ -36,7 +36,7 @@ static PyObject *GetScreenHistory(PyObject *self, PyObject *args,
     " or is not a capsule." << std::endl;
     return NULL;
   }
-  alectrnn::PlayerAgent* agent = static_cast<alectrnn::PlayerAgent*>(
+  alectrnn::NervousSystemAgent* agent = static_cast<alectrnn::NervousSystemAgent*>(
   PyCapsule_GetPointer(agent_capsule, "agent_generator.agent"));
 
   PyObject* np_history = ConvertLogToPyArray(agent->GetScreenLog().GetHistory());
