@@ -24,3 +24,7 @@ CMakeLists.txt
 /alectrnn/alelib/
 /alectrnn/build/
 /alectrnn_debug/
+
+# remove temp files
+*.png
+*.es
