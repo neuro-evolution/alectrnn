@@ -5,7 +5,7 @@ Requirements: Numpy, ALE, CMake (for ALE)
 Can be installed with pip. ALE and Numpy dependencies will be handled by pip. Can be installed using:
 
 ```
-pip install --install-option="--prefix=$PREFIX_PATH" git+https://github.com/neuro-evolution/alectrnn.git
+pip install --install-option="--prefix=$PREFIX_PATH" git+https://github.com/nathaniel-rodriguez/alectrnn.git
 ```
 
 `$PREFIX_PATH$` will specify the install location of the package (optional). Installing directly from the repo will require git to be installed as well (i.e. for the git+ command).
@@ -13,7 +13,7 @@ pip install --install-option="--prefix=$PREFIX_PATH" git+https://github.com/neur
 ALE supports a visual interface via SDL. If you want to install using the visual interface then you need to first install the libsdl1.2-dev library. By default SDL is not installed with ALE. It can be enabled via the `--with-sdl` option:
 
 ```
-pip install --install-option="--with-sdl" git+https://github.com/neuro-evolution/alectrnn.git
+pip install --install-option="--with-sdl" git+https://github.com/nathaniel-rodriguez/alectrnn.git
 ```
 
 This library is based on float (single precision values). If using with numpy, make sure to use dtype=float32 instead of the default float64
