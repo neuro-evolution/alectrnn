@@ -101,14 +101,37 @@ class ObjectiveHandler(Handler):
             obj_parameters = {}
 
         super().__init__(obj_type, obj_parameters)
-        self.ale = ale
-        self.agent = agent
+        self._ale = ale
+        self._agent = agent
 
     def create(self):
+        """
+        If either ale or agent change in-place, the handler needs to be
+        re-created in order to update the partial function.
+        :return: None
+        """
         if self._handle_type == "totalcost":
             self._handle = partial(objective.TotalCostObjective, 
-                                   ale=self.ale, agent=self.agent)
+                                   ale=self._ale, agent=self._agent)
             self._handle_exists = True
+
+    @property
+    def ale(self):
+        return self._ale
+
+    @ale.setter
+    def ale(self, new_ale):
+        self._ale = new_ale
+        self.create()
+
+    @property
+    def agent(self):
+        return self._agent
+
+    @agent.setter
+    def agent(self, new_agent):
+        self._agent = new_agent
+        self.create()
 
 
 class AgentHandler(Handler):
@@ -130,7 +153,7 @@ class AgentHandler(Handler):
             agent_parameters = {}
 
         super().__init__(agent_type, agent_parameters)
-        self.ale = ale
+        self._ale = ale
 
     def create(self):
         """
@@ -139,14 +162,23 @@ class AgentHandler(Handler):
         """
         # Create Agent handle
         if self._handle_type == "ctrnn":
-            self._handle = agent_generator.CreateCtrnnAgent(self.ale, 
+            self._handle = agent_generator.CreateCtrnnAgent(self._ale,
                                                         **self._handle_parameters)
         elif self._handle_type == "nervous_system":
-            self._handle = agent_generator.CreateNervousSystemAgent(self.ale, 
+            self._handle = agent_generator.CreateNervousSystemAgent(self._ale,
                                                         **self._handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
         self._handle_exists = True
+
+    @property
+    def ale(self):
+        return self._ale
+
+    @ale.setter
+    def ale(self, new_ale):
+        self._ale = new_ale
+        self.create()
 
 
 class NervousSystemAgentHandler(AgentHandler):
@@ -195,7 +227,7 @@ class NervousSystemAgentHandler(AgentHandler):
         :return: None
         """
         if self._handle_parameters['logging'] != is_logging:
-            self._handle_parameters['logging'] = is_logging
+            self._handle_parameters['logging'] = int(is_logging)
             self.create()
 
 

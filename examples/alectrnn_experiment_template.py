@@ -31,8 +31,8 @@ import cProfile
 # Create ALE environment
 rom = "atlantis"
 ale_handle = handlers.ALEHandler(rom=rom, ale_seed=12, color_avg=True,
-                                 max_num_frames=5000, max_num_episodes=2,
-                                 max_num_frames_per_episode=5000)
+                                 max_num_frames=500, max_num_episodes=2,
+                                 max_num_frames_per_episode=500)
 ale_handle.create()
 
 # Create NN
@@ -64,7 +64,7 @@ nn_handle = handlers.NervousSystem(input_shape=[1, 88, 88],
 agent_handle = handlers.NervousSystemAgentHandler(ale=ale_handle.handle,
                                                   nervous_system=nn_handle.neural_network,
                                                   update_rate=1,
-                                                  logging=True)
+                                                  logging=False)
 agent_handle.create()
 
 # Create objective
@@ -143,16 +143,19 @@ script_name = rom + "_npar" + str(num_pars) + "_pop7_google"
 ################################################################################
 # # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
-# trials = 5
+# trials = 5 #30
 # new_seed = 32535742
-# ale_handle.seed(new_seed) #TODO: Figure out if reset... resets the rng
 #
 # # get best
 # es = BoundedRandNumTableES.load(script_name + ".es")
 # costs = []
 # # run for number of trials
 # for i in range(trials):
-#     costs.append(obj_handle.handle(es.best))
+#
+#     ale_handle.seed(new_seed+1) #TODO: Figure out if reset... resets the rng
+#     agent_handle.ale = ale_handle.handle
+#     obj_handle.create()
+#     costs.append(obj_handle.handle(es.best)) # need to reset the objective...
 #     print("trial", i, "complete")
 # print("costs: ", costs)
 # print("mean cost: ", np.mean(costs))
@@ -163,25 +166,33 @@ script_name = rom + "_npar" + str(num_pars) + "_pop7_google"
 ################################################################################
 # get best
 es = BoundedRandNumTableES.load(script_name + ".es")
-# agent_handle.logging = True
+agent_handle.logging = True # TODO: Make an experiment class that holds the handles and does changes
+obj_handle.agent = agent_handle.handle #
+obj_handle.create() #
 print("running obj")
 print("cost: ", obj_handle.handle(es.best))
 
+# Print screen history
+# screen_history = agent_handle.screen_history()
+# analysis_tools.animate_screen(screen_history, script_name)
+
+# Get neural system history
 for layer_index in range(nn_handle.num_layers()):
     print("layer...", layer_index)
     history = agent_handle.layer_history(layer_index)
     print("\t has shape: ", history.shape)
     if layer_index == 0:
-        analysis_tools.animate_input(history, (88, 88), script_name)
+        pass
+        # analysis_tools.animate_input(history, (88, 88), script_name)
     elif layer_index == (nn_handle.num_layers() - 1):
         analysis_tools.plot_output(history, script_name)
     else:
-        analysis_tools.plot_internal_state_distribution(history, layer_index,
-                                                        script_name)
-        analysis_tools.plot_internal_states(history, layer_index, script_name)
+        # analysis_tools.plot_internal_state_distribution(history, layer_index,
+        #                                                 script_name)
+        analysis_tools.plot_internal_state(history, layer_index, [1,2,3,4], script_name)
 
 ################################################################################
 # Plot parameter distributions
 ################################################################################
-# es = BoundedRandNumTableES.load(script_name + ".es")
-# analysis_tools.plot_parameter_distributions(es.best, par_layout)
+es = BoundedRandNumTableES.load(script_name + ".es")
+analysis_tools.plot_parameter_distributions(es.best, par_layout)

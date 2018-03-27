@@ -105,7 +105,7 @@ def animate_input(first_layer_state, input_shape, prefix="test"):
     :return: None
     """
     # TODO: make another anim for color/lumin after color is implemented (may need reshape)
-    if input_shape[1] != 1:
+    if first_layer_state.shape[1] != 1:
         raise NotImplementedError("Currently only makes animations for "
                                   "greyscale")
 
@@ -116,23 +116,23 @@ def animate_input(first_layer_state, input_shape, prefix="test"):
         im = plt.imshow(img, cmap=plt.get_cmap('Greys'), animated=True)
         ims.append([im])
 
-    ani = animation.ArtistAnimation(fig, ims, interval=20, blit=True,
+    ani = animation.ArtistAnimation(fig, ims, interval=17, blit=True,
                                     repeat_delay=1000)
     ani.save(prefix + '_input_animation.mp4')
 
 
-def plot_internal_states(layer_state, index, prefix="test"):
+def plot_internal_state(layer_state, index, neuron_ids, prefix="test"):
     """
     Makes a time series plot of all the neurons in a given layer
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling)
+    :param neuron_ids: the indices location of neurons in the flattened state
     :param prefix: prefix for output file name
     :return: None
     """
     plt.clf()
-
-    for neuron_states in layer_state.T:
-        plt.plot(neuron_states, alpha=0.3)
+    for neuron_state in layer_state.reshape(-1, layer_state.shape[0])[neuron_ids]:
+        plt.plot(neuron_state, alpha=0.3, color="gray")
 
     plt.savefig(prefix + "_layer" + str(index) + "_states.pdf")
     plt.clf()
