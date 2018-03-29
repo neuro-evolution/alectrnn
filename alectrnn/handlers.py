@@ -83,6 +83,9 @@ class Handler:
     def handle(self, value):
         raise AttributeError("Not allowed to set the handle")
 
+    @property
+    def parameters(self):
+        return self._handle_parameters
 
 class ObjectiveHandler(Handler):
     """
