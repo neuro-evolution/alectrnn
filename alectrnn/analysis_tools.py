@@ -187,6 +187,7 @@ def plot_output(last_layer_state, prefix="test"):
     for i, output in enumerate(last_layer_state.T):
         plt.plot(output, label="output: " + str(i))
 
+    plt.legend()
     plt.savefig(prefix + "_output.pdf")
     plt.clf()
     plt.close()
@@ -213,7 +214,7 @@ def plot_parameter_distributions(parameters, parameter_layout, prefix="test",
     for par_type in handlers.PARAMETER_TYPE:
         type_indices = np.where(parameter_layout == par_type.value)[0]
         if len(type_indices != 0):
-            type_parameters = np.ma.array(parameters, mask=type_indices)
+            type_parameters = parameters[type_indices]
             type_prefix = prefix + "_type-" + par_type.name
             plot_ccdf(type_parameters, xlabel=par_type.name, prefix=type_prefix,
                       x_log=x_log, y_log=y_log, marker=marker,

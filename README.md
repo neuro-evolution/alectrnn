@@ -18,5 +18,12 @@ pip install --install-option="--with-sdl" git+https://github.com/nathaniel-rodri
 
 This library is based on float (single precision values). If using with numpy, make sure to use dtype=float32 instead of the default float64
 
-Note: the --install-option="--lib-path=/path/to/ale-master" can allow compilation using a local download of the ALE source code.
-Note: the ale_install.sh file directly uses gcc and g++ environment variables to define CC and CXX for cmake.
+Additional notes:
+
+- The --install-option="--lib-path=/path/to/ale-master" can allow compilation using a local download of the ALE source code.
+
+- The ale_install.sh file directly uses gcc and g++ environment variables to define CC and CXX for cmake.
+ 
+- To make animations from the `analysis_tools` module, ffmpeg needs to be installed for matplotlib to use.
+
+- The `alectrnn_experiment_template.py` requires `evostrat` to run. It can be installed from here: https://github.com/Nathaniel-Rodriguez/evostrat.git

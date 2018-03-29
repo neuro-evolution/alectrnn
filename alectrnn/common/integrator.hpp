@@ -202,13 +202,13 @@ class Conv3DIntegrator : public Integrator<TReal> {
        * tar_state will be re-interpreted as the same shape as layer_shape
        * src_state will be reinterpreted as the same shape as prev_layer_shape
        */
-      if (!(src_state.size() >= min_src_size_)) {
+      if (src_state.size() < min_src_size_) {
         throw std::invalid_argument("Src state too small for integrator");
       }
       const multi_array::TensorView<TReal> src_view(src_state.data(), 
         prev_layer_strides_.data(), prev_layer_shape_.data());
 
-      if (!(tar_state.size() >= min_tar_size_)) {
+      if (tar_state.size() < min_tar_size_) {
         throw std::invalid_argument("tar state too small for integrator");
       }
       multi_array::TensorView<TReal> tar_view(tar_state.data(), 
