@@ -9,7 +9,7 @@ INSTALL_DIR="$BASE_DIR/alelib"
 # if [ ! -d "$BIN_DIR" ] || [ ! -d "$INSTALL_DIR" ] || [ ! -d "$LIB_DIR" ]; then
 
 # Location of ALE fork used with ALECTRNN
-ALE_PACKAGE_URL="https://github.com/neuro-evolution/arcade-learning-environment/archive/master.zip"
+ALE_PACKAGE_URL="https://github.com/nathaniel-rodriguez/arcade-learning-environment/archive/master.zip"
 PACKAGE_FILE_NAME="master.zip"
 
 SDL_FLAG="OFF"
