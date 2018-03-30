@@ -21,7 +21,6 @@ python alectrnn_experiment_template.py
 from evostrat import BoundedRandNumTableES
 from alectrnn import handlers
 from alectrnn.experiment import ALEExperiment
-from alectrnn import analysis_tools
 import numpy as np
 import cProfile
 
@@ -155,6 +154,7 @@ if rank == 0:
 ################################################################################
 # Record neural activity
 ################################################################################
+# from alectrnn import analysis_tools
 # # get best
 # es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
 # ale_experiment.set_logging(True)
@@ -189,6 +189,7 @@ if rank == 0:
 ################################################################################
 # Plot parameter distributions
 ################################################################################
+# from alectrnn import analysis_tools
 # es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
 # analysis_tools.plot_parameter_distributions(es.best, par_layout, marker='None',
 #                                             prefix=ale_experiment.script_prefix)
