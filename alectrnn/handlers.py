@@ -87,6 +87,7 @@ class Handler:
     def parameters(self):
         return self._handle_parameters
 
+
 class ObjectiveHandler(Handler):
     """
     Subclass of handler meant to create and manage the c++ objective function.

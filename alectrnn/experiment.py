@@ -29,25 +29,36 @@ class ALEExperiment:
         :note: parameters should leave out the handlers as these will be taken
         care of by the experiment. See handlers docs for list of available
         handlers and necessary parameters (can use help(class) in python). make
-        sure to import handlers
+        sure to import handlers. Also, the # of outputs will automatically be
+        added to the nervous_system_class_parameters from game specifications
 
         :note: rom name and # of parameters are added to the end of the script
         name automatically.
         """
 
+        # Save parameters
+        self.ale_parameters = ale_parameters
+        self.nervous_system_class_parameters = nervous_system_class_parameters
+        self.agent_class_parameters = agent_class_parameters
+        self.objective_parameters = objective_parameters
+
+        # Construct handles
         self._ale_handle = handlers.ALEHandler(**ale_parameters)
         self._ale_handle.create()
 
-        self._nn_handle = nervous_system_class(**nervous_system_class_parameters)
+        self.nervous_system_class_parameters['num_outputs'] = \
+            self._ale_handle.action_set_size()
+
+        self._nn_handle = nervous_system_class(**self.nervous_system_class_parameters)
         self._nn_handle.create()
 
         self._agent_handle = agent_class(self._ale_handle, self._nn_handle,
-                                         **agent_class_parameters)
+                                         **self.agent_class_parameters)
         self._agent_handle.create()
 
         self._obj_handle = handlers.ObjectiveHandler(self._ale_handle,
                                                      self._agent_handle,
-                                                     **objective_parameters)
+                                                     **self.objective_parameters)
         self._obj_handle.create()
 
         self.script_prefix = script_prefix + "_" \
@@ -90,6 +101,16 @@ class ALEExperiment:
         self._obj_handle.agent = self._agent_handle.handle
         self._obj_handle.create()
 
+    def screen_history(self):
+        """
+        :return: numpy array of the screen state for each time-step
+        """
+        if isinstance(self._agent_handle, handlers.NervousSystemAgentHandler):
+            return self._agent_handle.screen_history()
+        else:
+            raise NotImplementedError("Screen history only available for"
+                                      " handlers with logging")
+
     def layer_history(self, layer_index):
         """
         :param layer_index: The index of the layer you want to get the history of
@@ -106,6 +127,10 @@ class ALEExperiment:
         :return: The number of layers in the neural network
         """
         return self._nn_handle.num_layers()
+
+    @property
+    def objective_function(self):
+        return self._obj_handle.handle
 
 
 if __name__ == '__main__':
