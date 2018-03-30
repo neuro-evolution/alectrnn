@@ -31,7 +31,7 @@ import cProfile
 ################################################################################
 # Create ALE environment
 ale_parameters = {'rom': "atlantis",
-                  'ale_seed': 12,
+                  'seed': 12,
                   'color_avg': True,
                   'max_num_frames': 500,
                   'max_num_episodes': 2,
@@ -67,10 +67,10 @@ objective_parameters = {'obj_type': 'totalcost',
 ale_experiment = ALEExperiment(ale_parameters=ale_parameters,
                                nervous_system_class=handlers.NervousSystem,
                                nervous_system_class_parameters=nervous_system_parameters,
-                               agent_class=handlers.NervousSystemAgentHandler,
                                agent_class_parameters=agent_parameters,
                                objective_parameters=objective_parameters,
                                script_prefix='pop7_google')
+par_layout = ale_experiment.parameter_layout()
 
 ################################################################################
 # Initiate evolutionary run (requires Experiment parameters)
@@ -79,7 +79,6 @@ ale_experiment = ALEExperiment(ale_parameters=ale_parameters,
 type_bounds = {handlers.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
                handlers.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
                handlers.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
-par_layout = ale_experiment.parameter_layout()
 bounds = handlers.boundary_array_for_parameter_layout(par_layout, type_bounds)
 
 # Initial guess
@@ -184,7 +183,7 @@ if rank == 0:
 # layer_index = 2
 # history = ale_experiment.layer_history(layer_index)
 # analysis_tools.plot_internal_state(history, index=layer_index,
-#                                    neuron_ids=[1, 2, 3, 4], 
+#                                    neuron_ids=[1, 2, 3, 4],
 #                                    prefix=ale_experiment.script_prefix)
 
 ################################################################################
@@ -193,5 +192,3 @@ if rank == 0:
 # es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
 # analysis_tools.plot_parameter_distributions(es.best, par_layout, marker='None',
 #                                             prefix=ale_experiment.script_prefix)
-
-#TODO: Figure out if reset... resets the rng. CAN JUST run 2 trials and see screen!!!...unless reset :(

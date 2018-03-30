@@ -10,9 +10,8 @@ class ALEExperiment:
     """
 
     def __init__(self, ale_parameters, nervous_system_class,
-                 nervous_system_class_parameters, agent_class,
-                 agent_class_parameters, objective_parameters,
-                 script_prefix="test"):
+                 nervous_system_class_parameters, agent_class_parameters,
+                 objective_parameters, script_prefix="test"):
         """
         Initializes the experiment.
 
@@ -21,8 +20,8 @@ class ALEExperiment:
             network class you wish to use
         :param nervous_system_class_parameters: parameters for that class
             instance
-        :param agent_class: the class instance of the desired agent handler
-        :param agent_class_parameters: dictionary of parameters for said class
+        :param agent_class_parameters: dictionary of parameters for
+            NervousSystemAgentHandler class.
         :param objective_parameters: parameters for the objective handler
         :param script_prefix: string that will be pre-pended to output files
 
@@ -30,7 +29,9 @@ class ALEExperiment:
         care of by the experiment. See handlers docs for list of available
         handlers and necessary parameters (can use help(class) in python). make
         sure to import handlers. Also, the # of outputs will automatically be
-        added to the nervous_system_class_parameters from game specifications
+        added to the nervous_system_class_parameters from game specifications.
+        The nervous_system will also automatically be added for agent
+        parameters.
 
         :note: rom name and # of parameters are added to the end of the script
         name automatically.
@@ -50,19 +51,19 @@ class ALEExperiment:
             self._ale_handle.action_set_size()
 
         self._nn_handle = nervous_system_class(**self.nervous_system_class_parameters)
-        self._nn_handle.create()
 
-        self._agent_handle = agent_class(self._ale_handle, self._nn_handle,
+        self.agent_class_parameters['nervous_system'] = self._nn_handle.neural_network
+        self._agent_handle = handlers.NervousSystemAgentHandler(self._ale_handle.handle,
                                          **self.agent_class_parameters)
         self._agent_handle.create()
 
-        self._obj_handle = handlers.ObjectiveHandler(self._ale_handle,
-                                                     self._agent_handle,
+        self._obj_handle = handlers.ObjectiveHandler(self._ale_handle.handle,
+                                                     self._agent_handle.handle,
                                                      **self.objective_parameters)
         self._obj_handle.create()
 
         self.script_prefix = script_prefix + "_" \
-                             + self._ale_handle.parameters['rom'] + "_npar" \
+                             + self._ale_handle.rom + "_npar" \
                              + str(self.get_parameter_count())
 
     def get_parameter_count(self):
@@ -105,22 +106,14 @@ class ALEExperiment:
         """
         :return: numpy array of the screen state for each time-step
         """
-        if isinstance(self._agent_handle, handlers.NervousSystemAgentHandler):
-            return self._agent_handle.screen_history()
-        else:
-            raise NotImplementedError("Screen history only available for"
-                                      " handlers with logging")
+        return self._agent_handle.screen_history()
 
     def layer_history(self, layer_index):
         """
         :param layer_index: The index of the layer you want to get the history of
         :return: a numpy array of the state for each time-step
         """
-        if isinstance(self._agent_handle, handlers.NervousSystemAgentHandler):
-            return self._agent_handle.layer_history(layer_index)
-        else:
-            raise NotImplementedError("Layer history only available for"
-                                      " handlers with logging")
+        return self._agent_handle.layer_history(layer_index)
 
     def num_layers(self):
         """

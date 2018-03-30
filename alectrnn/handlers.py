@@ -242,45 +242,41 @@ class ALEHandler(Handler):
     """
     installed_roms = generate_rom_dictionary()
 
-    def __init__(self, rom, ale_seed,
+    def __init__(self, rom, seed,
                  color_avg, max_num_frames, max_num_episodes,
                  max_num_frames_per_episode,
-                 rom_file="",
                  print_screen=False,
                  display_screen=False,
                  sound=False):
         """
         ALE parameters:
           rom - rom name (specify from list)
-          rom_file - rom filename (specify for using your own roms)
-          ale_seed - integer type
-          display_screen - boolean type
-          sound - boolean type
+          seed - integer type
+          display_screen - boolean type (default=False)
+          sound - boolean type (default=False)
           color_avg - boolean type (whether to average consecutive screens)
           max_num_frames - integer type
           max_num_episodes - integer type
           max_num_frames_per_episode - integer type
-          print_screen - boolean type
+          print_screen - boolean type (default=False)
 
         """
-        super().__init__(None, None)
-        self.rom_path = ""
-        if rom_file != "":
-            self.rom_path = rom_file
-        else:
-            if rom in ALEHandler.installed_roms:
-                self.rom_path = ALEHandler.installed_roms[rom]
-            else:
-                sys.exit("Error: " + rom + " is not installed.")
 
-        self.ale_seed = ale_seed
-        self.display_screen = display_screen
-        self.sound = sound
-        self.color_avg = color_avg
-        self.max_num_frames = max_num_frames
-        self.max_num_episodes = max_num_episodes
-        self.max_num_frames_per_episode = max_num_frames_per_episode
-        self.print_screen = print_screen
+        if rom in ALEHandler.installed_roms:
+            self.rom = rom
+            self.rom_path = ALEHandler.installed_roms[rom]
+        else:
+            sys.exit("Error: " + rom + " is not installed.")
+
+        super().__init__("ale", {'rom': self.rom_path,
+                                 'seed': seed,
+                                 'color_avg': color_avg,
+                                 'max_num_frames': max_num_frames,
+                                 'max_num_episodes': max_num_episodes,
+                                 'max_num_frames_per_episode': max_num_frames_per_episode,
+                                 'print_screen': print_screen,
+                                 'display_screen': display_screen,
+                                 'sound': sound})
 
     def seed(self, integer):
         """
@@ -291,23 +287,14 @@ class ALEHandler(Handler):
         """
 
         if self._handle_exists:
-            self.ale_seed = integer
+            self._handle_parameters['seed'] = integer
             self.create()
         else:
-            self.ale_seed = integer
+            self._handle_parameters['seed'] = integer
 
     def create(self):
         # Create ALE handle
-        self._handle = ale_generator.CreatALE(
-            rom=self.rom_path, 
-            seed=self.ale_seed, 
-            display_screen=self.display_screen, 
-            sound=self.sound,
-            color_avg=self.color_avg, 
-            max_num_frames=self.max_num_frames,
-            max_num_episodes=self.max_num_episodes,
-            max_num_frames_per_episode=self.max_num_frames_per_episode,
-            print_screen=self.print_screen)
+        self._handle = ale_generator.CreatALE(**self._handle_parameters)
         self._handle_exists = True
 
     def action_set_size(self):
