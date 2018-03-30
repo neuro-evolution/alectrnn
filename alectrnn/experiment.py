@@ -88,7 +88,8 @@ class ALEExperiment:
         """
         self._ale_handle.seed(seed)
         self._agent_handle.ale = self._ale_handle.handle
-        self._obj_handle.create()
+        self._obj_handle.agent = self._agent_handle.handle
+        self._obj_handle.ale = self._ale_handle.handle
 
     def set_logging(self, is_logging):
         """
@@ -100,7 +101,6 @@ class ALEExperiment:
 
         self._agent_handle.logging = is_logging
         self._obj_handle.agent = self._agent_handle.handle
-        self._obj_handle.create()
 
     def screen_history(self):
         """
