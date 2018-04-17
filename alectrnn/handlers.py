@@ -21,7 +21,6 @@ from pkg_resources import resource_listdir
 from pkg_resources import resource_filename
 from enum import Enum
 import numpy as np
-import json
 
 
 def generate_rom_dictionary():
@@ -307,58 +306,6 @@ class ALEHandler(Handler):
         roms.sort(key=str.lower)
         for rom in roms:
             print("\t", rom)
-
-
-def load_ALEHandler(json_filename):
-    """
-    creates an ale handler from parameters in the json file
-    json file should be created from python dumps that will be read in
-    as a dictionary with expected keys.
-    Top level key should be ale_parameters
-    :param json_filename: a json filename to be loaded
-    :return: an ale_handler
-    """
-
-    configuration = json.load(open(json_filename, 'r'))
-    return ALEHandler(**configuration['ale_parameters'])
-
-
-def load_ObjectiveHandler(json_filename):
-    """
-    creates an objective handler from parameters in the json file
-    json file should be created from python dumps and will expect a top
-    level key of objective_parameters
-    :param json_filename: a json filename to be loaded
-    :return: an objective handler
-    """
-
-    configuration = json.load(open(json_filename, 'r'))
-    return ObjectiveHandler(**configuration['objective_parameters'])
-
-
-def load_AgentHandler(json_filename):
-    """
-    creates an agent handler from parameters in the json file. The json
-    file should be created from python dumps and will expect a top level
-    key of agent_parameters
-    :param json_filename: a json filename to be loaded
-    :return: an agent handler
-    """
-
-    configuration = json.load(open(json_filename, 'r'))
-    raise NotImplementedError
-
-
-def load_game_configuration(json_filename):
-    """
-    :param json_filename:
-    :return:
-    """
-    # TODO: Handlers need other handlers, so we need to add those arguments
-    # to the agent and objective above. Also add the NN handler
-    # but we won't use those directly, instead use this function below
-    # it will load everything in the correct order
-    raise NotImplementedError
 
 
 class PARAMETER_TYPE(Enum):
@@ -1046,8 +993,8 @@ def calc_image_dimensions(prev_image_dimensions, stride):
     excluded, as that is determined by the # of filters.
     """
 
-    return [ calc_num_pixels(image_dimension, stride) 
-                for image_dimension in prev_image_dimensions ]
+    return [calc_num_pixels(image_dimension, stride)
+            for image_dimension in prev_image_dimensions]
 
 
 def calc_num_pixels(num_pixels, stride):

@@ -6,7 +6,7 @@ class ALEExperiment:
     This class is for creating and managing an ALE experiment. The user gives
     parameters for the game, objective, and neural network. The class setups
     the necessary handlers and the user can then access the objective function
-    for use in
+    for use in optimization
     """
 
     def __init__(self, ale_parameters, nervous_system_class,

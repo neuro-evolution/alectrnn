@@ -32,9 +32,9 @@ import cProfile
 ale_parameters = {'rom': "atlantis",
                   'seed': 12,
                   'color_avg': True,
-                  'max_num_frames': 500,
+                  'max_num_frames': 2000,
                   'max_num_episodes': 2,
-                  'max_num_frames_per_episode': 500}
+                  'max_num_frames_per_episode': 2000}
 
 nervous_system_parameters = {'input_shape': [1, 88, 88],
                              'nn_parameters': [{
@@ -83,7 +83,7 @@ bounds = handlers.boundary_array_for_parameter_layout(par_layout, type_bounds)
 # Initial guess
 rng = np.random.RandomState(1)
 guess_bounds = {handlers.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
-                handlers.PARAMETER_TYPE.RTAUS: (0.001, 10.0),
+                handlers.PARAMETER_TYPE.RTAUS: (0.01, 1.0),
                 handlers.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
 guess_range = handlers.boundary_array_for_parameter_layout(par_layout,
                                                            guess_bounds)
@@ -96,7 +96,7 @@ alectrnn_profiler = cProfile.Profile()
 alectrnn_profiler.enable()
 
 es = BoundedRandNumTableES(xo=initial_guess,
-                           step_size=1.0,
+                           step_size=2.0,
                            bounds=bounds,
                            objective=ale_experiment.objective_function,
                            seed=7,
@@ -135,7 +135,7 @@ if rank == 0:
 ################################################################################
 # # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
-# trials = 5 #30
+# trials = 30
 # new_seed = 32535742
 #
 # # get best

@@ -84,6 +84,9 @@ class SharedTensor;
 
 template<typename T>
 class TensorView;
+
+//template <typename T>
+//class IrregularMatrix;
 // End Forward declare
 
 template<typename T, std::size_t NumElem>
@@ -1663,6 +1666,167 @@ void CalculateStrides(const SizeType1* shape, SizeType2* strides, std::size_t nd
     }
   }
 }
+
+/*
+ * The irregular matrix is a matrix whose minor (not contiguous in memory) axis
+ * may have different numbers of elements. The irregular matrix is supported
+ * as a contiguous array by building a stride array with the step-size needed
+ * to access the contiguous elements on the major axis (i.e. A[minor][major]).
+ *
+ * The size of the whole array can be accessed via size().
+ * minor_size() returns the number of elements along the minor axis.
+ * major_size(index) returns the number of elements along the major axis for a
+ * given minor axis element.
+ *
+ * To take advantage of the contiguous memory pattern, a typical loop should
+ * look like:
+ *
+ *  for (Index i = 0; i < A.minor_size(); ++i) {
+ *    for (Index j = 0; j < A.major_size(i); ++j) {
+ *      A(i, j);
+ *    }
+ *  }
+ *
+ *  TODO: Implement two helper classes (Minor/Major) to support []
+ */
+//template <typename T>
+//class IrregularMatrix {
+//  public:
+//    typedef T* TPtr;
+//    typedef std::size_t Index;
+//    typedef std::size_t Size;
+//
+//    // Default constructor
+//    IrregularMatrix() {
+//      size_ = 0;
+//      minor_size_ = 0;
+//      data_ = nullptr;
+//    }
+//
+//    // Support 1D accessors with STD container-like methods
+//    template <typename, typename... Args> class TArray
+//    IrregularMatrix(const TArray<Index, Args...>& minor_axis_sizes) {
+//
+//      minor_size_ = minor_axis_sizes.size();
+//      minor_axis_sizes.resize(minor_size_);
+//      for (Index iii = 0; iii < minor_size_; ++iii) {
+//        minor_axis_sizes_[iii] = minor_axis_sizes[iii];
+//      }
+//
+//      minor_axis_strides_.resize(minor_size_);
+//      Size cumulative_sum = 0;
+//      for (Index iii = 0; iii < minor_size_; ++iii) {
+//        minor_axis_strides_[iii] = cumulative_sum;
+//        cumulative_sum += minor_axis_sizes_[iii];
+//      }
+//
+//      size_ = cumulative_sum;
+//      data_ = new T[size_];
+//    }
+//
+//    IrregularMatrix(const IrregularMatrix<T> &other)
+//        : size_(other.size_),
+//          minor_size_(other.minor_size_),
+//          minor_axis_sizes_(other.minor_axis_sizes_),
+//          minor_axis_strides_(other.minor_axis_strides_) {
+//
+//      data_ = new T[size_];
+//      for (Index iii = 0; iii < size_; iii++) {
+//        data_[iii] = other.data_[iii];
+//      }
+//    }
+//
+//    IrregularMatrix(const IrregularMatrix<T> &&other)
+//    : size_(std::move(other.size_)),
+//      minor_size_(std::move(other.minor_size_)),
+//      minor_axis_sizes_(std::move(other.minor_axis_sizes_)),
+//      minor_axis_strides_(std::move(other.minor_axis_strides_)) {
+//
+//      data_ = other.data_;
+//      other.data_ = nullptr;
+//    }
+//
+//    ~IrregularMatrix() {
+//      delete[] data_;
+//    }
+//
+//    IrregularMatrix<T>& operator=(const IrregularMatrix<T>& other) {
+//      delete[] data_;
+//      size_ = other.size_;
+//      minor_size_ = other.minor_size_;
+//      minor_axis_sizes_ = other.minor_axis_sizes_;
+//      minor_axis_strides_ = other.minor_axis_strides_;
+//
+//      data_ = new T[size_];
+//      for (Index iii = 0; iii < size_; iii++) {
+//        data_[iii] = other.data_[iii];
+//      }
+//
+//      return *this;
+//    }
+//
+//    IrregularMatrix<T>& operator=(IrregularMatrix<T>&& other) {
+//      data_ = other.data_;
+//      other.data_ = nullptr;
+//      size_ = std::move(other.size_);
+//      minor_size_ = std::move(other.minor_size_);
+//      minor_axis_sizes_ = std::move(other.minor_axis_sizes_);
+//      minor_axis_strides_ = std::move(other.minor_axis_strides_);
+//
+//      return *this;
+//    }
+//
+//    T& operator()(Index minor_index, Index major_index) {
+//      return data_[minor_axis_strides_[minor_index] + major_index];
+//    }
+//
+//    const T& operator()(Index minor_index, Index major_index) const {
+//      return data_[minor_axis_strides_[minor_index] + major_index];
+//    }
+//
+//    Size size() const {
+//      return size_;
+//    }
+//
+//    Size minor_size() const {
+//      return minor_size_;
+//    }
+//
+//    Size major_size(Index minor_index) const {
+//      return minor_axis_sizes_[minor_index];
+//    }
+//
+//    TPtr data() {
+//      return data_;
+//    }
+//
+//    const TPtr data() const {
+//      return data_;
+//    }
+//
+//    void Fill(T value) {
+//      for (Index iii = 0; iii < size_; iii++) {
+//        data_[iii] = value;
+//      }
+//    }
+//
+//    template <typename, typename... Args> class TArray
+//    void Fill(const TArray<T, Args...>& other_array) {
+//      if (other_array.size() != size_) {
+//        throw std::invalid_argument("Can't fill matrix, incompatible sizes");
+//      }
+//      for (Index iii = 0; iii < size_; ++iii) {
+//        data_[iii] = other_array[iii];
+//      }
+//    }
+//
+//  protected:
+//    Size minor_size_;
+//    std::vector<Index> minor_axis_sizes_;
+//    std::vector<Index> minor_axis_strides_;
+//    Size size_;
+//    TPtr data_;
+//};
 
 } // End namespace multi_array
 
