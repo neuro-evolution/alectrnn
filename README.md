@@ -1,3 +1,7 @@
+This is a Python 3 module designed to allow for a high level interface with neural network agents that play Atari games (via ALE). The Python API is divided into 3 main sections: the `ALEExperiment` class which allows high level setup of parameters for a complete run of ALE with some neural network and objective function (training is not a part of this module). `handlers.py` deals with the interface between the c++ code and python, and `analysis_tools.py` includes various plotting functions for displaying neuron state, parameter distribution, and other tools.
+
+The c++ portion of the code follows a similar structure as Xitari, `controller` and `player_agent` classes define the interface of the agent with ALE. `objective.cpp` defines available objective functions. The neural networks are constructed via the `NervousSystem` which contains `Layers`, which in turn contains `Integrators` and `Activators` of various types, which define the structure of the network, its parameters, and neuronal dynamics. The Python `NervousSystem` handler defines the API for the lower level c++ code and allows construction of various types of neural networks. The user can create convolutional layers, recurrent layers, reservoir layers, all-to-all layers, and hybrid layers of the various types. For details about layer types, see the doc strings for the `NervousSystem` class in `handlers.py` or use `help` in the Python terminal.  
+
 Written for Python 3 using g++ 5.4. A C++14 compiler required.
 
 Requirements: Numpy, ALE, CMake (for ALE)
