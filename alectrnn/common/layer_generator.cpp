@@ -182,14 +182,13 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
 
     case nervous_system::CONV_IAF_ACTIVATOR: {
       PyArrayObject* shape;
-      int num_states;
       float step_size;
       float peak;
       float reset;
-      if (!PyArg_ParseTuple(args, "Oifff", &shape, &num_states, &step_size,
+      if (!PyArg_ParseTuple(args, "Offf", &shape, &step_size,
                             &peak, &reset)) {
         std::cerr << "Error parsing Activator arguments" << std::endl;
-        throw std::invalid_argument("IAF Activator couldn't parse tuple");
+        throw std::invalid_argument("IAF Conv Activator couldn't parse tuple");
       }
 
       // Make sure the numpy array is the correct size
