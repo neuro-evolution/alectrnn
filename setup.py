@@ -240,10 +240,10 @@ agent_handler = Extension('agent_handler',
 setup(name=PACKAGE_NAME,
       version='1.0',
       author='Nathaniel Rodriguez',
-      cmdclass = {'build_ext': build_ext,
-                  'install': install,
-                  'develop': develop
-                  },
+      cmdclass={'build_ext': build_ext,
+                'install': install,
+                'develop': develop
+                },
       description='A wrapper for a ctrnn implementation of ALE',
       url='https://github.com/neuro-evolution/alectrnn.git',
       install_requires=[
