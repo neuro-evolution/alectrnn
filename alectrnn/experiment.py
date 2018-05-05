@@ -79,6 +79,15 @@ class ALEExperiment:
         """
         return self._nn_handle.parameter_layout()
 
+    def set_game_parameters(self, **kwargs):
+        """
+        :param kwargs: any keyword arguments used by the ale environment
+        :return: None
+        """
+
+        self._ale_handle.set_parameters(**kwargs)
+        self._update_game_environment()
+
     def set_game_seed(self, seed):
         """
         Resets the games seed. This remakes the ale, agent and objective
@@ -87,9 +96,7 @@ class ALEExperiment:
         :return: None
         """
         self._ale_handle.seed(seed)
-        self._agent_handle.ale = self._ale_handle.handle
-        self._obj_handle.agent = self._agent_handle.handle
-        self._obj_handle.ale = self._ale_handle.handle
+        self._update_game_environment()
 
     def set_logging(self, is_logging):
         """
@@ -101,6 +108,14 @@ class ALEExperiment:
 
         self._agent_handle.logging = is_logging
         self._obj_handle.agent = self._agent_handle.handle
+
+    def _update_game_environment(self):
+        """
+        updates the necessary handles when the game environment is updated
+        """
+        self._agent_handle.ale = self._ale_handle.handle
+        self._obj_handle.agent = self._agent_handle.handle
+        self._obj_handle.ale = self._ale_handle.handle
 
     def screen_history(self):
         """

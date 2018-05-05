@@ -277,6 +277,20 @@ class ALEHandler(Handler):
                                  'display_screen': display_screen,
                                  'sound': sound})
 
+    def set_parameters(self, **kwargs):
+        """
+        This function destroys the current handle object and makes a new ALE
+        instance using updated parameter settings
+        :param kwargs: any ale key word value pairs
+        :return: None
+        """
+
+        if self._handle_exists:
+            self._handle_parameters.update(kwargs)
+            self.create()
+        else:
+            self._handle_parameters.update(kwargs)
+
     def seed(self, integer):
         """
         This function destroys the current handle object and makes a new ALE

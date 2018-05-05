@@ -133,8 +133,9 @@ if rank == 0:
 ################################################################################
 # Evaluate
 ################################################################################
-# # In the google paper, they ran for 5min (18000 frames) for 30 games
+# In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
+# max_episodes = 10
 # trials = 30
 # new_seed = 32535742
 #
@@ -143,7 +144,9 @@ if rank == 0:
 # costs = []
 # # run for number of trials
 # for i in range(trials):
-#     ale_experiment.set_game_seed(new_seed + i)
+#     ale_experiment.set_game_parameters(seed=new_seed + i, max_num_frames=frames,
+#                                        max_num_frames_per_episode=frames,
+#                                        max_num_episodes=max_episodes)
 #     costs.append(ale_experiment.objective_function(es.best))
 #     print("trial", i, "complete")
 #
@@ -154,30 +157,33 @@ if rank == 0:
 ################################################################################
 # MPI - Evaluate
 ################################################################################
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
-
-# In the google paper, they ran for 5min (18000 frames) for 30 games
-frames = 18000
-trials = size
-new_seed = 32535742
-seeds = [new_seed + i for i in range(size)]
-
-# get best
-es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
-local_cost = np.empty(1, dtype=np.float32)
-ale_experiment.set_game_seed(seeds[rank])
-local_cost[0] = ale_experiment.objective_function(es.best)
-all_costs = np.empty(size, dtype=np.float32)
-comm.Allgather([local_cost, MPI.FLOAT],
-                     [all_costs, MPI.FLOAT])
-
-if rank == 0:
-    print("costs: ", all_costs)
-    print("mean cost: ", np.mean(all_costs))
-    print("total cost: ", np.sum(all_costs))
+# from mpi4py import MPI
+# comm = MPI.COMM_WORLD
+# size = comm.Get_size()
+# rank = comm.Get_rank()
+#
+# # In the google paper, they ran for 5min (18000 frames) for 30 games
+# frames = 18000
+# max_episodes = 10
+# trials = size
+# new_seed = 32535742
+# seeds = [new_seed + i for i in range(size)]
+#
+# # get best
+# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
+# local_cost = np.empty(1, dtype=np.float32)
+# ale_experiment.set_game_parameters(seed=seeds[rank], max_num_frames=frames,
+#                                    max_num_frames_per_episode=frames,
+#                                    max_num_episodes=max_episodes)
+# local_cost[0] = ale_experiment.objective_function(es.best)
+# all_costs = np.empty(size, dtype=np.float32)
+# comm.Allgather([local_cost, MPI.FLOAT],
+#                      [all_costs, MPI.FLOAT])
+#
+# if rank == 0:
+#     print("costs: ", all_costs)
+#     print("mean cost: ", np.mean(all_costs))
+#     print("total cost: ", np.sum(all_costs))
 
 ################################################################################
 # Record neural activity
