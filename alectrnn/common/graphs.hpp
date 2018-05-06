@@ -48,6 +48,9 @@ class PredecessorGraph {
      * When building from an edge list it is assumed nodes are labelled
      * contiguously starting from 0 to num_nodes-1
      */
+    PredecessorGraph() : PredecessorGraph(0) {
+    }
+
     PredecessorGraph(NodeID num_nodes)
         : num_nodes_(num_nodes) {
       graph_.resize(num_nodes);
@@ -143,6 +146,9 @@ class PredecessorGraph<void> {
      * When building from an edge list it is assumed nodes are labelled
      * contiguously starting from 0 to num_nodes-1
      */
+    PredecessorGraph() : PredecessorGraph(0) {
+    }
+
     PredecessorGraph(NodeID num_nodes)
         : num_nodes_(num_nodes) {
       graph_.resize(num_nodes);
@@ -199,6 +205,7 @@ class PredecessorGraph<void> {
       return graph_[node];
     }
 
+    // Automatically resizes graph if new nodes are introduced
     void AddEdge(NodeID source, NodeID target) {
       // It is assumed the Node should exist, so new nodes are added
       // up to the NodeID of the source or target
@@ -236,9 +243,8 @@ class PredecessorGraph<void> {
  */
 
 template<typename Integer, template<typename, Index> class multi>
-PredecessorGraph<> ConvertEdgeListToPredecessorGraph(NodeID num_nodes,
-    const multi<Integer, 2>& edge_list) {
-  PredecessorGraph<> graph = PredecessorGraph<>(num_nodes);
+PredecessorGraph<> ConvertEdgeListToPredecessorGraph(const multi<Integer, 2>& edge_list) {
+  PredecessorGraph<> graph = PredecessorGraph<>();
   const multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
   for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
     graph.AddEdge(edge_view[iii][0], edge_view[iii][1]);
@@ -248,10 +254,9 @@ PredecessorGraph<> ConvertEdgeListToPredecessorGraph(NodeID num_nodes,
 }
 
 template<typename Integer, typename TReal, template<typename, Index> class multi>
-PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(NodeID num_nodes,
-    const multi<Integer, 2>& edge_list, 
+PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(const multi<Integer, 2>& edge_list,
     const multi<TReal, 1>& weights) {
-  PredecessorGraph<TReal> graph = PredecessorGraph<TReal>(num_nodes);
+  PredecessorGraph<TReal> graph = PredecessorGraph<TReal>();
   multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
   multi_array::ArrayView<TReal, 1> weight_view = weights.accessor();
   for (Index iii = 0; iii < edge_view.extent(0); ++iii) {

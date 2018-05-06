@@ -38,7 +38,8 @@ enum INTEGRATOR_TYPE {
   CONV_INTEGRATOR,
   RECURRENT_INTEGRATOR,
   RESERVOIR_INTEGRATOR,
-  RESERVOIR_HYBRID
+  RESERVOIR_HYBRID,
+  TRUNCATED_RECURRENT_INTEGRATOR
 };
 
 // Abstract base class
@@ -50,7 +51,8 @@ class Integrator {
       parameter_count_ = 0;
     }
     virtual ~Integrator()=default;
-    virtual void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state)=0;
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+                            multi_array::Tensor<TReal>& tar_state)=0;
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters)=0;
 
     std::size_t GetParameterCount() const {
@@ -93,6 +95,7 @@ class All2AllIntegrator : public Integrator<TReal> {
     All2AllIntegrator(Index num_states, Index num_prev_states) 
         : num_states_(num_states), num_prev_states_(num_prev_states) {
       super_type::parameter_count_ = num_states_ * num_prev_states_;
+      super_type::integrator_type_ = ALL2ALL_INTEGRATOR;
     }
 
     void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
@@ -502,18 +505,20 @@ class RecurrentIntegrator : public Integrator<TReal> {
 
     ~RecurrentIntegrator()=default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) {
       
-      if (tar_state.size() != network_.NumNodes()) {
-        std::cerr << "tar state size: " << tar_state.size() << std::endl;
-        std::cerr << "network size: " << network_.NumNodes() << std::endl;
-        throw std::invalid_argument("tar state must have the same number of "
-                                    "nodes as the network");
-      }
+      /*
+       * Graph maybe a connector graph or an internal graph.
+       * In case of connector, the num nodes doesn't need to match tar_state,
+       * because predecessors should be empty for nodes not in tar_state.
+       * However, src state does have to be checked using (at) when tar_state
+       * is larger than src_state, to ensure nothing invalid is accessed.
+       */
       Index edge_id = 0;
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id];
+          tar_state.at(node) += src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id];
           tar_state[node] = utilities::BoundState(tar_state[node]);
           ++edge_id;
         }
@@ -546,6 +551,52 @@ class RecurrentIntegrator : public Integrator<TReal> {
     multi_array::ConstArraySlice<TReal> weights_;
 };
 
+// Truncated Recurrent integrator sets weights to 0 during calculations if
+// they are below the magnitude of the threshold.
+template<typename TReal>
+class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
+  public:
+    typedef std::size_t Index;
+    typedef RecurrentIntegrator<TReal> super_type;
+
+    TruncatedRecurrentIntegrator(const graphs::PredecessorGraph<>& network,
+                                 TReal weight_threshold)
+        : super_type(network), weight_threshold_(weight_threshold) {
+
+      super_type::integrator_type_ = TRUNCATED_RECURRENT_INTEGRATOR;
+    }
+
+    ~TruncatedRecurrentIntegrator()= default;
+
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) {
+
+      Index edge_id = 0;
+      for (Index node = 0; node < super_type::network_.NumNodes(); ++node) {
+        for (Index iii = 0; iii < super_type::network_.Predecessors(node).size(); ++iii) {
+          // Only carry out calculation if it exceeds magnitude of the threshold
+          if ((super_type::weights_[edge_id] > weight_threshold_
+               && super_type::weights_[edge_id] >= 0) ||
+              (super_type::weights_[edge_id] < weight_threshold_
+               && super_type::weights_[edge_id] <= 0)) {
+
+            tar_state.at(node) += src_state.at(super_type::network_.Predecessors(node)[iii].source)
+                               * super_type::weights_[edge_id];
+            tar_state[node] = utilities::BoundState(tar_state[node]);
+          }
+          ++edge_id;
+        }
+      }
+      if (edge_id != super_type::network_.NumEdges()) {
+        throw std::runtime_error("Miss match between number of edges and the"
+                                 " number integrated");
+      }
+    }
+
+  protected:
+    TReal weight_threshold_;
+};
+
 // Reservoir -- uses explicit weighted structure
 template<typename TReal>
 class ReservoirIntegrator : public Integrator<TReal> {
@@ -560,17 +611,13 @@ class ReservoirIntegrator : public Integrator<TReal> {
 
     ~ReservoirIntegrator()=default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
-      if (tar_state.size() != network_.NumNodes()) {
-        std::cerr << "tar state size: " << tar_state.size() << std::endl;
-        std::cerr << "network size: " << network_.NumNodes() << std::endl;
-        throw std::invalid_argument("tar state must have the same number of "
-                                    "nodes as the network");
-      }
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) {
+
       for (Index node = 0; node < network_.NumNodes(); ++node) {
         for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-          tar_state[node] += src_state.at(network_.Predecessors(node)[iii].source)
-                          * network_.Predecessors(node)[iii].weight;
+          tar_state.at(node) += src_state.at(network_.Predecessors(node)[iii].source)
+                              * network_.Predecessors(node)[iii].weight;
           tar_state[node] = utilities::BoundState(tar_state[node]);
         }
       }

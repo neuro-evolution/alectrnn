@@ -275,9 +275,8 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
     }
 
     case nervous_system::RECURRENT_INTEGRATOR: {
-      int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
-      if (!PyArg_ParseTuple(args, "iO", &num_nodes, &edge_list)) {
+      if (!PyArg_ParseTuple(args, "O", &edge_list)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         throw std::invalid_argument("RECCURENT INTEGRATOR ERROR");
       }
@@ -297,15 +296,14 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
       new_integrator = new nervous_system::RecurrentIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
-        num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
+          alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)));
       break;
     }
 
     case nervous_system::RESERVOIR_INTEGRATOR: {
-      int num_nodes;
       PyArrayObject* edge_list; // Nx2 dimensional array
       PyArrayObject* weights; // N element array
-      if (!PyArg_ParseTuple(args, "iOO", &num_nodes, &edge_list, &weights)) {
+      if (!PyArg_ParseTuple(args, "OO", &edge_list, &weights)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
         throw std::invalid_argument("FAILURE IN RESERVOIR INTEGRATOR");
       }
@@ -337,8 +335,43 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
       new_integrator = new nervous_system::ReservoirIntegrator<float>(
         graphs::ConvertEdgeListToPredecessorGraph(
-        num_nodes, alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
+          alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
         alectrnn::PyArrayToSharedMultiArray<float,1>(weights)));
+      break;
+    }
+
+    case nervous_system::TRUNCATED_RECURRENT_INTEGRATOR: {
+      PyArrayObject* edge_list; // Nx2 dimensional array
+      float weight_threshold;
+      if (!PyArg_ParseTuple(args, "Of", &edge_list,
+                            &weight_threshold)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("Truncated Recurrent Integrator ERROR");
+      }
+
+      // Make sure weight threshold is greater than 0
+      if (weight_threshold < 0.0) {
+        std::cerr << "Error: Weight threshold must be greater than 0" << std::endl;
+        throw std::invalid_argument("Truncated Recurrent Integrator Error");
+      }
+
+      // Make sure numpy array has correct shape
+      int edge_list_ndims = PyArray_NDIM(edge_list);
+      if (edge_list_ndims != 2) {
+        std::cerr << "edge list dimensions: " << edge_list_ndims << std::endl;
+        throw std::invalid_argument("edge list has invalid # of dimensions (needs 2)");
+      }
+      npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
+      if (edge_list_shape[1] != 2) {
+        std::cerr << "edge list shape[1]: " << edge_list_shape[1] << std::endl;
+        std::cerr << "edge list shape[1]: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list is the wrong size");
+      }
+
+      new_integrator = new nervous_system::TruncatedRecurrentIntegrator<float>(
+        graphs::ConvertEdgeListToPredecessorGraph(
+          alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list)),
+        weight_threshold);
       break;
     }
 

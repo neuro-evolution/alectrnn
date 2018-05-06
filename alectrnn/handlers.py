@@ -416,6 +416,8 @@ class INTEGRATOR_TYPE(Enum):
     CONV=3
     RECURRENT=4
     RESERVOIR=5
+    RESERVOIR_HYBRID=6
+    TRUNCATED_RECURRENT=7
 
 
 ACTMAP = { ACTIVATOR_TYPE.IAF : ACTIVATOR_TYPE.CONV_IAF,
@@ -451,21 +453,29 @@ class NervousSystem:
     input graph. The back connections are determined by the input graph.
     Both must specify weights. Should have a dictionary with the following keys:
         'layer_type' = "reservoir"
-        'num_input_graph_nodes' = N
-        'input_graph' = Nx2, dtype=np.uint64 bipartite edge graph
+        'input_graph' = E1x2, dtype=np.uint64 bipartite edge graph
         'input_weights' = N element, dtype=np.float32
         'num_internal_nodes' = M
-        'internal_graph' = Mx2, dtype=np.uint64 edge array
+        'internal_graph' = E2x2, dtype=np.uint64 edge array
         'internal_weights' = M element, dtype=np.float32 array
 
     Recurrent layers define the connections, but not the weights of the internal
     and back connections. All connections are trained.
     Should have a dictionary with the following keys:
         'layer_type' = "recurrent"
-        'num_input_graph_nodes' = N
-        'input_graph' = Nx2, dtype=np.uint64 bipartite edge graph
+        'input_graph' = E1x2, dtype=np.uint64 bipartite edge graph
         'num_internal_nodes' = M
-        'internal_graph' = Mx2, dtype=np.uint64 edge array
+        'internal_graph' = E2x2, dtype=np.uint64 edge array
+
+    Truncated Recurrent layers are the same as recurrent layers, except with an
+    additional parameter that specifies a weight threshold. When the weights
+    are below the thresholds magnitude, the connection is considered non-existent.
+    Should have a dictionary with the following keys:
+        'layer_type' = "truncated_recurrent"
+        'input_graph' = E1x2, dtype=np.uint64 bipartite edge graph
+        'num_internal_nodes' = M
+        'internal_graph' = E2x2, dtype=np.uint64 edge array
+        'weight_threshold' = float dtype=np.float32 (>=0.0)
 
     conv_recurrent layers have a convolutional input into the layer, but also
     have internal connections determined in the same way as the recurrent layer.
@@ -581,17 +591,25 @@ class NervousSystem:
 
             elif layer_pars['layer_type'] == "recurrent":
                 layers.append(self._create_recurrent_layer(
-                    layer_pars['num_input_graph_nodes'], 
                     layer_pars['input_graph'],
+                    layer_pars['internal_graph'],
                     layer_pars['num_internal_nodes'],
-                    layer_pars['internal_graph'], 
                     layer_act_types[i], 
                     layer_act_args[i],
                     layer_shapes[i+1]))
 
+            elif layer_pars['layer_type'] == "truncated_recurrent":
+                layers.append(self._create_truncated_recurrent_layer(
+                    layer_pars['input_graph'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1],
+                    layer_pars['weight_threshold']))
+
             elif layer_pars['layer_type'] == "reservoir":
                 layers.append(self._create_reservoir_layer(
-                    layer_pars['num_input_graph_nodes'], 
                     layer_pars['input_graph'],
                     layer_pars['input_weights'], 
                     layer_pars['num_internal_nodes'],
@@ -821,8 +839,7 @@ class NervousSystem:
                      int(stride))
         
         self_type = INTEGRATOR_TYPE.RECURRENT.value
-        self_args = (int(num_internal_nodes),
-                     internal_edge_array)
+        self_args = (internal_edge_array,)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
@@ -834,8 +851,6 @@ class NervousSystem:
         """
         Creates a layer with convolutional back connections and a randomly
         connected and weight internal connections.
-        Restructures input parameters into the correct format for the
-        C++ function call, then calls the CreateLayer function.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
         :param prev_layer_shape: shape of the previous layer
@@ -857,22 +872,20 @@ class NervousSystem:
                      np.array(prev_layer_shape, dtype=np.uint64),
                      int(stride))
         self_type = INTEGRATOR_TYPE.RESERVOIR.value
-        self_args = (int(num_internal_nodes),
-                     internal_edge_array,
+        self_args = (internal_edge_array,
                      internal_weight_array)
 
         return layer_generator.CreateLayer(back_type, back_args, self_type,
             self_args, act_type, act_args, layer_shape)
 
-    def _create_recurrent_layer(self, num_bipartite_nodes,
-            bipartite_input_edge_array, num_internal_nodes,
-            internal_edge_array, act_type, act_args, layer_shape):
+    def _create_recurrent_layer(self, bipartite_input_edge_array,
+                                num_internal_nodes, internal_edge_array,
+                                act_type, act_args, layer_shape):
         """
         Creates a recurrent layer with graphs specifying back and self
         connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
-        :param num_bipartite_nodes: number of nodes in bipartite graph
         :param bipartite_input_edge_array: array for back-connections (Nx2)
             dtype=np.uint64
         :param num_internal_nodes: number of neurons in layer
@@ -884,25 +897,51 @@ class NervousSystem:
         :return: python capsule with pointer to the layer
         """
         back_type = INTEGRATOR_TYPE.RECURRENT.value
-        back_args = (int(num_bipartite_nodes),
-                    bipartite_input_edge_array)
+        back_args = (bipartite_input_edge_array,)
         self_type = INTEGRATOR_TYPE.RECURRENT.value
-        self_args = (int(num_internal_nodes),
-                    internal_edge_array)
+        self_args = (internal_edge_array,)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
             back_args, self_type, self_args, act_type, act_args, layer_shape)
 
-    def _create_reservoir_layer(self, num_bipartite_nodes,
-            bipartite_input_edge_array, input_weights, num_internal_nodes,
-            internal_edge_array, internal_weight_array, act_type, act_args,
-            layer_shape):
+    def _create_truncated_recurrent_layer(self, bipartite_input_edge_array,
+                                          num_internal_nodes,
+                                          internal_edge_array, act_type,
+                                          act_args, layer_shape,
+                                          weight_threshold):
+        """
+        Creates a recurrent layer with graphs specifying back and self
+        connections.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param bipartite_input_edge_array: array for back-connections (Nx2)
+            dtype=np.uint64
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections (Nx2)
+            dtype=np.uint64
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.TRUNCATED_RECURRENT.value
+        back_args = (bipartite_input_edge_array, weight_threshold)
+        self_type = INTEGRATOR_TYPE.TRUNCATED_RECURRENT.value
+        self_args = (internal_edge_array, weight_threshold)
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+                                           self_args, act_type, act_args,
+                                           layer_shape)
+
+    def _create_reservoir_layer(self, bipartite_input_edge_array, input_weights,
+                                num_internal_nodes, internal_edge_array,
+                                internal_weight_array, act_type, act_args,
+                                layer_shape):
         """
         Layer with internal and back connection and weights specified by
         the input graphs.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
-        :param num_bipartite_nodes: number of nodes in bigraph
         :param bipartite_input_edge_array: Nx2 dtype=np.uint64 graph
         :param input_weights: N dtype=np.float32 array
         :param num_internal_nodes: number of neurons in layer
@@ -914,12 +953,10 @@ class NervousSystem:
         :return: python capsule with pointer to the layer
         """
         back_type = INTEGRATOR_TYPE.RESERVOIR.value
-        back_args = (int(num_bipartite_nodes),
-                     bipartite_input_edge_array,
+        back_args = (bipartite_input_edge_array,
                      input_weights)
         self_type = INTEGRATOR_TYPE.RESERVOIR.value
-        self_args = (int(num_internal_nodes),
-                     internal_edge_array,
+        self_args = (internal_edge_array,
                      internal_weight_array)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
