@@ -150,6 +150,14 @@ class Layer {
       return shape_;
     }
 
+    const Integrator<TReal>* GetBackIntegrator() const {
+      return back_integrator_;
+    }
+
+    const Integrator<TReal>* GetSelfIntegrator() const {
+      return self_integrator_;
+    }
+
   protected:
     // calculates inputs from other layers and applies them to input buffer
     Integrator<TReal>* back_integrator_;

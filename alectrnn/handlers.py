@@ -95,10 +95,11 @@ class ObjectiveHandler(Handler):
         """
         Objective parameters:
         # Note: should not include agent/ALE/parameters, only configuration pars
-          objective_type - "totalcost"
-          objective_parameters - dictionary of keyword arguments for objective
+          obj_type - "totalcost"
+          obj_parameters - dictionary of keyword arguments for objective
 
             For "totalcost": none
+            For "s&cc": cc_scale
         """
         if obj_parameters is None:
             obj_parameters = {}
@@ -117,6 +118,14 @@ class ObjectiveHandler(Handler):
             self._handle = partial(objective.TotalCostObjective, 
                                    ale=self._ale, agent=self._agent)
             self._handle_exists = True
+        elif self._handle_type == "s&cc":
+            self._handle = partial(objective.ScoreAndConnectionCostObjective,
+                ale=self._ale, agent=self._agent,
+                cc_scale=self._handle_parameters['cc_scale'])
+            self._handle_exists = True
+
+        else:
+            raise NotImplementedError
 
     @property
     def ale(self):

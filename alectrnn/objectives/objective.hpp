@@ -16,15 +16,20 @@
 
 #include <Python.h>
 #include <ale_interface.hpp>
+#include <cstdint>
 #include "../agents/player_agent.hpp"
+#include "../common/multi_array.hpp"
+#include "../agents/nervous_system_agent.hpp"
 
 PyMODINIT_FUNC PyInit_objective(void);
 
 namespace alectrnn {
 
 float CalculateTotalCost(const float* parameters, ALEInterface *ale,
-    PlayerAgent* agent);
-
+                         PlayerAgent* agent);
+std::uint64_t CalculateConnectionCost(alectrnn::NervousSystemAgent* agent);
+std::uint64_t CalculateNumConnection(const multi_array::ConstArraySlice<float>& weights,
+                                     float weight_threshold);
 }
 
 #endif /* ALECTRNN_OBJECTIVES_OBJECTIVE_H_ */

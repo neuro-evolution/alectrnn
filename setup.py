@@ -127,6 +127,8 @@ objective_sources = [
     "alectrnn/objectives/objective.cpp",
     "alectrnn/common/capi_tools.cpp",
     "alectrnn/agents/player_agent.cpp",
+    "alectrnn/agents/nervous_system_agent.cpp",
+    "alectrnn/common/screen_preprocessing.cpp",
     "alectrnn/controllers/controller.cpp"
 ]
 

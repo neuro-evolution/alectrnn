@@ -23,6 +23,10 @@ class ALEExperiment:
         :param agent_class_parameters: dictionary of parameters for
             NervousSystemAgentHandler class.
         :param objective_parameters: parameters for the objective handler
+            If obj_type == 'totalcost': No parameters needed
+            if obj_type == 's&cc': the following keys are required:
+                :param cc_scale: adjusts contribution of connections to cost
+
         :param script_prefix: string that will be pre-pended to output files
 
         :note: parameters should leave out the handlers as these will be taken
@@ -43,20 +47,23 @@ class ALEExperiment:
         self.agent_class_parameters = agent_class_parameters
         self.objective_parameters = objective_parameters
 
-        # Construct handles
+        # Construct handles (ALE)
         self._ale_handle = handlers.ALEHandler(**ale_parameters)
         self._ale_handle.create()
 
+        # Construct handle (Nervous system)
         self.nervous_system_class_parameters['num_outputs'] = \
             self._ale_handle.action_set_size()
 
         self._nn_handle = nervous_system_class(**self.nervous_system_class_parameters)
 
+        # Construct handle (Agent)
         self.agent_class_parameters['nervous_system'] = self._nn_handle.neural_network
         self._agent_handle = handlers.NervousSystemAgentHandler(self._ale_handle.handle,
-                                         **self.agent_class_parameters)
+                                                                **self.agent_class_parameters)
         self._agent_handle.create()
 
+        # Construct handle (objective)
         self._obj_handle = handlers.ObjectiveHandler(self._ale_handle.handle,
                                                      self._agent_handle.handle,
                                                      **self.objective_parameters)

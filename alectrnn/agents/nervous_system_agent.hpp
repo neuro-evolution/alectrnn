@@ -29,6 +29,7 @@ class NervousSystemAgent : public PlayerAgent {
     void Reset();
     const nervous_system::StateLogger<float>& GetLog() const;
     const ScreenLogger<float>& GetScreenLog() const;
+    const nervous_system::NervousSystem<float>& GetNeuralNet() const;
 
   protected:
     Action Act();

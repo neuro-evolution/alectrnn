@@ -546,6 +546,10 @@ class RecurrentIntegrator : public Integrator<TReal> {
       return layout;
     }
 
+    const multi_array::ConstArraySlice<TReal>& GetWeights() const {
+      return weights_;
+    }
+
   protected:
     graphs::PredecessorGraph<> network_;
     multi_array::ConstArraySlice<TReal> weights_;
@@ -577,9 +581,8 @@ class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
           // Only carry out calculation if it exceeds magnitude of the threshold
           if ((super_type::weights_[edge_id] > weight_threshold_
                && super_type::weights_[edge_id] >= 0) ||
-              (super_type::weights_[edge_id] < weight_threshold_
+              (super_type::weights_[edge_id] < -weight_threshold_
                && super_type::weights_[edge_id] <= 0)) {
-
             tar_state.at(node) += src_state.at(super_type::network_.Predecessors(node)[iii].source)
                                * super_type::weights_[edge_id];
             tar_state[node] = utilities::BoundState(tar_state[node]);
@@ -591,6 +594,10 @@ class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
         throw std::runtime_error("Miss match between number of edges and the"
                                  " number integrated");
       }
+    }
+
+    TReal GetWeightThreshold() const {
+      return weight_threshold_;
     }
 
   protected:

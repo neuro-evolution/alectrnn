@@ -125,4 +125,8 @@ const ScreenLogger<float>& NervousSystemAgent::GetScreenLog() const {
   return screen_log_;
 }
 
+const nervous_system::NervousSystem<float>& NervousSystemAgent::GetNeuralNet() const {
+  return neural_net_;
+}
+
 } // End namespace alectrnn
