@@ -68,6 +68,9 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
  * Note: The number of edges is calculated. If you want to scale this
  * according to the total number of possible edges, then factor that into the
  * scaling parameter
+ *
+ * Note: This only supports TRUNCATED_RECURRENT_INTEGRATOR, as it is the only
+ * one with weight truncation. As new ones are added ill expand the code.
  */
 static PyObject *ScoreAndConnectionCostObjective(PyObject *self, PyObject *args,
                                     PyObject *kwargs) {
