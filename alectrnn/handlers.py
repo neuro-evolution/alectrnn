@@ -588,6 +588,7 @@ class NervousSystem:
                                             nn_parameters,
                                             act_type, act_args)
 
+        # Build layers
         for i, layer_pars in enumerate(nn_parameters):
             if layer_pars['layer_type'] == "conv":
                 layers.append(self._create_conv_layer(
@@ -690,6 +691,10 @@ class NervousSystem:
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
+
+        # Save shape info
+        layer_shapes.append(np.array([num_outputs], dtype=np.uint64))
+        self.layer_shapes = layer_shapes
 
     def _configure_layer_activations(self, layer_shapes, interpreted_shapes,
                                      nn_parameters, act_type, act_args):

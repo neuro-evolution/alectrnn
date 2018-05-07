@@ -137,6 +137,15 @@ class ALEExperiment:
         """
         return self._agent_handle.layer_history(layer_index)
 
+    def print_layer_shapes(self):
+        """
+        Prints the shapes calculated for each layer
+        :note: not to be confused with interpreted shapes
+        """
+
+        for i, shape in enumerate(self._nn_handle.layer_shapes):
+            print("Layer", i, " with shape", shape)
+
     def num_layers(self):
         """
         :return: The number of layers in the neural network
