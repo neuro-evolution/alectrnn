@@ -73,6 +73,18 @@ class ALEExperiment:
                              + self._ale_handle.rom + "_npar" \
                              + str(self.get_parameter_count())
 
+    def set_objective_function(self, objective_parameters):
+        """
+        Re-makes the objective handle based on given objective parameters
+        :param objective_parameters: dictionary with objective parameters and
+            objective type
+        :return: None
+        """
+        self._obj_handle = handlers.ObjectiveHandler(self._ale_handle.handle,
+                                                     self._agent_handle.handle,
+                                                     **objective_parameters)
+        self._obj_handle.create()
+
     def get_parameter_count(self):
         """
         :return: The number of parameters in the neural network
