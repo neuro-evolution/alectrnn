@@ -164,7 +164,7 @@ if rank == 0:
 #
 # # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
-# max_episodes = 10
+# max_episodes = 1
 # trials = size
 # new_seed = 32535742
 # seeds = [new_seed + i for i in range(size)]
@@ -192,6 +192,9 @@ if rank == 0:
 # # get best
 # es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
 # ale_experiment.set_logging(True)
+# ale_experiment.set_game_parameters(max_num_frames=2000,
+#                                    max_num_episodes=2,
+#                                    max_num_frames_per_episode=2000)
 #
 # print("running obj")
 # print("cost: ", ale_experiment.objective_function(es.best))
