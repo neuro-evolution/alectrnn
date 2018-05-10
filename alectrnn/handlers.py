@@ -253,20 +253,26 @@ class ALEHandler(Handler):
     def __init__(self, rom, seed,
                  color_avg, max_num_frames, max_num_episodes,
                  max_num_frames_per_episode,
+                 frame_skip=1,
                  print_screen=False,
                  display_screen=False,
-                 sound=False):
+                 sound=False,
+                 system_reset_steps=4,
+                 use_environment_distribution=True):
         """
         ALE parameters:
           rom - rom name (specify from list)
           seed - integer type
           display_screen - boolean type (default=False)
+          frame_skip - number of frames to skip between NN evalutions (default 1)
           sound - boolean type (default=False)
           color_avg - boolean type (whether to average consecutive screens)
           max_num_frames - integer type
           max_num_episodes - integer type
           max_num_frames_per_episode - integer type
           print_screen - boolean type (default=False)
+          system_reset_steps - int (default=4)
+          use_environment_distribution - boolean (default True)
 
         """
 
@@ -279,12 +285,15 @@ class ALEHandler(Handler):
         super().__init__("ale", {'rom': self.rom_path,
                                  'seed': seed,
                                  'color_avg': color_avg,
+                                 'frame_skip': frame_skip,
                                  'max_num_frames': max_num_frames,
                                  'max_num_episodes': max_num_episodes,
                                  'max_num_frames_per_episode': max_num_frames_per_episode,
                                  'print_screen': print_screen,
                                  'display_screen': display_screen,
-                                 'sound': sound})
+                                 'sound': sound,
+                                 'system_reset_steps': system_reset_steps,
+                                 'use_environment_distribution': use_environment_distribution})
 
     def set_parameters(self, **kwargs):
         """

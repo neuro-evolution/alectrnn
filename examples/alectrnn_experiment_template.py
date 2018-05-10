@@ -32,9 +32,9 @@ import cProfile
 ale_parameters = {'rom': "atlantis",
                   'seed': 12,
                   'color_avg': True,
-                  'max_num_frames': 2000,
-                  'max_num_episodes': 2,
-                  'max_num_frames_per_episode': 2000}
+                  'max_num_frames': 20000,
+                  'max_num_episodes': 1,
+                  'max_num_frames_per_episode': 20000}
 
 nervous_system_parameters = {'input_shape': [1, 88, 88],
                              'nn_parameters': [{
