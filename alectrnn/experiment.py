@@ -55,10 +55,10 @@ class ALEExperiment:
         self.nervous_system_class_parameters['num_outputs'] = \
             self._ale_handle.action_set_size()
 
-        self._nn_handle = nervous_system_class(**self.nervous_system_class_parameters)
+        self._nervous_system = nervous_system_class(**self.nervous_system_class_parameters)
 
         # Construct handle (Agent)
-        self.agent_class_parameters['nervous_system'] = self._nn_handle.neural_network
+        self.agent_class_parameters['nervous_system'] = self._nervous_system.neural_network
         self._agent_handle = handlers.NervousSystemAgentHandler(self._ale_handle.handle,
                                                                 **self.agent_class_parameters)
         self._agent_handle.create()
@@ -89,14 +89,14 @@ class ALEExperiment:
         """
         :return: The number of parameters in the neural network
         """
-        return self._nn_handle.get_parameter_count()
+        return self._nervous_system.get_parameter_count()
 
     def parameter_layout(self):
         """
         :return: The parameters lay out as a numpy array valued by
             handlers.PARAMETER_TYPE values
         """
-        return self._nn_handle.parameter_layout()
+        return self._nervous_system.parameter_layout()
 
     def set_game_parameters(self, **kwargs):
         """
@@ -155,14 +155,14 @@ class ALEExperiment:
         :note: not to be confused with interpreted shapes
         """
 
-        for i, shape in enumerate(self._nn_handle.layer_shapes):
+        for i, shape in enumerate(self._nervous_system.layer_shapes):
             print("Layer", i, " with shape", shape)
 
     def num_layers(self):
         """
         :return: The number of layers in the neural network
         """
-        return self._nn_handle.num_layers()
+        return self._nervous_system.num_layers()
 
     @property
     def objective_function(self):
