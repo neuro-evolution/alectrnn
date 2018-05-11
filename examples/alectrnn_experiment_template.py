@@ -87,7 +87,7 @@ guess_bounds = {handlers.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
                 handlers.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
 guess_range = handlers.boundary_array_for_parameter_layout(par_layout,
                                                            guess_bounds)
-initial_guess = handlers.draw_uniform_initial_guess(rng, guess_range)
+initial_guess = handlers.draw_uniform_initial_guess(guess_range, rng)
 del guess_range
 del par_layout
 

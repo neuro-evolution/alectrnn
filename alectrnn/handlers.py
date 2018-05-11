@@ -354,12 +354,12 @@ class PARAMETER_TYPE(Enum):
     RESISTANCE = 5  # resistance for IF models
 
 
-def draw_uniform_initial_guess(rng, boundary_array):
+def draw_uniform_initial_guess(boundary_array, rng):
     """
     Uses a numpy RandomState to draw a uniform set of initial values between
     the specified bounds.
-    :param rng: numpy RandomState object
     :param boundary_array: Nx2 np.float32 array
+    :param rng: numpy RandomState object
     :return: 1-D array of size N and dtype np.float32
     """
 
