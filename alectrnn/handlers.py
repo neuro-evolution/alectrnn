@@ -701,9 +701,11 @@ class NervousSystem:
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
             tuple(layers))
 
-        # Save shape info
+        # Save shape info and parameters (so that they don't go out of scope
+        # as the c++ classes only share the data, they don't own it.
         layer_shapes.append(np.array([num_outputs], dtype=np.uint64))
         self.layer_shapes = layer_shapes
+        self.nn_parameters = nn_parameters
 
     def _configure_layer_activations(self, layer_shapes, interpreted_shapes,
                                      nn_parameters, act_type, act_args):
