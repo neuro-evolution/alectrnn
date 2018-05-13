@@ -168,6 +168,19 @@ class ALEExperiment:
     def objective_function(self):
         return self._obj_handle.handle
 
+    def draw_initial_guess(self, type_bounds, rng):
+        """
+        :param type_bounds: a dictionary with low/high bounds for each type.
+            If weights are set too 'norm', then they are initialized with a
+            normalization procedure.
+        :param rng: a seeded numpy RandomState
+        :return: a 1D numpy float 32 array
+        """
+
+        return handlers.draw_initial_guess(type_bounds,
+                                           self._nervous_system,
+                                           rng)
+
 
 if __name__ == '__main__':
     pass

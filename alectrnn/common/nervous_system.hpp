@@ -70,12 +70,14 @@ class NervousSystem {
 
     /*
      * It is assumed that the last layer is the output of the network
-     * Its states will be returned as a Tensor.
+     * Its states will be returned as a const Tensor reference.
      */
     const multi_array::Tensor<TReal>& GetOutput() const {
       return network_layers_[network_layers_.size()-1]->state();
     }
 
+    /* Pushes a layer onto the neural network, taking ownership and incrementing
+     * the parameter count */
     void AddLayer(Layer<TReal>* layer) {
       network_layers_.push_back(layer);
       parameter_count_ += layer->GetParameterCount();
@@ -101,6 +103,26 @@ class NervousSystem {
         }
       }
       return layout;
+    }
+
+    /*
+     * Loops through each layer and has it construct its portion of the weight
+     * normalization factor vector, then writes those elements onto the
+     * vector that will be returned.
+     */
+    std::vector<float> GetWeightNormalizationFactors() const {
+      std::vector<float> normalization_factors(parameter_count_);
+
+      Index parameter_id = 0;
+      for (auto layer_prt : network_layers_) {
+        std::vector<float> layer_factors = layer_prt->GetWeightNormalizationFactors();
+        for (auto factor : layer_factors) {
+          normalization_factors[parameter_id] = factor;
+          ++parameter_id;
+        }
+      }
+
+      return normalization_factors;
     }
 
     const Layer<TReal>& operator[](Index index) const {

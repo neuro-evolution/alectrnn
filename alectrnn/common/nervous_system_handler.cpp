@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <iostream>
 #include <vector>
+#include <utility>
 #include "nervous_system_handler.hpp"
 #include "numpy/arrayobject.h"
 #include "layer.hpp"
@@ -94,6 +95,50 @@ static PyObject *GetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
   return Py_BuildValue("i", nn_size);
 }
 
+static PyObject *GetWeightNormalizationFactors(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"neural_network", NULL};
+
+  PyObject* nn_capsule;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list,
+                                   &nn_capsule)) {
+    std::cerr << "Error parsing GetWeightNormalizationFactors arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
+  {
+    std::cerr << "Invalid pointer to NN returned from capsule,"
+    " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nn =
+    static_cast<nervous_system::NervousSystem<float>*>(
+    PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
+
+  // call function and get vector
+  std::vector<float> normalization_factors = nn->GetWeightNormalizationFactors();
+  // convert vector<float> -> numpy array float32
+  return ConvertFloatVectorToPyFloat32Array(normalization_factors);
+}
+
+PyObject* ConvertFloatVectorToPyFloat32Array(const std::vector<float>& vec) {
+  // Need a temp shape pointer for numpy array
+  npy_intp vector_size = vec.size();
+  npy_intp* shape_ptr = &vector_size;
+
+  // Create numpy array and recast for assignment
+  PyObject* py_array = PyArray_SimpleNew(1, shape_ptr, NPY_FLOAT32);
+  PyArrayObject* np_array = reinterpret_cast<PyArrayObject*>(py_array);
+  npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
+
+  // Copy vect data to numpy array
+  for (std::size_t iii = 0; iii < vec.size(); ++iii) {
+    data[iii] = static_cast<npy_float32>(vec[iii]);
+  }
+  return py_array;
+}
+
 PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAMETER_TYPE>& par_types) {
   // Need a temp shape pointer for numpy array
   npy_intp vector_size = par_types.size();
@@ -123,6 +168,10 @@ static PyMethodDef NervousSystemHandlerMethods[] = {
   { "GetSize", (PyCFunction) GetSize,
           METH_VARARGS | METH_KEYWORDS,
           "Returns # layers in network"},
+  {
+    "GetWeightNormalizationFactors", (PyCFunction) GetWeightNormalizationFactors,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a numpy array with normalization factors for each parameter"},
   { NULL, NULL, 0, NULL}
 };
 

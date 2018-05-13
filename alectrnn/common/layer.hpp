@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <initializer_list>
 #include <iostream>
+#include <utility>
+#include "graphs.hpp"
 #include "activator.hpp"
 #include "integrator.hpp"
 #include "multi_array.hpp"
@@ -22,6 +24,7 @@ template<typename TReal>
 class Layer {
   public:
     typedef std::size_t Index;
+    typedef float Factor;
 
     Layer() {
       back_integrator_ = nullptr;
@@ -129,6 +132,24 @@ class Layer {
       return layout;
     }
 
+    /*
+     * Constructs a normalization factor vector. Each element corresponds to
+     * a parameter. Parameters associated with weights should be set to a
+     * non-zero value == to the degree of the post-synaptic neuron.
+     */
+    virtual std::vector<Factor> GetWeightNormalizationFactors() const {
+      std::vector<Factor> normalization_factors(parameter_count_);
+      // initializes values to 0
+      for (auto& factor : normalization_factors) {
+        factor = 0.0;
+      }
+
+      EvaluateNormalizationFactors(normalization_factors, back_integrator_,
+                                   self_integrator_, NumNeurons());
+
+      return normalization_factors;
+    }
+
     std::size_t NumNeurons() const {
       return layer_state_.size();
     }
@@ -175,8 +196,9 @@ class Layer {
 template<typename TReal>
 class InputLayer : public Layer<TReal> {
   public:
-    typedef std::size_t Index;
     typedef Layer<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef typename super_type::Factor Factor;
 
     InputLayer(const std::vector<Index>& shape) {
       super_type::shape_ = shape;
@@ -210,8 +232,10 @@ class InputLayer : public Layer<TReal> {
 template<typename TReal>
 class MotorLayer : public Layer<TReal> {
   public:
-    typedef std::size_t Index;
     typedef Layer<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef typename super_type::Factor Factor;
+
 
     MotorLayer(Index num_outputs, Index num_inputs, 
         Activator<TReal>* activation_function) {
@@ -267,6 +291,97 @@ class MotorLayer : public Layer<TReal> {
 
       return layout;
     }
+};
+
+/*
+ * Calculates the number of links the integrator has
+ */
+template <typename Factor, typename TReal>
+Factor GetNumOfLinks(const Integrator<TReal>* integrator) {
+
+  if (integrator == nullptr) {
+    return 0; // If there is no integrator (which is valid) it has no links.
+  }
+
+  INTEGRATOR_TYPE integrator_type = integrator->GetIntegratorType();
+  Factor num_links = 0;
+  switch (integrator_type) {
+    case ALL2ALL_INTEGRATOR: {
+      num_links = integrator->GetParameterCount();
+      break;
+    }
+
+    case NONE_INTEGRATOR: {
+      break;
+    }
+
+    case CONV_INTEGRATOR: {
+      const Conv3DIntegrator<TReal> *conv_integrator = dynamic_cast<const Conv3DIntegrator<TReal> *>(integrator);
+      const multi_array::Array<std::size_t, 3> filter = conv_integrator->GetFilterShape();
+      num_links = filter[0] * filter[1] * filter[2] * conv_integrator->GetMinTarSize();
+      break;
+    }
+
+    case TRUNCATED_RECURRENT_INTEGRATOR:
+    case RECURRENT_INTEGRATOR: {
+      const RecurrentIntegrator<TReal> *recurrent_integrator = dynamic_cast<const RecurrentIntegrator<TReal> *>(integrator);
+      const graphs::PredecessorGraph<> graph = recurrent_integrator->GetGraph();
+      num_links = graph.NumEdges();
+      break;
+    }
+
+    case RESERVOIR_INTEGRATOR: {
+      const ReservoirIntegrator<TReal> *reservoir_integrator = dynamic_cast<const ReservoirIntegrator<TReal> *>(integrator);
+      const graphs::PredecessorGraph<TReal> graph = reservoir_integrator->GetGraph();
+      num_links = graph.NumEdges();
+      break;
+    }
+
+    default:
+      throw std::invalid_argument("Error: Integrator type not found.");
+  }
+
+  return num_links;
+};
+
+/*
+ * Calculates the average degree by combining information from the back and
+ * self integrators, and then assigns the values to the respective links
+ */
+template <typename Factor, typename TReal>
+void EvaluateNormalizationFactors(std::vector<Factor>& normalization_factors,
+                                  const Integrator<TReal>* back_integrator,
+                                  const Integrator<TReal>* self_integrator,
+                                  std::size_t layer_size) {
+
+  std::size_t num_back_links = 0;
+  std::pair<std::size_t, std::size_t> back_weight_slice{0,0};
+  if (back_integrator != nullptr) {
+    num_back_links = GetNumOfLinks<std::size_t, TReal>(back_integrator);
+    back_weight_slice = back_integrator->GetWeightIndexRange();
+  }
+
+  std::size_t num_self_links = 0;
+  std::pair<std::size_t, std::size_t> self_weight_slice{0,0};
+  if (self_integrator != nullptr) {
+    num_self_links = GetNumOfLinks<std::size_t, TReal>(self_integrator);
+    self_weight_slice = self_integrator->GetWeightIndexRange();
+  }
+
+  // Because self params are added after back params, we have to offset the weight indices for self
+  if (back_integrator != nullptr) {
+    self_weight_slice.first += back_integrator->GetParameterCount();
+    self_weight_slice.second += back_integrator->GetParameterCount();
+  }
+
+  // Calculate average degree and the assign it to the weight indices of self and back
+  Factor average_degree = (num_back_links + num_self_links) / static_cast<double>(layer_size);
+  for (std::size_t iii = 0; iii < normalization_factors.size(); ++iii) {
+    if ((iii >= back_weight_slice.first) && (iii < back_weight_slice.second) ||
+        (iii >= self_weight_slice.first) && (iii < self_weight_slice.second)) {
+      normalization_factors[iii] = average_degree;
+    }
+  }
 };
 
 } // End nervous_system namespace

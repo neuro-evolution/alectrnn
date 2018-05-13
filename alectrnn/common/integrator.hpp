@@ -24,6 +24,7 @@
 #include <iostream>
 #include <numeric>
 #include <functional>
+#include <utility>
 #include "multi_array.hpp"
 #include "graphs.hpp"
 #include "parameter_types.hpp"
@@ -46,6 +47,8 @@ enum INTEGRATOR_TYPE {
 template<typename TReal>
 class Integrator {
   public:
+    typedef std::size_t Index;
+
     Integrator() {
       integrator_type_ = BASE_INTEGRATOR;
       parameter_count_ = 0;
@@ -65,6 +68,12 @@ class Integrator {
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const=0;
 
+    /*
+     * Returns a pair representing the start and stop indices for the parameters
+     * associated with link weights. These should always be contiguous.
+     */
+    virtual std::pair<Index, Index> GetWeightIndexRange() const=0;
+
   protected:
     INTEGRATOR_TYPE integrator_type_;
     std::size_t parameter_count_;
@@ -73,8 +82,10 @@ class Integrator {
 // None integrator - does nothing
 template<typename TReal>
 class NoneIntegrator : public Integrator<TReal> {
-  typedef Integrator<TReal> super_type;
   public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
     NoneIntegrator() : super_type() { super_type::integrator_type_ = NONE_INTEGRATOR; }
     ~NoneIntegrator()=default;
 
@@ -84,15 +95,20 @@ class NoneIntegrator : public Integrator<TReal> {
     std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
     }
+
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, 0);
+    }
 };
 
 // Integrator that has All2All connectivity with previous layer
 template<typename TReal>
 class All2AllIntegrator : public Integrator<TReal> {
-  typedef Integrator<TReal> super_type;
-  typedef std::size_t Index;
   public:
-    All2AllIntegrator(Index num_states, Index num_prev_states) 
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    All2AllIntegrator(Index num_states, Index num_prev_states)
         : num_states_(num_states), num_prev_states_(num_prev_states) {
       super_type::parameter_count_ = num_states_ * num_prev_states_;
       super_type::integrator_type_ = ALL2ALL_INTEGRATOR;
@@ -136,6 +152,10 @@ class All2AllIntegrator : public Integrator<TReal> {
       return layout;
     }
 
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, super_type::parameter_count_);
+    }
+
   protected:
     Index num_states_;
     Index num_prev_states_;
@@ -162,10 +182,11 @@ class All2AllIntegrator : public Integrator<TReal> {
  */
 template<typename TReal>
 class Conv3DIntegrator : public Integrator<TReal> {
-  typedef Integrator<TReal> super_type;
-  typedef std::size_t Index;
   public:
-    Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape, 
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape,
         const multi_array::Array<Index,3>& layer_shape, 
         const multi_array::Array<Index,3>& prev_layer_shape, Index stride)
         : num_filters_(layer_shape[0]), layer_shape_(layer_shape), 
@@ -473,6 +494,18 @@ class Conv3DIntegrator : public Integrator<TReal> {
       return layout;
     }
 
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, super_type::parameter_count_);
+    }
+
+    const multi_array::Array<Index, 3>& GetFilterShape() const {
+      return filter_shape_;
+    };
+
+    Index GetMinTarSize() const {
+      return min_tar_size_;
+    }
+
   protected:
     Index num_filters_;
     multi_array::Array<Index, 3> layer_shape_;
@@ -493,9 +526,9 @@ class Conv3DIntegrator : public Integrator<TReal> {
 // Network integrator -- uses explicit unweighted structure
 template<typename TReal>
 class RecurrentIntegrator : public Integrator<TReal> {
-  typedef Integrator<TReal> super_type;
-  typedef std::size_t Index;
   public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
 
     RecurrentIntegrator(const graphs::PredecessorGraph<>& network) 
         : network_(network) {
@@ -550,6 +583,14 @@ class RecurrentIntegrator : public Integrator<TReal> {
       return weights_;
     }
 
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, super_type::parameter_count_);
+    }
+
+    const graphs::PredecessorGraph<>& GetGraph() const {
+      return network_;
+    }
+
   protected:
     graphs::PredecessorGraph<> network_;
     multi_array::ConstArraySlice<TReal> weights_;
@@ -560,8 +601,8 @@ class RecurrentIntegrator : public Integrator<TReal> {
 template<typename TReal>
 class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
   public:
-    typedef std::size_t Index;
     typedef RecurrentIntegrator<TReal> super_type;
+    typedef typename super_type::Index Index;
 
     TruncatedRecurrentIntegrator(const graphs::PredecessorGraph<>& network,
                                  TReal weight_threshold)
@@ -607,9 +648,10 @@ class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
 // Reservoir -- uses explicit weighted structure
 template<typename TReal>
 class ReservoirIntegrator : public Integrator<TReal> {
-  typedef Integrator<TReal> super_type;
-  typedef std::size_t Index;
   public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
     ReservoirIntegrator(const graphs::PredecessorGraph<TReal>& network)
         : network_(network) {
       super_type::integrator_type_ = RESERVOIR_INTEGRATOR;
@@ -634,6 +676,14 @@ class ReservoirIntegrator : public Integrator<TReal> {
 
     std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
+    }
+
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, 0);
+    }
+
+    const graphs::PredecessorGraph<TReal>& GetGraph() const {
+      return network_;
     }
 
   protected:

@@ -370,6 +370,55 @@ def draw_uniform_initial_guess(boundary_array, rng):
     return initial_guess
 
 
+def normalized_weight_bound(nervous_system):
+    """
+    Uses the degree of all the nodes in the neural network to determine
+    the normalized weight for each link, which is 1/sqrt(N), where N is the
+    number of pre-synaptic connections.
+
+    :param nervous_system: A NervousSystem instance
+    :return: a numpy float32 that is the size of the # parameters
+    """
+
+    normalization_factors = nn_handler.GetWeightNormalizationFactors(nervous_system.neural_network)
+    np.sqrt(normalization_factors, out=normalization_factors)
+    np.divide(1., normalization_factors,
+              where=normalization_factors != 0.0,
+              out=normalization_factors)
+
+    return normalization_factors
+
+
+def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True):
+    """
+    :param type_bounds: key is PARAMETER_TYPE, value is (low, high)
+    :param nervous_system: an instance of NervousSystem
+    :param rng: an instance of numpy RandomState
+    :param normalized_weights: if True, divides weights by 1/sqrt(N), where N
+        is the number of pre-synaptic neurons (the neuron at the tail of the
+        weight). If false, uses bounds defined in parameter type.
+    :return: a 1D numpy float 32 array representing the initial guess
+    """
+
+    if normalized_weights:
+        # Will be set later on a parameter by parameter basis
+        type_bounds[PARAMETER_TYPE.WEIGHT] = (0.0, 0.0)
+
+    parameter_layout = nervous_system.parameter_layout()
+    boundary_array = boundary_array_for_parameter_layout(parameter_layout,
+                                                         type_bounds)
+
+    # adjust boundary_array with weight initial values
+    if normalized_weights:
+        weight_bound = normalized_weight_bound(nervous_system)
+
+        # set boundary array
+        boundary_array[:, 0] -= weight_bound
+        boundary_array[:, 1] += weight_bound
+
+    return draw_uniform_initial_guess(boundary_array, rng)
+
+
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
@@ -381,8 +430,8 @@ def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
         boundaries = np.zeros((len(parameter_layout), 2), dtype=np.float32)
         for par_type, bounds in type_bounds.items():
             type_indexes = np.where(parameter_layout == par_type.value)
-            boundaries[type_indexes,0] = bounds[0]
-            boundaries[type_indexes,1] = bounds[1]
+            boundaries[type_indexes, 0] = bounds[0]
+            boundaries[type_indexes, 1] = bounds[1]
         return boundaries
 
     else:
@@ -696,6 +745,7 @@ class NervousSystem:
                                                prev_layer_size,
                                                act_type.value,
                                                (num_outputs, *act_args)))
+        nn_parameters.append({'layer_type': 'motor'})
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
