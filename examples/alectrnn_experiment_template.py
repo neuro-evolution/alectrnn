@@ -19,7 +19,7 @@ python alectrnn_experiment_template.py
 """
 
 from evostrat import BoundedRandNumTableES
-from alectrnn import handlers
+from alectrnn import nervous_system as ns
 from alectrnn.experiment import ALEExperiment
 import numpy as np
 import cProfile
@@ -54,7 +54,7 @@ nervous_system_parameters = {'input_shape': [1, 88, 88],
                                 },
                                {'layer_type': "a2a_ff",
                                 'num_internal_nodes': 512}],
-                             'act_type': handlers.ACTIVATOR_TYPE.CTRNN,
+                             'act_type': ns.ACTIVATOR_TYPE.CTRNN,
                              'act_args': (1.0,)}
 
 agent_parameters = {'update_rate': 1,
@@ -64,7 +64,7 @@ objective_parameters = {'obj_type': 'totalcost',
                         'obj_parameters': None}
 
 ale_experiment = ALEExperiment(ale_parameters=ale_parameters,
-                               nervous_system_class=handlers.NervousSystem,
+                               nervous_system_class=ns.NervousSystem,
                                nervous_system_class_parameters=nervous_system_parameters,
                                agent_class_parameters=agent_parameters,
                                objective_parameters=objective_parameters,
@@ -75,19 +75,19 @@ par_layout = ale_experiment.parameter_layout()
 # Initiate evolutionary run (requires Experiment parameters)
 ################################################################################
 # Define bounds
-type_bounds = {handlers.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
-               handlers.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
-               handlers.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
-bounds = handlers.boundary_array_for_parameter_layout(par_layout, type_bounds)
+type_bounds = {ns.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
+               ns.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
+               ns.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
+bounds = ns.boundary_array_for_parameter_layout(par_layout, type_bounds)
 
 # Initial guess
 rng = np.random.RandomState(1)
-guess_bounds = {handlers.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
-                handlers.PARAMETER_TYPE.RTAUS: (0.01, 1.0),
-                handlers.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
-guess_range = handlers.boundary_array_for_parameter_layout(par_layout,
-                                                           guess_bounds)
-initial_guess = handlers.draw_uniform_initial_guess(guess_range, rng)
+guess_bounds = {ns.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
+                ns.PARAMETER_TYPE.RTAUS: (0.01, 1.0),
+                ns.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
+guess_range = ns.boundary_array_for_parameter_layout(par_layout,
+                                                     guess_bounds)
+initial_guess = ns.draw_uniform_initial_guess(guess_range, rng)
 del guess_range
 del par_layout
 

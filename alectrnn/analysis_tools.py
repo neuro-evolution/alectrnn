@@ -4,11 +4,11 @@ Various functions for plotting and analyzing the output of the neural networks
 (requires ffmpeg for animations)
 """
 
-from alectrnn import handlers
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.animation as animation
+from alectrnn import nervous_system
 
 
 def ecdf(data):
@@ -211,7 +211,7 @@ def plot_parameter_distributions(parameters, parameter_layout, prefix="test",
     :return: None
     """
 
-    for par_type in handlers.PARAMETER_TYPE:
+    for par_type in nervous_system.PARAMETER_TYPE:
         type_indices = np.where(parameter_layout == par_type.value)[0]
         if len(type_indices != 0):
             type_parameters = parameters[type_indices]

@@ -1,4 +1,5 @@
 from alectrnn import handlers
+from alectrnn import nervous_system as ns
 
 
 class ALEExperiment:
@@ -177,9 +178,9 @@ class ALEExperiment:
         :return: a 1D numpy float 32 array
         """
 
-        return handlers.draw_initial_guess(type_bounds,
-                                           self._nervous_system,
-                                           rng)
+        return ns.draw_initial_guess(type_bounds,
+                                     self._nervous_system,
+                                     rng)
 
 
 if __name__ == '__main__':

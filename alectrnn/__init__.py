@@ -13,7 +13,9 @@ ale_handler: This module contains functions for extracting information from the
 ALE environment
 
 handlers: This module contains a high level interface to the other modules and
-classes for ez construction of agents, ALE, and nervous systems
+classes for ez construction of agents, ALE
+
+nervous_system: This module contains a high level interface to the neural networks
 
 layer_generator: This module contains functions for creating nervous system layers
 
