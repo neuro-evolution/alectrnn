@@ -53,7 +53,10 @@ nervous_system_parameters = {'input_shape': [1, 88, 88],
                                 'stride': 1
                                 },
                                {'layer_type': "a2a_ff",
-                                'num_internal_nodes': 512}],
+                                'num_internal_nodes': 512
+                                },
+                               {'layer_type': 'motor',
+                                'motor_type': 'standard'}],
                              'act_type': ns.ACTIVATOR_TYPE.CTRNN,
                              'act_args': (1.0,)}
 

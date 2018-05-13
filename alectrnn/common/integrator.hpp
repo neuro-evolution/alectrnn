@@ -87,16 +87,16 @@ class NoneIntegrator : public Integrator<TReal> {
     typedef typename super_type::Index Index;
 
     NoneIntegrator() : super_type() { super_type::integrator_type_ = NONE_INTEGRATOR; }
-    ~NoneIntegrator()=default;
+    virtual ~NoneIntegrator()=default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {}
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
     }
 
-    std::pair<Index, Index> GetWeightIndexRange() const {
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
       return std::make_pair(0, 0);
     }
 };
@@ -114,7 +114,7 @@ class All2AllIntegrator : public Integrator<TReal> {
       super_type::integrator_type_ = ALL2ALL_INTEGRATOR;
     }
 
-    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
       if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
         std::cerr << "src state size: " << src_state.size() << std::endl;
         std::cerr << "prev state size: " << num_prev_states_ << std::endl;
@@ -135,7 +135,7 @@ class All2AllIntegrator : public Integrator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -144,7 +144,7 @@ class All2AllIntegrator : public Integrator<TReal> {
       weights_ = multi_array::ConstArraySlice<TReal>(parameters);
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
         layout[iii] = WEIGHT;
@@ -152,7 +152,7 @@ class All2AllIntegrator : public Integrator<TReal> {
       return layout;
     }
 
-    std::pair<Index, Index> GetWeightIndexRange() const {
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
       return std::make_pair(0, super_type::parameter_count_);
     }
 
@@ -217,9 +217,10 @@ class Conv3DIntegrator : public Integrator<TReal> {
       secondpass_buffer_ = multi_array::Tensor<TReal>(
                             {layer_shape[1], layer_shape[2]});
     }
-    ~Conv3DIntegrator()=default;
+    virtual ~Conv3DIntegrator()=default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state, multi_array::Tensor<TReal>& tar_state) {
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+                            multi_array::Tensor<TReal>& tar_state) {
       /*
        * tar_state needs to have AT LEAST as many elements as required by
        * layer_shape, but it doesn't not need to have the same shape.
@@ -462,7 +463,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
 
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
@@ -486,7 +487,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       }
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
         layout[iii] = WEIGHT;
@@ -494,7 +495,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       return layout;
     }
 
-    std::pair<Index, Index> GetWeightIndexRange() const {
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
       return std::make_pair(0, super_type::parameter_count_);
     }
 
@@ -536,9 +537,9 @@ class RecurrentIntegrator : public Integrator<TReal> {
       super_type::parameter_count_ = network_.NumEdges();
     }
 
-    ~RecurrentIntegrator()=default;
+    virtual ~RecurrentIntegrator()=default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state,
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
                     multi_array::Tensor<TReal>& tar_state) {
       
       /*
@@ -562,7 +563,7 @@ class RecurrentIntegrator : public Integrator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -571,7 +572,7 @@ class RecurrentIntegrator : public Integrator<TReal> {
       weights_ = parameters.slice(0, super_type::parameter_count_);
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
         layout[iii] = WEIGHT;
@@ -583,7 +584,7 @@ class RecurrentIntegrator : public Integrator<TReal> {
       return weights_;
     }
 
-    std::pair<Index, Index> GetWeightIndexRange() const {
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
       return std::make_pair(0, super_type::parameter_count_);
     }
 
@@ -611,9 +612,9 @@ class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
       super_type::integrator_type_ = TRUNCATED_RECURRENT_INTEGRATOR;
     }
 
-    ~TruncatedRecurrentIntegrator()= default;
+    virtual ~TruncatedRecurrentIntegrator()= default;
 
-    void operator()(const multi_array::Tensor<TReal>& src_state,
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
                     multi_array::Tensor<TReal>& tar_state) {
 
       Index edge_id = 0;

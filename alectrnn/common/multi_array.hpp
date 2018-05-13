@@ -452,6 +452,8 @@ class MultiArray {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
+    typedef T* iterator;
+    typedef const T* const_iterator;
 
     MultiArray() {
       data_ = nullptr;
@@ -559,6 +561,22 @@ class MultiArray {
       return data_[index];
     }
 
+    iterator begin() {
+      return &data_[0];
+    }
+
+    iterator end() {
+      return &data_[size_];
+    }
+
+    const_iterator begin() const {
+      return &data_[0];
+    }
+
+    const_iterator end() const {
+      return &data_[size_];
+    }
+
     MultiArray<T,NumDim>& operator=(const MultiArray<T,NumDim>& other) {
       delete[] data_;
       shape_ = other.shape_;
@@ -644,6 +662,8 @@ class SharedMultiArray {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
+    typedef T* iterator;
+    typedef const T* const_iterator;
 
     SharedMultiArray() {
       data_ = nullptr;
@@ -732,6 +752,22 @@ class SharedMultiArray {
     const T& at(Index index) const {
       if (index >= size_) { throw std::out_of_range("index out of range"); }
       return data_[index];
+    }
+
+    iterator begin() {
+      return &data_[0];
+    }
+
+    iterator end() {
+      return &data_[size_];
+    }
+
+    const_iterator begin() const {
+      return &data_[0];
+    }
+
+    const_iterator end() const {
+      return &data_[size_];
     }
 
     SharedMultiArray<T,NumDim>& operator=(const SharedMultiArray<T,NumDim>& other) {
@@ -1239,6 +1275,8 @@ class Tensor {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
+    typedef T* iterator;
+    typedef const T* const_iterator;
 
     // Default constructor
     Tensor() {
@@ -1347,7 +1385,23 @@ class Tensor {
     const T& at(Index index) const {
       if (index >= size_) { throw std::out_of_range("index out of range"); }
       return data_[index];
-    }    
+    }
+
+    iterator begin() {
+      return &data_[0];
+    }
+
+    iterator end() {
+      return &data_[size_];
+    }
+
+    const_iterator begin() const {
+      return &data_[0];
+    }
+
+    const_iterator end() const {
+      return &data_[size_];
+    }
 
     T& operator()(const std::initializer_list<T>& indices) {
       Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);
@@ -1445,6 +1499,8 @@ class SharedTensor {
   public:
     typedef T* TPtr;
     typedef std::size_t Index;
+    typedef T* iterator;
+    typedef const T* const_iterator;
 
     // Default constructor
     SharedTensor() {
@@ -1545,7 +1601,23 @@ class SharedTensor {
     const T& at(Index index) const {
       if (index >= size_) { throw std::out_of_range("index out of range"); }
       return data_[index];
-    }    
+    }
+
+    iterator begin() {
+      return &data_[0];
+    }
+
+    iterator end() {
+      return &data_[size_];
+    }
+
+    const_iterator begin() const {
+      return &data_[0];
+    }
+
+    const_iterator end() const {
+      return &data_[size_];
+    }
 
     T& operator()(const std::initializer_list<T>& indices) {
       Index flat_index = std::inner_product(indices.begin(), indices.end(), strides_.begin(), 0);

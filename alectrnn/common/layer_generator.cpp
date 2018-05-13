@@ -118,6 +118,28 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
   return layer_capsule;
 }
 
+static PyObject *CreateSoftMaxMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "temperature", NULL};
+
+  int num_outputs;
+  int num_inputs;
+  float temperature;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iif", keyword_list,
+                                   &num_outputs, &num_inputs, &temperature)) {
+    std::cerr << "Error parsing CreateSoftMaxMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Layer<float>* layer = new nervous_system::SoftMaxMotorLayer<float>(
+    num_outputs, num_inputs, temperature);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
 nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE type, PyObject* args) {
   /*
    * CONV activators should take a shape argument
@@ -394,6 +416,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateMotorLayer", (PyCFunction) CreateMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a MotorLayer"},
+  { "CreateSoftMaxMotorLayer", (PyCFunction) CreateSoftMaxMotorLayer,
+  METH_VARARGS | METH_KEYWORDS,
+  "Returns a handle to a SoftMaxMotorLayer"},
       //Additional layers here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

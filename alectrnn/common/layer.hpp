@@ -29,7 +29,8 @@ class Layer {
     Layer() {
       back_integrator_ = nullptr;
       self_integrator_ = nullptr;
-      activation_function_ = nullptr;      
+      activation_function_ = nullptr;
+      parameter_count_ = 0;
     }
 
     Layer(const std::vector<Index>& shape, 
@@ -186,10 +187,12 @@ class Layer {
     Integrator<TReal>* self_integrator_;
     // updates the layer's state using the input buffer (may also contain internal state)
     Activator<TReal>* activation_function_;
+    // maintains the current layer's state
     multi_array::Tensor<TReal> layer_state_;
     // holds input values used to update the layer's state
     multi_array::Tensor<TReal> input_buffer_;
     std::vector<Index> shape_;
+    // Number of parameters required by layer
     std::size_t parameter_count_;
 };
 
@@ -199,6 +202,9 @@ class InputLayer : public Layer<TReal> {
     typedef Layer<TReal> super_type;
     typedef typename super_type::Index Index;
     typedef typename super_type::Factor Factor;
+
+    InputLayer() : super_type() {
+    }
 
     InputLayer(const std::vector<Index>& shape) {
       super_type::shape_ = shape;
@@ -218,13 +224,13 @@ class InputLayer : public Layer<TReal> {
       super_type::parameter_count_ = 0;
     }
 
-    void operator()(const Layer<TReal>* prev_layer) {}
+    virtual void operator()(const Layer<TReal>* prev_layer) {}
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
 
-    void Reset() { super_type::layer_state_.Fill(0.0); }
+    virtual void Reset() { super_type::layer_state_.Fill(0.0); }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       return std::vector<PARAMETER_TYPE>(0);
     }
 };
@@ -236,6 +242,8 @@ class MotorLayer : public Layer<TReal> {
     typedef typename super_type::Index Index;
     typedef typename super_type::Factor Factor;
 
+    MotorLayer() : super_type() {
+    }
 
     MotorLayer(Index num_outputs, Index num_inputs, 
         Activator<TReal>* activation_function) {
@@ -248,7 +256,7 @@ class MotorLayer : public Layer<TReal> {
       super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
     }
 
-    void operator()(const Layer<TReal>* prev_layer) {
+    virtual void operator()(const Layer<TReal>* prev_layer) {
       // First clear input buffer
       super_type::input_buffer_.Fill(0.0);
       // Call back integrator first to resolve input from prev layer
@@ -257,20 +265,22 @@ class MotorLayer : public Layer<TReal> {
       (*super_type::activation_function_)(super_type::layer_state_, super_type::input_buffer_);
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (super_type::parameter_count_ != parameters.size()) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
         throw std::invalid_argument("Wrong number of parameters given");
       }
+      // configure back integrator parameters
       super_type::back_integrator_->Configure(
         parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
+      // configure activation parameters
       super_type::activation_function_->Configure(
         parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
                          super_type::activation_function_->GetParameterCount()));
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
 
       // layout produced in configure order: back->act
@@ -290,6 +300,31 @@ class MotorLayer : public Layer<TReal> {
       }
 
       return layout;
+    }
+};
+
+/*
+ * A motor layer that has no internal memory, and whose outputs represents
+ * a distribution, so that all state members sum to 1.
+ */
+template<typename TReal>
+class SoftMaxMotorLayer : public MotorLayer<TReal> {
+  public:
+    typedef MotorLayer<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef typename super_type::Factor Factor;
+
+    SoftMaxMotorLayer() : super_type() {
+    }
+
+    SoftMaxMotorLayer(Index num_outputs, Index num_inputs, TReal temperature) {
+      super_type::activation_function_ = new nervous_system::SoftMaxActivator<TReal>(temperature);
+      super_type::back_integrator_ = new nervous_system::All2AllIntegrator<TReal>(num_outputs, num_inputs);
+      super_type::self_integrator_ = nullptr;
+      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount()
+                                     + super_type::back_integrator_->GetParameterCount();
+      super_type::layer_state_ = multi_array::Tensor<TReal>({num_outputs});
+      super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
     }
 };
 
@@ -377,8 +412,8 @@ void EvaluateNormalizationFactors(std::vector<Factor>& normalization_factors,
   // Calculate average degree and the assign it to the weight indices of self and back
   Factor average_degree = (num_back_links + num_self_links) / static_cast<double>(layer_size);
   for (std::size_t iii = 0; iii < normalization_factors.size(); ++iii) {
-    if ((iii >= back_weight_slice.first) && (iii < back_weight_slice.second) ||
-        (iii >= self_weight_slice.first) && (iii < self_weight_slice.second)) {
+    if (((iii >= back_weight_slice.first) && (iii < back_weight_slice.second)) ||
+       ((iii >= self_weight_slice.first) && (iii < self_weight_slice.second))) {
       normalization_factors[iii] = average_degree;
     }
   }

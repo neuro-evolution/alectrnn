@@ -31,12 +31,15 @@ enum ACTIVATOR_TYPE {
   CTRNN_ACTIVATOR,
   CONV_CTRNN_ACTIVATOR,
   IAF_ACTIVATOR,
-  CONV_IAF_ACTIVATOR
+  CONV_IAF_ACTIVATOR,
+  SOFT_MAX_ACTIVATOR
 };
 
 template<typename TReal>
 class Activator {
   public:
+    typedef std::size_t Index;
+
     Activator() {
       activator_type_ = BASE_ACTIVATOR;
       parameter_count_ = 0;
@@ -84,9 +87,10 @@ class Activator {
 
 template<typename TReal>
 class IdentityActivator : public Activator<TReal> {
-  typedef Activator<TReal> super_type;
-  typedef std::size_t Index;
   public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
     IdentityActivator() {
       super_type::parameter_count_ = 0;
       super_type::activator_type_ = IDENTITY_ACTIVATOR;
@@ -101,31 +105,57 @@ class IdentityActivator : public Activator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       return std::vector<PARAMETER_TYPE>(0);
     }
 
-    void Reset() {}
+    virtual void Reset() {}
+};
+
+template <typename TReal>
+class SoftMaxActivator: public IdentityActivator<TReal> {
+  public:
+    typedef IdentityActivator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    SoftMaxActivator(TReal temperature) : super_type(),
+                                          temperature_(temperature) {
+      super_type::activator_type_ = SOFT_MAX_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                    const multi_array::Tensor<TReal>& input_buffer) {
+      super_type::operator()(state, input_buffer);
+      utilities::SoftMax(state.begin(), state.end(), temperature_);
+    }
+
+    TReal GetTemperature() const {
+      return temperature_;
+    }
+
+  protected:
+    TReal temperature_;
 };
 
 template<typename TReal>
 class CTRNNActivator : public Activator<TReal> {
-  typedef Activator<TReal> super_type;
-  typedef std::size_t Index;
   public:
-    CTRNNActivator(std::size_t num_states, TReal step_size) : 
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    CTRNNActivator(std::size_t num_states, TReal step_size) :
         num_states_(num_states), step_size_(step_size) {
       // bias[N] and rtau[N]
       super_type::parameter_count_ = num_states * 2;
       super_type::activator_type_ = CTRNN_ACTIVATOR;
     }
 
-    ~CTRNNActivator()=default;
+    virtual ~CTRNNActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state, 
+    virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
       if (!((state.size() == num_states_) && (input_buffer.size() == num_states_))) {
         std::cerr << "state size: " << state.size() << std::endl;
@@ -142,7 +172,7 @@ class CTRNNActivator : public Activator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -153,7 +183,7 @@ class CTRNNActivator : public Activator<TReal> {
       rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < num_states_; ++iii) {
         layout[iii] = BIAS;
@@ -164,7 +194,7 @@ class CTRNNActivator : public Activator<TReal> {
       return layout;
     }
 
-    void Reset() {};
+    virtual void Reset() {};
 
   protected:
     multi_array::ConstArraySlice<TReal> biases_;
@@ -181,18 +211,19 @@ class CTRNNActivator : public Activator<TReal> {
  */
 template<typename TReal>
 class Conv3DCTRNNActivator : public Activator<TReal> {
-  typedef Activator<TReal> super_type;
-  typedef std::size_t Index;
   public:
-    Conv3DCTRNNActivator(const multi_array::Array<Index, 3>& shape, TReal step_size) : 
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    Conv3DCTRNNActivator(const multi_array::Array<Index, 3>& shape, TReal step_size) :
         step_size_(step_size), shape_(shape) {
       super_type::parameter_count_ = shape_[0] * 2;
       super_type::activator_type_ = CONV_CTRNN_ACTIVATOR;
     }
 
-    ~Conv3DCTRNNActivator()=default;
+    virtual ~Conv3DCTRNNActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+    virtual void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
 
       if (!((state.shape() == shape_) && (input_buffer.shape() == shape_))) {
         std::cerr << "Activator incompatible with state: " <<
@@ -221,7 +252,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -232,7 +263,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       rtaus_ = parameters.slice(parameters.stride() * shape_[0], shape_[0]);
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < shape_[0]; ++iii) {
         layout[iii] = BIAS;
@@ -243,7 +274,7 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       return layout;
     }
 
-    void Reset() {};
+    virtual void Reset() {};
 
   protected:
     multi_array::ConstArraySlice<TReal> biases_;
@@ -260,9 +291,9 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
  */
 template<typename TReal>
 class IafActivator : public Activator<TReal> {
-    typedef Activator<TReal> super_type;
-    typedef std::size_t Index;
   public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
 
     IafActivator(std::size_t num_states, TReal step_size, TReal peak, TReal reset) :
         num_states_(num_states), step_size_(step_size), peak_(peak), reset_(reset) {
@@ -280,9 +311,9 @@ class IafActivator : public Activator<TReal> {
       Reset();
     }
 
-    ~IafActivator()=default;
+    virtual ~IafActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state,
+    virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
       if (!((state.size() == num_states_) && (input_buffer.size() == num_states_))) {
         std::cerr << "state size: " << state.size() << std::endl;
@@ -322,7 +353,7 @@ class IafActivator : public Activator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -343,7 +374,7 @@ class IafActivator : public Activator<TReal> {
       }
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < num_states_; ++iii) {
         layout[iii] = RANGE;
@@ -360,7 +391,7 @@ class IafActivator : public Activator<TReal> {
       return layout;
     }
 
-    void Reset() {
+    virtual void Reset() {
       for (Index iii = 0; iii < num_states_; ++iii) {
         last_spike_time_[iii] = std::numeric_limits<TReal>::max();
         subthreshold_state_[iii] = 0.0;
@@ -393,9 +424,9 @@ class IafActivator : public Activator<TReal> {
 /* The convolutional version of the IafActivator */
 template <typename TReal>
 class Conv3DIafActivator : public Activator<TReal> {
-    typedef Activator<TReal> super_type;
-    typedef std::size_t Index;
   public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
 
     Conv3DIafActivator(const multi_array::Array<Index, 3>& shape,
                        TReal step_size, TReal peak, TReal reset) :
@@ -417,7 +448,7 @@ class Conv3DIafActivator : public Activator<TReal> {
 
     ~Conv3DIafActivator()=default;
 
-    void operator()(multi_array::Tensor<TReal>& state,
+    virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
       if (!((state.shape() == shape_) && (input_buffer.shape() == shape_))) {
         std::cerr << "Activator incompatible with state: " <<
@@ -468,7 +499,7 @@ class Conv3DIafActivator : public Activator<TReal> {
       }
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -506,7 +537,7 @@ class Conv3DIafActivator : public Activator<TReal> {
       return layout;
     }
 
-    void Reset() {
+    virtual void Reset() {
       for (Index iii = 0; iii < subthreshold_state_.size(); ++iii) {
         last_spike_time_[iii] = std::numeric_limits<TReal>::max();
         subthreshold_state_[iii] = 0.0;

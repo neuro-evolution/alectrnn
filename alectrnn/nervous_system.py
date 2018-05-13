@@ -180,6 +180,17 @@ class NervousSystem:
         ACTIVATION_TYPE.CTRNN: (float(step_size),)
         ACTIVATION_TYPE.IAF: (float(step_size), float(peak), float(reset))
 
+    Motor layer is the last layer of the network and should have a dictionary
+    with the following keys:
+        'layer_type' = "motor"
+        'motor_type' = ('standard' | 'softmax')
+
+    A standard motor layer takes on the same activation types and arguments as
+    the other layers. The softmax layer has no memory and implements the softmax
+    function. It takes an additional argument specified as:
+        'temperature' = float, low temp means greedy, high temp means exploration,
+            defaults to 1.
+
     Convolutional layers should have a dictionary with the following keys:
         'layer_type' = "conv"
         'filter_shape' = 2-element list/array with filter dimensions
@@ -301,16 +312,22 @@ class NervousSystem:
         act_type = general ACTIVATION_TYPE for model
         act_args = general arguments for model
 
+        :param motor_type: specifies the type of motor layer created.
+            defaults to 'motor', which adopts network activators
+            'softmax' is a memoryless motor which assign probabilities to outputs
+
         CONV layers usually have additional arguments, like shape, for
         parameter sharing of act_args. They also have their own ACTIVATION_TYPE.
         These are automatically added to the CONV layers.
         """
+        self.num_outputs = num_outputs
         input_shape = np.array(input_shape, dtype=np.uint64)
         layers = []
         # interpreted shapes are for some back integrators which need
         # to know how to interpret the layer for convolution
         interpreted_shapes, layer_shapes = self._configure_layer_shapes(
             input_shape, nn_parameters)
+        # Layer act types doesn't include input layer, so (
         layer_act_types, layer_act_args = self._configure_layer_activations(
             layer_shapes, interpreted_shapes,
             nn_parameters,
@@ -406,24 +423,26 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1]))
+
+            elif layer_pars['layer_type'] == 'motor':
+                if layer_pars['motor_type'].lower() == 'standard':
+                    layers.append(self._create_motor_layer(
+                        layer_shapes[i+1],
+                        layer_shapes[i],
+                        layer_act_types[i],
+                        layer_act_args[i],
+                    ))
+                elif layer_pars['motor_type'].lower() == 'softmax':
+                    layers.append(self._create_softmax_motor_layer(
+                        layer_shapes[i+1],
+                        layer_shapes[i],
+                        layer_pars['temperature']))
             else:
                 raise NotImplementedError
-
-        # Build motor later
-        prev_layer_size = int(np.prod(layer_shapes[-1]))
-        layers.append(self._create_motor_layer(num_outputs,
-                                               prev_layer_size,
-                                               act_type.value,
-                                               (num_outputs, *act_args)))
-        nn_parameters.append({'layer_type': 'motor'})
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
                                                                tuple(layers))
-
-        # Save shape info and parameters (so that they don't go out of scope
-        # as the c++ classes only share the data, they don't own it.
-        layer_shapes.append(np.array([num_outputs], dtype=np.uint64))
         self.layer_shapes = layer_shapes
         self.nn_parameters = nn_parameters
 
@@ -478,6 +497,10 @@ class NervousSystem:
                 else:
                     layer_shapes.append(np.array([np.prod(interpreted_shapes[-1])],
                                                  dtype=np.uint64))
+            elif 'motor' in layer_pars['layer_type']:
+                interpreted_shapes.append(np.array([self.num_outputs], dtype=np.uint64))
+                layer_shapes.append(np.array([self.num_outputs], dtype=np.uint64))
+
             else:
                 interpreted_shapes.append(np.array([layer_pars['num_internal_nodes']],
                                                    dtype=np.uint64))
@@ -738,7 +761,7 @@ class NervousSystem:
         return layer_generator.CreateLayer(back_type,
                                            back_args, self_type, self_args, act_type, act_args, interpreted_shape)
 
-    def _create_motor_layer(self, num_outputs, size_of_prev_layer, act_type, act_args):
+    def _create_motor_layer(self, num_outputs, prev_layer_shape, act_type, act_args):
         """
         Generates a motor layer for the neural network, which will represent
         the output of the network. It is fully connected to whatever layer
@@ -746,9 +769,24 @@ class NervousSystem:
         act_args needs to be in the correct tuple format for the activator
         """
 
+        size_of_prev_layer = int(np.prod(prev_layer_shape))
         assert(act_args[0] == num_outputs)
         return layer_generator.CreateMotorLayer(
-            int(num_outputs), int(size_of_prev_layer), act_type, act_args)
+            int(num_outputs), size_of_prev_layer, act_type, act_args)
+
+    def _create_softmax_motor_layer(self, num_outputs, prev_layer_shape, temperature=1.0):
+        """
+        :param num_outputs: number of outputs expected by the application
+        :param prev_layer_shape: shape of previous layer
+        :param temperature: adjusts probablities, lower temperature -> greedy
+            selection, high temperature -> exploration.
+        :return: A softmax motor capsule
+        """
+
+        size_of_prev_layer = int(np.prod(prev_layer_shape))
+        return layer_generator.CreateSoftMaxMotorLayer(int(num_outputs),
+                                                       size_of_prev_layer,
+                                                       float(temperature))
 
     def get_parameter_count(self):
         """
