@@ -40,18 +40,25 @@ def draw_uniform_initial_guess(boundary_array, rng):
     return initial_guess
 
 
-def normalized_weight_bound(nervous_system):
+def normalized_weight_bound(nervous_system, norm_type='sqrt'):
     """
     Uses the degree of all the nodes in the neural network to determine
     the normalized weight for each link, which is 1/sqrt(N), where N is the
     number of pre-synaptic connections.
 
     :param nervous_system: A NervousSystem instance
+    :param norm_type: 'sqrt' for 1/sqrt(N) and 'norm' for 1/N
     :return: a numpy float32 that is the size of the # parameters
     """
 
     normalization_factors = nn_handler.GetWeightNormalizationFactors(nervous_system.neural_network)
-    np.sqrt(normalization_factors, out=normalization_factors)
+    if norm_type == 'sqrt':
+        np.sqrt(normalization_factors, out=normalization_factors)
+    elif norm_type == 'norm':
+        pass
+    else:
+        raise AssertionError("Unsupported normalization type")
+
     np.divide(1., normalization_factors,
               where=normalization_factors != 0.0,
               out=normalization_factors)
@@ -59,7 +66,8 @@ def normalized_weight_bound(nervous_system):
     return normalization_factors
 
 
-def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True):
+def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True,
+                       norm_type='sqrt'):
     """
     :param type_bounds: key is PARAMETER_TYPE, value is (low, high)
     :param nervous_system: an instance of NervousSystem
@@ -67,6 +75,7 @@ def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True
     :param normalized_weights: if True, divides weights by 1/sqrt(N), where N
         is the number of pre-synaptic neurons (the neuron at the tail of the
         weight). If false, uses bounds defined in parameter type.
+    :param norm_type: 'sqrt' for 1/sqrt(N) and 'norm' for 1/N
     :return: a 1D numpy float 32 array representing the initial guess
     """
 
@@ -80,7 +89,7 @@ def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True
 
     # adjust boundary_array with weight initial values
     if normalized_weights:
-        weight_bound = normalized_weight_bound(nervous_system)
+        weight_bound = normalized_weight_bound(nervous_system, norm_type)
 
         # set boundary array
         boundary_array[:, 0] -= weight_bound

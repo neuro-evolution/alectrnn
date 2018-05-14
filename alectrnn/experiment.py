@@ -190,18 +190,23 @@ class ALEExperiment:
     def objective_function(self):
         return self._obj_handle.handle
 
-    def draw_initial_guess(self, type_bounds, rng):
+    def draw_initial_guess(self, type_bounds, rng, normalized_weights=True,
+                           norm_type='sqrt'):
         """
         :param type_bounds: a dictionary with low/high bounds for each type.
             If weights are set too 'norm', then they are initialized with a
             normalization procedure.
         :param rng: a seeded numpy RandomState
+        :param normalized_weights: True (ignores WEIGHTS bounds and chooses
+            weights between [-1/N, 1/N], where N==# of pre-synaptic connections)
+        :param norm_type: 'sqrt' for 1/sqrt(N) (default)
+                          'norm' for 1/N
         :return: a 1D numpy float 32 array
         """
 
         return ns.draw_initial_guess(type_bounds,
                                      self._nervous_system,
-                                     rng)
+                                     rng, normalized_weights, norm_type)
 
 
 if __name__ == '__main__':
