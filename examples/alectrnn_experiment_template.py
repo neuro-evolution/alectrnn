@@ -20,6 +20,7 @@ python alectrnn_experiment_template.py
 
 from evostrat import BoundedRandNumTableES
 from alectrnn import nervous_system as ns
+from alectrnn.handlers import NervousSystemAgentHandler
 from alectrnn.experiment import ALEExperiment
 import numpy as np
 import cProfile
@@ -69,6 +70,7 @@ objective_parameters = {'obj_type': 'totalcost',
 ale_experiment = ALEExperiment(ale_parameters=ale_parameters,
                                nervous_system_class=ns.NervousSystem,
                                nervous_system_class_parameters=nervous_system_parameters,
+                               agent_class=NervousSystemAgentHandler,
                                agent_class_parameters=agent_parameters,
                                objective_parameters=objective_parameters,
                                script_prefix='pop7_google')
