@@ -300,7 +300,7 @@ class NervousSystem:
     """
 
     def __init__(self, input_shape, num_outputs, nn_parameters,
-                 act_type, act_args):
+                 act_type, act_args, verbose=False):
         """
         input_shape - shape of input into the NN (should be 3D) 1st dim is
                       channels, second is height, then width. Will be cast
@@ -320,6 +320,7 @@ class NervousSystem:
         parameter sharing of act_args. They also have their own ACTIVATION_TYPE.
         These are automatically added to the CONV layers.
         """
+        self.verbose = verbose
         self.num_outputs = num_outputs
         input_shape = np.array(input_shape, dtype=np.uint64)
         layers = []
@@ -335,6 +336,9 @@ class NervousSystem:
 
         # Build layers
         for i, layer_pars in enumerate(nn_parameters):
+            if self.verbose:
+                print("Building layer...", i, "with pars", nn_parameters[i])
+
             if layer_pars['layer_type'] == "conv":
                 layers.append(self._create_conv_layer(
                     interpreted_shapes[i],
@@ -347,8 +351,8 @@ class NervousSystem:
             elif layer_pars['layer_type'] == "recurrent":
                 layers.append(self._create_recurrent_layer(
                     layer_pars['input_graph'],
-                    layer_pars['internal_graph'],
                     layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1]))
@@ -380,7 +384,6 @@ class NervousSystem:
                     interpreted_shapes[i+1],
                     layer_pars['filter_shape'],
                     layer_pars['stride'],
-                    layer_pars['num_internal_nodes'],
                     layer_pars['internal_graph'],
                     layer_act_types[i],
                     layer_act_args[i],
@@ -392,7 +395,6 @@ class NervousSystem:
                     interpreted_shapes[i+1],
                     layer_pars['filter_shape'],
                     layer_pars['stride'],
-                    layer_pars['num_internal_nodes'],
                     layer_pars['internal_graph'],
                     layer_pars['internal_weights'],
                     layer_act_types[i],
@@ -529,8 +531,7 @@ class NervousSystem:
         back_args = (int(num_internal_nodes),
                      int(np.prod(prev_layer_shape)))
         self_type = INTEGRATOR_TYPE.RECURRENT.value
-        self_args = (int(num_internal_nodes),
-                     internal_edge_array)
+        self_args = (internal_edge_array,)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
@@ -582,7 +583,7 @@ class NervousSystem:
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
-                                     filter_shape, stride, num_internal_nodes,
+                                     filter_shape, stride,
                                      internal_edge_array, act_type, act_args, layer_shape):
         """
         Creates a layer with convolutional back connections and self-connections
@@ -613,8 +614,9 @@ class NervousSystem:
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_conv_reservoir_layer(self, prev_layer_shape, interpreted_shape,
-                                     filter_shape, stride, num_internal_nodes,
-                                     internal_edge_array, internal_weight_array, act_type, act_args,
+                                     filter_shape, stride,
+                                     internal_edge_array, internal_weight_array,
+                                     act_type, act_args,
                                      layer_shape):
         """
         Creates a layer with convolutional back connections and a randomly
@@ -670,7 +672,8 @@ class NervousSystem:
         self_args = (internal_edge_array,)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
-                                           back_args, self_type, self_args, act_type, act_args, layer_shape)
+                                           back_args, self_type, self_args,
+                                           act_type, act_args, layer_shape)
 
     def _create_truncated_recurrent_layer(self, bipartite_input_edge_array,
                                           num_internal_nodes,
@@ -728,7 +731,8 @@ class NervousSystem:
                      internal_weight_array)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
-                                           back_args, self_type, self_args, act_type, act_args, layer_shape)
+                                           back_args, self_type, self_args, act_type, act_args,
+                                           layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
                            filter_shape, stride, act_type, act_args):
