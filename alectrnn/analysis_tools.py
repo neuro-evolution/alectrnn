@@ -139,6 +139,32 @@ def plot_internal_state(layer_state, index, neuron_ids, prefix="test"):
     plt.close()
 
 
+def plot_internal_spike_train(layer_state, index, neuron_ids, prefix="test"):
+    """
+    Makes a spike train plot of all the neurons in a given layer
+    :param layer_state: a Tx(L) matrix, where L is the shape of the layer
+    :param index: the layer index (for labelling)
+    :param neuron_ids: the indices location of neurons in the flattened state
+    :param prefix: prefix for output file name
+    :return: None
+    """
+    plt.clf()
+    y_pos = 0
+    for neuron_state in layer_state.reshape(-1, layer_state.shape[0])[neuron_ids]:
+        spike_indices = np.nonzero(neuron_state)[0]
+        if len(spike_indices) != 0:
+            plt.scatter(spike_indices, y_pos * np.ones(len(spike_indices)),
+                        color="blue", marker='o')
+        y_pos += 1
+
+    plt.xlim(0, len(layer_state))
+    plt.xlabel("time")
+    plt.ylabel("neuron")
+    plt.savefig(prefix + "_layer" + str(index) + "_spike_train.pdf")
+    plt.clf()
+    plt.close()
+
+
 def plot_internal_state_distribution(layer_state, index, prefix="test"):
     """
     Makes a time series plot of the max/min/median/90%/10% quartile ranges
