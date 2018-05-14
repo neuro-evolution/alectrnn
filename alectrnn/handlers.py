@@ -170,10 +170,13 @@ class AgentHandler(Handler):
         # Create Agent handle
         if self._handle_type == "ctrnn":
             self._handle = agent_generator.CreateCtrnnAgent(self._ale,
-                                                        **self._handle_parameters)
+                                                            **self._handle_parameters)
         elif self._handle_type == "nervous_system":
             self._handle = agent_generator.CreateNervousSystemAgent(self._ale,
-                                                        **self._handle_parameters)
+                                                                    **self._handle_parameters)
+        elif self._handle_type == "softmax":
+            self._handle = agent_generator.CreateSoftMaxAgent(self._ale,
+                                                              **self._handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
         self._handle_exists = True
@@ -188,16 +191,7 @@ class AgentHandler(Handler):
         self.create()
 
 
-class NervousSystemAgentHandler(AgentHandler):
-    """
-    Subclass of AgentHandler for easy creation and handling of NervousSystem
-    agents, which have several distinct methods (e.g. layer_history and
-    screen_history).
-    """
-    def __init__(self, ale, nervous_system, update_rate, logging=False):
-        super().__init__(ale, "nervous_system", {'nervous_system': nervous_system, 
-                                                 'update_rate': update_rate,
-                                                 'logging': int(logging)})
+class LoggingAndHistoryMixin:
 
     def layer_history(self, layer_index):
         """
@@ -236,6 +230,29 @@ class NervousSystemAgentHandler(AgentHandler):
         if self._handle_parameters['logging'] != is_logging:
             self._handle_parameters['logging'] = int(is_logging)
             self.create()
+
+
+class NervousSystemAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of NervousSystem
+    agents, which have several distinct methods (e.g. layer_history and
+    screen_history).
+    """
+    def __init__(self, ale, nervous_system, update_rate, logging=False):
+        super().__init__(ale, "nervous_system", {'nervous_system': nervous_system,
+                                                 'update_rate': update_rate,
+                                                 'logging': int(logging)})
+
+
+class SoftMaxAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of SoftMaxAgentHandlers
+    """
+    def __init__(self, ale, nervous_system, update_rate, seed, logging=False):
+        super().__init__(ale, "softmax", {'nervous_system': nervous_system,
+                                                 'update_rate': update_rate,
+                                                 'logging': int(logging),
+                                                 'seed': int(seed)})
 
 
 class ALEHandler(Handler):

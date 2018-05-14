@@ -121,7 +121,7 @@ class SoftMaxActivator: public IdentityActivator<TReal> {
     typedef IdentityActivator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    SoftMaxActivator(TReal temperature) : super_type(),
+    explicit SoftMaxActivator(TReal temperature) : super_type(),
                                           temperature_(temperature) {
       super_type::activator_type_ = SOFT_MAX_ACTIVATOR;
     }

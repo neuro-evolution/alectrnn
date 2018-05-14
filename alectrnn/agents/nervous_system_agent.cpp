@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <ale_interface.hpp>
 #include "nervous_system_agent.hpp"
 #include "player_agent.hpp"
 #include "../common/multi_array.hpp"
@@ -72,7 +73,7 @@ void NervousSystemAgent::Reset() {
   neural_net_.Reset();
 }
 
-Action NervousSystemAgent::Act() {
+void NervousSystemAgent::UpdateScreen() {
   // Need to get the screen
   ale_->getScreenGrayscale(grey_screen_);
 
@@ -90,14 +91,9 @@ Action NervousSystemAgent::Act() {
                    downsized_screen_,
                    buffer_screen1_,
                    buffer_screen2_);
-  neural_net_.SetInput(downsized_screen_);
-  // The neural network will be updates update_rate_ times before output is read
-  for (std::size_t iii = 0; iii < update_rate_; iii++) {
-    neural_net_.Step();
-    if (is_logging_) {
-      log_(neural_net_);
-    }
-  }
+}
+
+Action NervousSystemAgent::GetActionFromNervousSystem() {
 
   // Read values from last X neurons, X==LastNeuronIndex - Action#
   Action preferred_action(PLAYER_A_NOOP);
@@ -115,6 +111,23 @@ Action NervousSystemAgent::Act() {
     }
   }
   return preferred_action;
+}
+
+void NervousSystemAgent::StepNervousSystem() {
+  // The neural network will be updates update_rate_ times before output is read
+  neural_net_.SetInput(downsized_screen_);
+  for (std::size_t iii = 0; iii < update_rate_; iii++) {
+    neural_net_.Step();
+    if (is_logging_) {
+      log_(neural_net_);
+    }
+  }
+}
+
+Action NervousSystemAgent::Act() {
+  UpdateScreen();
+  StepNervousSystem();
+  return GetActionFromNervousSystem();
 }
 
 const nervous_system::StateLogger<float>& NervousSystemAgent::GetLog() const {

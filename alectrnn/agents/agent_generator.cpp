@@ -29,6 +29,7 @@
 // Add includes to agents you wish to add below:
 #include "ctrnn_agent.hpp"
 #include "nervous_system_agent.hpp"
+#include "soft_max_agent.hpp"
 
 /*
  * DeleteAgent can be shared among the agents as a destructor
@@ -98,7 +99,7 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOii", keyword_list,
       &ale_capsule, &nervous_system_capsule, &update_rate, &logging)) {
-    std::cerr << "Error parsing Agent arguments" << std::endl;
+    std::cerr << "Error parsing NervousSystem Agent arguments" << std::endl;
     return NULL;
   }
 
@@ -130,6 +131,54 @@ static PyObject *CreateNervousSystemAgent(PyObject *self, PyObject *args,
   return agent_capsule;
 }
 
+static PyObject *CreateSoftMaxAgent(PyObject *self, PyObject *args,
+                                          PyObject *kwargs) {
+  static char *keyword_list[] = {"ale", "nervous_system", "update_rate",
+                                 "logging", "seed", NULL};
+
+  PyObject* ale_capsule;
+  PyObject* nervous_system_capsule;
+  int update_rate;
+  int logging;
+  int seed;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOiii", keyword_list,
+                                   &ale_capsule, &nervous_system_capsule,
+                                   &update_rate, &logging, &seed)) {
+    std::cerr << "Error parsing SoftMax Agent arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
+  {
+    std::cerr << "Invalid pointer to ALE returned from capsule,"
+    " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
+  ale_capsule, "ale_generator.ale"));
+
+  if (!PyCapsule_IsValid(nervous_system_capsule, "nervous_system_generator.nn"))
+  {
+    std::cerr << "Invalid pointer to NervousSystem returned from capsule,"
+    " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nervous_system =
+    static_cast<nervous_system::NervousSystem<float>*>(PyCapsule_GetPointer(
+    nervous_system_capsule, "nervous_system_generator.nn"));
+
+  bool is_logging = static_cast<bool>(logging);
+  alectrnn::PlayerAgent *agent = new alectrnn::SoftMaxAgent(ale,
+                                                            *nervous_system,
+                                                            update_rate,
+                                                            is_logging, seed);
+
+  PyObject* agent_capsule = PyCapsule_New(static_cast<void*>(agent),
+                                          "agent_generator.agent", DeleteAgent);
+  return agent_capsule;
+}
+
 /*
  * Add new agents in additional lines below:
  */
@@ -140,6 +189,9 @@ static PyMethodDef AgentMethods[] = {
   { "CreateNervousSystemAgent", (PyCFunction) CreateNervousSystemAgent,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a NervousSystemAgent"},
+  { "CreateSoftMaxAgent", (PyCFunction) CreateSoftMaxAgent,
+    METH_VARARGS | METH_KEYWORDS,
+    "Returns a handle to a SoftMaxAgent"},
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

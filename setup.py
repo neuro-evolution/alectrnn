@@ -114,6 +114,7 @@ extra_link_args = ['-Wl,--verbose']
 ale_sources = [
     "alectrnn/common/ale_generator.cpp"
 ]
+
 agent_sources = [
     "alectrnn/agents/agent_generator.cpp",
     "alectrnn/agents/player_agent.cpp",
@@ -121,8 +122,10 @@ agent_sources = [
     "alectrnn/agents/nervous_system_agent.cpp",
     "alectrnn/common/network_constructor.cpp",
     "alectrnn/common/ctrnn.cpp",
-    "alectrnn/common/screen_preprocessing.cpp"
+    "alectrnn/common/screen_preprocessing.cpp",
+    "alectrnn/agents/soft_max_agent.cpp"
 ]
+
 objective_sources = [
     "alectrnn/objectives/objective.cpp",
     "alectrnn/common/capi_tools.cpp",

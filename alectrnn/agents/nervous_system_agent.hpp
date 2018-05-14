@@ -33,6 +33,9 @@ class NervousSystemAgent : public PlayerAgent {
 
   protected:
     Action Act();
+    Action GetActionFromNervousSystem();
+    void StepNervousSystem();
+    void UpdateScreen();
 
   protected:
     nervous_system::NervousSystem<float>& neural_net_;

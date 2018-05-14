@@ -474,7 +474,7 @@ class MultiArray {
       CalculateStrides(); 
     }
 
-    MultiArray(const std::initializer_list<Index> &shape) 
+    MultiArray(const std::initializer_list<Index> &shape)
         : shape_(shape) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
@@ -1297,7 +1297,7 @@ class Tensor {
       CalculateStrides();
     }
 
-    Tensor(const std::vector<Index> &shape) : shape_(shape), 
+    Tensor(const std::vector<Index> &shape) : shape_(shape),
         ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];
@@ -1305,7 +1305,7 @@ class Tensor {
       CalculateStrides();
     }
 
-    Tensor(const std::initializer_list<Index> &shape) 
+    Tensor(const std::initializer_list<Index> &shape)
         : shape_(shape), ndims_(shape.size()) {
       size_ = std::accumulate(shape_.begin(), shape_.end(), 1, std::multiplies<>());
       data_ = new T[size_];

@@ -11,8 +11,9 @@ class ALEExperiment:
     """
 
     def __init__(self, ale_parameters, nervous_system_class,
-                 nervous_system_class_parameters, agent_class_parameters,
-                 objective_parameters, script_prefix="test"):
+                 nervous_system_class_parameters, agent_class,
+                 agent_class_parameters, objective_parameters,
+                 script_prefix="test"):
         """
         Initializes the experiment.
 
@@ -21,8 +22,11 @@ class ALEExperiment:
             network class you wish to use
         :param nervous_system_class_parameters: parameters for that class
             instance
+        :param agent_class: chosen agent class
+            currently either: SoftMaxAgentHandler or NervousSystemAgentHandler
+            Any class is fine so long as it inherits the LoggingAndHistoryMixin
         :param agent_class_parameters: dictionary of parameters for
-            NervousSystemAgentHandler class.
+            agent class.
         :param objective_parameters: parameters for the objective handler
             If obj_type == 'totalcost': No parameters needed
             if obj_type == 's&cc': the following keys are required:
@@ -59,9 +63,10 @@ class ALEExperiment:
         self._nervous_system = nervous_system_class(**self.nervous_system_class_parameters)
 
         # Construct handle (Agent)
+        self.agent_class = agent_class
         self.agent_class_parameters['nervous_system'] = self._nervous_system.neural_network
-        self._agent_handle = handlers.NervousSystemAgentHandler(self._ale_handle.handle,
-                                                                **self.agent_class_parameters)
+        self._agent_handle = self.agent_class(self._ale_handle.handle,
+                                              **self.agent_class_parameters)
         self._agent_handle.create()
 
         # Construct handle (objective)
@@ -73,6 +78,22 @@ class ALEExperiment:
         self.script_prefix = script_prefix + "_" \
                              + self._ale_handle.rom + "_npar" \
                              + str(self.get_parameter_count())
+
+        self.check_configuration_conflicts()
+
+    def check_configuration_conflicts(self):
+        """
+        Some configurations maynot be compatible with others, so this function
+        houses a check for such misc issues
+        :return: 1, else raise error
+        """
+
+        # Check to make sure softmax agents get softmax motor layer
+        if (self.agent_class == handlers.SoftMaxAgentHandler) and (
+            self.nervous_system_class_parameters['nn_parameters'][-1]['motor_type'].lower()
+            != 'softmax'):
+
+            raise AssertionError("SoftMaxAgents must have a softmax motor layer.")
 
     def set_objective_function(self, objective_parameters):
         """
