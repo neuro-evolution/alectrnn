@@ -234,6 +234,14 @@ class NervousSystem:
         'internal_graph' = E2x2, dtype=np.uint64 edge array
         'weight_threshold' = float dtype=np.float32 (>=0.0)
 
+    Trained-input Reservoir layers have trained recurrent connections to the
+    previous layer, but the reservoir is untrained.
+        'layer_type' = "trained_input_reservoir"
+        'input_graph' = E1x2, dtype=np.uint64 bipartite edge graph
+        'num_internal_nodes' = M
+        'internal_graph' = E2x2, dtype=np.uint64 edge array
+        'internal_weights' = M element, dtype=np.float32 array
+
     conv_recurrent layers have a convolutional input into the layer, but also
     have internal connections determined in the same way as the recurrent layer.
     Should have a dictionary with the following keys:
@@ -431,6 +439,16 @@ class NervousSystem:
                 layers.append(self._create_a2a_ff_layer(
                     layer_shapes[i],
                     layer_pars['num_internal_nodes'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1]))
+
+            elif layer_pars['layer_type'] == 'trained_input_reservoir':
+                layers.append(self._create_trained_input_reservoir_layer(
+                    layer_pars['input_graph'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_pars['internal_weights'],
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1]))
@@ -741,6 +759,36 @@ class NervousSystem:
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
                                            back_args, self_type, self_args, act_type, act_args,
+                                           layer_shape)
+
+    def _create_trained_input_reservoir_layer(self, bipartite_input_edge_array,
+                                              num_internal_nodes,
+                                              internal_edge_array,
+                                              internal_weight_array, act_type,
+                                              act_args, layer_shape):
+        """
+        Layer with internal connection and weights specified by
+        the input graphs. Input weights are trained.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param bipartite_input_edge_array: Nx2 dtype=np.uint64 graph
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections Nx2 np.uint64
+        :param internal_weight_array: weights for graph N dtype=np.float32
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.RECURRENT.value
+        back_args = (bipartite_input_edge_array,)
+        self_type = INTEGRATOR_TYPE.RESERVOIR.value
+        self_args = (internal_edge_array,
+                     internal_weight_array)
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateLayer(back_type,
+                                           back_args, self_type, self_args,
+                                           act_type, act_args,
                                            layer_shape)
 
     def _create_conv_layer(self, prev_layer_shape, interpreted_shape,
