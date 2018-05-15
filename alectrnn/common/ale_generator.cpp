@@ -26,7 +26,8 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
                                  "frame_skip", "max_num_frames", "max_num_episodes",
                                  "max_num_frames_per_episode", "print_screen",
                                  "system_reset_steps",
-                                 "use_environment_distribution", NULL};
+                                 "use_environment_distribution",
+                                 "num_random_environments", NULL};
   /*
    * Generates and configures the ALE and returns a Python capsule wrapped
    * around the pointer. This capsule is not usable directly by python,
@@ -54,13 +55,15 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   int print_screen(0); // bool
   int num_reset_steps(4);
   int stochastic_environment(1);
+  int num_random_environments(30);
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiiiiii", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiiiiiii", keyword_list,
                                    &rom, &seed, &repeat_action_probability,
                                    &display_screen, &sound, &color_avg,
                                    &frame_skip, &max_num_frames, &max_num_episodes,
                                    &max_num_frames_per_episode, &print_screen,
-                                   &num_reset_steps, &stochastic_environment)){
+                                   &num_reset_steps, &stochastic_environment,
+                                   &num_random_environments)){
     std::cerr << "Error parsing ALE arguments" << std::endl;
     return NULL;
   }
@@ -78,6 +81,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   ale->setInt("max_num_frames_per_episode", max_num_frames_per_episode);
   ale->setInt("system_reset_steps", num_reset_steps);
   ale->setBool("use_environment_distribution", static_cast<bool>(stochastic_environment));
+  ale->setInt("num_random_environments", num_random_environments);
   ale->loadROM(rom);
 
   PyObject* ale_capsule = PyCapsule_New(static_cast<void*>(ale),

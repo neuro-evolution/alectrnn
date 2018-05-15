@@ -270,13 +270,14 @@ class ALEHandler(Handler):
                  display_screen=False,
                  sound=False,
                  system_reset_steps=4,
-                 use_environment_distribution=True):
+                 use_environment_distribution=True,
+                 num_random_environments=30):
         """
         ALE parameters:
           rom - rom name (specify from list)
           seed - integer type
           display_screen - boolean type (default=False)
-          frame_skip - number of frames to skip between NN evalutions (default 1)
+          frame_skip - number of frames to skip between NN evaluations (default 1)
           sound - boolean type (default=False)
           color_avg - boolean type (whether to average consecutive screens)
           max_num_frames - integer type
@@ -285,6 +286,7 @@ class ALEHandler(Handler):
           print_screen - boolean type (default=False)
           system_reset_steps - int (default=4)
           use_environment_distribution - boolean (default True)
+          num_random_environments - int (default 30)
 
         """
 
@@ -305,7 +307,8 @@ class ALEHandler(Handler):
                                  'display_screen': display_screen,
                                  'sound': sound,
                                  'system_reset_steps': system_reset_steps,
-                                 'use_environment_distribution': use_environment_distribution})
+                                 'use_environment_distribution': use_environment_distribution,
+                                 'num_random_environments': num_random_environments})
 
     def set_parameters(self, **kwargs):
         """

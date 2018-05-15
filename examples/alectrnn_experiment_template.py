@@ -35,7 +35,11 @@ ale_parameters = {'rom': "atlantis",
                   'color_avg': True,
                   'max_num_frames': 20000,
                   'max_num_episodes': 1,
-                  'max_num_frames_per_episode': 20000}
+                  'max_num_frames_per_episode': 20000,
+                  'frame_skip': 4,
+                  'use_environment_distribution': True,
+                  'system_reset_steps': 4,
+                  'num_random_environments': 70}
 
 nervous_system_parameters = {'input_shape': [1, 88, 88],
                              'nn_parameters': [{
@@ -107,7 +111,6 @@ es = BoundedRandNumTableES(xo=initial_guess,
                            seed=7,
                            verbose=True,
                            rand_num_table_size=20000000)
-del initial_guess
 
 # Run evolution
 es(5)
