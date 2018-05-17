@@ -55,6 +55,31 @@ std::vector<T> uInt64PyArrayToVector(PyArrayObject *py_array) {
   return vec;
 }
 
+template<typename T>
+std::vector<T> float32PyArrayToVector(PyArrayObject *py_array) {
+  // type check before reinterpret
+  int array_type = PyArray_TYPE(py_array);
+  if (array_type != NPY_FLOAT32) {
+    std::cerr << " Numpy array type: " << array_type << std::endl;
+    std::cerr << " Required type: " << NPY_FLOAT32 << std::endl;
+    throw std::invalid_argument("Numpy array of wrong type. Requires npy_float32");
+  }
+
+  std::size_t num_elements = 1;
+  if (!(py_array->nd >= 0)) {
+    throw std::invalid_argument("Numpy array shouldn't have negative dimensions");
+  }
+  for (std::size_t iii = 0; iii < py_array->nd; ++iii) {
+    num_elements *= py_array->dimensions[iii];
+  }
+  std::vector<T> vec(num_elements);
+  float* data_array = reinterpret_cast<float*>(py_array->data);
+  for (std::size_t iii = 0; iii < num_elements; ++iii) {
+    vec[iii] = static_cast<T>(data_array[iii]);
+  }
+  return vec;
+}
+
 template<typename T, std::size_t NumDims>
 multi_array::SharedMultiArray<T, NumDims> PyArrayToSharedMultiArray(PyArrayObject *py_array) {
   /* The python data has to be reinterpret casted to the corresponding c-type

@@ -226,6 +226,48 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
     }
 
+    case nervous_system::RESERVOIR_CTRNN_ACTIVATOR: {
+      int num_states;
+      float step_size;
+      PyArrayObject* biases;
+      PyArrayObject* rtaus;
+
+      if (!PyArg_ParseTuple(args, "ifOO", &num_states, &step_size, &biases, &rtaus)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("RESERVOIR_CTRNN_ACTIVATOR couldn't parse tuple");
+      }
+
+      new_activator = new nervous_system::CTRNNActivator<float>(
+          num_states, step_size, alectrnn::float32PyArrayToVector<float>(biases),
+          alectrnn::float32PyArrayToVector<float>(rtaus));
+      break;
+    }
+
+    case nervous_system::RESERVOIR_IAF_ACTIVATOR: {
+      int num_states;
+      float step_size;
+      float peak;
+      float reset;
+      PyArrayObject* range;
+      PyArrayObject* rtaus;
+      PyArrayObject* refractory;
+      PyArrayObject* resistance;
+      if (!PyArg_ParseTuple(args, "ifffOOOO", &num_states, &step_size,
+                            &peak, &reset, &range, &rtaus, &refractory,
+                            &resistance)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("RESERVOIR_IAF_ACTIVATOR couldn't parse tuple");
+      }
+
+      new_activator = new nervous_system::IafActivator<float>(
+          num_states, step_size, peak, reset,
+          alectrnn::float32PyArrayToVector<float>(range),
+          alectrnn::float32PyArrayToVector<float>(rtaus),
+          alectrnn::float32PyArrayToVector<float>(refractory),
+          alectrnn::float32PyArrayToVector<float>(resistance));
+      break;
+    }
+
     default: {
       std::cerr << "Activator case not supported... exiting." << std::endl;
       throw std::invalid_argument("Not an activator");

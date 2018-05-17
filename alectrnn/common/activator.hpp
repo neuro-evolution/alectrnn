@@ -32,7 +32,9 @@ enum ACTIVATOR_TYPE {
   CONV_CTRNN_ACTIVATOR,
   IAF_ACTIVATOR,
   CONV_IAF_ACTIVATOR,
-  SOFT_MAX_ACTIVATOR
+  SOFT_MAX_ACTIVATOR,
+  RESERVOIR_CTRNN_ACTIVATOR,
+  RESERVOIR_IAF_ACTIVATOR
 };
 
 template<typename TReal>
@@ -96,8 +98,6 @@ class IdentityActivator : public Activator<TReal> {
       super_type::activator_type_ = IDENTITY_ACTIVATOR;
     }
 
-    ~IdentityActivator()=default;
-
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
       for (Index iii = 0; iii < state.size(); iii++) {
@@ -146,14 +146,29 @@ class CTRNNActivator : public Activator<TReal> {
     typedef Activator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    CTRNNActivator(std::size_t num_states, TReal step_size) :
-        num_states_(num_states), step_size_(step_size) {
+    CTRNNActivator(Index num_states, TReal step_size) :
+        num_states_(num_states), step_size_(step_size),
+        parameters_are_set_(false) {
       // bias[N] and rtau[N]
       super_type::parameter_count_ = num_states * 2;
       super_type::activator_type_ = CTRNN_ACTIVATOR;
     }
 
-    virtual ~CTRNNActivator()=default;
+    CTRNNActivator(Index num_states, TReal step_size,
+                   std::vector<TReal> preset_biases,
+                   std::vector<TReal> preset_rtaus)
+                  : num_states_(num_states), step_size_(std::move(step_size)),
+                    parameters_are_set_(true), preset_biases_(std::move(preset_biases)),
+                    preset_rtaus_(preset_rtaus) {
+      super_type::parameter_count_ = 0;
+      super_type::activator_type_ = RESERVOIR_CTRNN_ACTIVATOR;
+
+      // Do initial parameter configuration
+      biases_ = multi_array::ConstArraySlice<TReal>(preset_biases_.data(), 0,
+                                                    preset_biases_.size());
+      rtaus_ = multi_array::ConstArraySlice<TReal>(preset_rtaus_.data(), 0,
+                                                   preset_rtaus_.size());
+    }
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
@@ -173,25 +188,32 @@ class CTRNNActivator : public Activator<TReal> {
     }
 
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      if (parameters.size() != super_type::parameter_count_) {
-        std::cerr << "parameter size: " << parameters.size() << std::endl;
-        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
-        throw std::invalid_argument("Number of parameters must equal parameter"
-                                    " count");
+      if (!parameters_are_set_) {
+        if (parameters.size() != super_type::parameter_count_) {
+          std::cerr << "parameter size: " << parameters.size() << std::endl;
+          std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+          throw std::invalid_argument("Number of parameters must equal parameter"
+                                      " count");
+        }
+        biases_ = parameters.slice(0, num_states_);
+        rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
       }
-      biases_ = parameters.slice(0, num_states_);
-      rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
-      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-      for (Index iii = 0; iii < num_states_; ++iii) {
-        layout[iii] = BIAS;
+
+      if (parameters_are_set_) {
+        return std::vector<PARAMETER_TYPE>(0);
+      } else {
+        std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < super_type::parameter_count_; ++iii) {
+          layout[iii] = RTAUS;
+        }
+        return layout;
       }
-      for (Index iii = num_states_; iii < super_type::parameter_count_; ++iii) {
-        layout[iii] = RTAUS;
-      }
-      return layout;
     }
 
     virtual void Reset() {};
@@ -201,6 +223,9 @@ class CTRNNActivator : public Activator<TReal> {
     multi_array::ConstArraySlice<TReal> rtaus_;
     std::size_t num_states_;
     TReal step_size_;
+    std::vector<TReal> preset_biases_;
+    std::vector<TReal> preset_rtaus_;
+    bool parameters_are_set_;
 };
 
 /*
@@ -220,8 +245,6 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       super_type::parameter_count_ = shape_[0] * 2;
       super_type::activator_type_ = CONV_CTRNN_ACTIVATOR;
     }
-
-    virtual ~Conv3DCTRNNActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
 
@@ -295,8 +318,10 @@ class IafActivator : public Activator<TReal> {
     typedef Activator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    IafActivator(std::size_t num_states, TReal step_size, TReal peak, TReal reset) :
-        num_states_(num_states), step_size_(step_size), peak_(peak), reset_(reset) {
+    IafActivator(std::size_t num_states, TReal step_size, TReal peak, TReal reset)
+                : num_states_(num_states), step_size_(step_size), peak_(peak),
+                  reset_(reset), parameters_are_set_(false) {
+
       if (peak_ <= reset_) {
         throw std::invalid_argument("Peak needs to be greater than reset voltage");
       }
@@ -311,7 +336,46 @@ class IafActivator : public Activator<TReal> {
       Reset();
     }
 
-    virtual ~IafActivator()=default;
+    IafActivator(std::size_t num_states, TReal step_size, TReal peak, TReal reset,
+                 std::vector<TReal> preset_range, std::vector<TReal> preset_rtaus,
+                 std::vector<TReal> preset_refractory,
+                 std::vector<TReal> preset_resistance)
+                : num_states_(num_states), step_size_(step_size), peak_(peak),
+                  reset_(reset), parameters_are_set_(true),
+                  preset_range_(std::move(preset_range)),
+                  preset_rtaus_(std::move(preset_rtaus)),
+                  preset_refractory_(std::move(preset_refractory)),
+                  preset_resistance_(std::move(preset_resistance)) {
+
+      if (peak_ <= reset_) {
+        throw std::invalid_argument("Peak needs to be greater than reset voltage");
+      }
+      // refract, range, rtaus_, and resistance
+      super_type::parameter_count_ = 0;
+      super_type::activator_type_ = RESERVOIR_IAF_ACTIVATOR;
+
+      last_spike_time_.resize(num_states_);
+      subthreshold_state_ = multi_array::Tensor<TReal>({num_states_});
+      alpha_.resize(num_states_);
+      vthresh_.resize(num_states_);
+      Reset();
+
+      // Configure parameters
+      range_  = multi_array::ConstArraySlice<TReal>(preset_range_.data(), 0,
+                                                    preset_range_.size());
+      rtaus_ = multi_array::ConstArraySlice<TReal>(preset_rtaus_.data(), 0,
+                                                   preset_rtaus_.size());
+      refractory_period_ = multi_array::ConstArraySlice<TReal>(preset_refractory_.data(),
+                                                               0, preset_refractory_.size());
+      resistance_ = multi_array::ConstArraySlice<TReal>(preset_resistance_.data(),
+                                                        0, preset_resistance_.size());
+
+      // Need to update the precomputed parameters
+      for (Index iii = 0; iii < num_states_; ++iii) {
+        alpha_[iii] = -step_size_ * rtaus_[iii];
+        vthresh_[iii] = reset_ + range_[iii];
+      }
+    }
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
@@ -354,41 +418,47 @@ class IafActivator : public Activator<TReal> {
     }
 
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      if (parameters.size() != super_type::parameter_count_) {
-        std::cerr << "parameter size: " << parameters.size() << std::endl;
-        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
-        throw std::invalid_argument("Number of parameters must equal parameter"
-                                    " count");
-      }
+      if (!parameters_are_set_) {
+        if (parameters.size() != super_type::parameter_count_) {
+          std::cerr << "parameter size: " << parameters.size() << std::endl;
+          std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+          throw std::invalid_argument("Number of parameters must equal parameter"
+                                      " count");
+        }
 
-      range_ = parameters.slice(0, num_states_);
-      rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
-      refractory_period_ = parameters.slice(2 * parameters.stride() * num_states_, num_states_);
-      resistance_ = parameters.slice(3 * parameters.stride() * num_states_, num_states_);
+        range_ = parameters.slice(0, num_states_);
+        rtaus_ = parameters.slice(parameters.stride() * num_states_, num_states_);
+        refractory_period_ = parameters.slice(2 * parameters.stride() * num_states_, num_states_);
+        resistance_ = parameters.slice(3 * parameters.stride() * num_states_, num_states_);
 
-      Reset();
-      // Need to update the precomputed parameters
-      for (Index iii = 0; iii < num_states_; ++iii) {
-        alpha_[iii] = -step_size_ * rtaus_[iii];
-        vthresh_[iii] = reset_ + range_[iii];
+        Reset();
+        // Need to update the precomputed parameters
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          alpha_[iii] = -step_size_ * rtaus_[iii];
+          vthresh_[iii] = reset_ + range_[iii];
+        }
       }
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
-      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-      for (Index iii = 0; iii < num_states_; ++iii) {
-        layout[iii] = RANGE;
+      if (parameters_are_set_) {
+        return std::vector<PARAMETER_TYPE>(0);
+      } else {
+        std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = RANGE;
+        }
+        for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
+          layout[iii] = RTAUS;
+        }
+        for (Index iii = 2*num_states_; iii < 3*num_states_; ++iii) {
+          layout[iii] = REFRACTORY;
+        }
+        for (Index iii = 3*num_states_; iii < 4*num_states_; ++iii) {
+          layout[iii] = RESISTANCE;
+        }
+        return layout;
       }
-      for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
-        layout[iii] = RTAUS;
-      }
-      for (Index iii = 2*num_states_; iii < 3*num_states_; ++iii) {
-        layout[iii] = REFRACTORY;
-      }
-      for (Index iii = 3*num_states_; iii < 4*num_states_; ++iii) {
-        layout[iii] = RESISTANCE;
-      }
-      return layout;
     }
 
     virtual void Reset() {
@@ -419,6 +489,11 @@ class IafActivator : public Activator<TReal> {
     // vthresh == the pre-computed reset threshold (reset_ + range_)
     std::vector<TReal> vthresh_;
     multi_array::Tensor<TReal> subthreshold_state_;
+    bool parameters_are_set_;
+    std::vector<TReal> preset_range_;
+    std::vector<TReal> preset_rtaus_;
+    std::vector<TReal> preset_refractory_;
+    std::vector<TReal> preset_resistance_;
 };
 
 /* The convolutional version of the IafActivator */
@@ -445,8 +520,6 @@ class Conv3DIafActivator : public Activator<TReal> {
       vthresh_.resize(shape_[0]);
       Reset();
     }
-
-    ~Conv3DIafActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {

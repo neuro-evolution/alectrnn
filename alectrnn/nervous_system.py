@@ -149,6 +149,9 @@ class ACTIVATOR_TYPE(Enum):
     CONV_CTRNN=3
     IAF=4
     CONV_IAF=5
+    SOFT_MAX_ACTIVATOR = 6
+    RESERVOIR_CTRNN_ACTIVATOR = 7
+    RESERVOIR_IAF_ACTIVATOR = 8
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -168,6 +171,9 @@ class INTEGRATOR_TYPE(Enum):
 
 ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.CONV_IAF,
            ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.CONV_CTRNN}
+
+RESERVOIR_ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.RESERVOIR_IAF_ACTIVATOR,
+                    ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.RESERVOIR_CTRNN_ACTIVATOR}
 
 
 class NervousSystem:
@@ -215,6 +221,7 @@ class NervousSystem:
         'num_internal_nodes' = M
         'internal_graph' = E2x2, dtype=np.uint64 edge array
         'internal_weights' = M element, dtype=np.float32 array
+        'neuron_parameters' = a tuple of parameters for the neurons
 
     Recurrent layers define the connections, but not the weights of the internal
     and back connections. All connections are trained.
@@ -241,6 +248,7 @@ class NervousSystem:
         'num_internal_nodes' = M
         'internal_graph' = E2x2, dtype=np.uint64 edge array
         'internal_weights' = M element, dtype=np.float32 array
+        'neuron_parameters' = a tuple of parameters for the neurons
 
     conv_recurrent layers have a convolutional input into the layer, but also
     have internal connections determined in the same way as the recurrent layer.
@@ -262,6 +270,7 @@ class NervousSystem:
         'num_internal_nodes'
         'internal_graph'
         'internal_weights'
+        'neuron_parameters'
 
     a2a_recurrent layers have full input from the previous layer, but internal
     connections are determined in the same way as the recurrent layer.
@@ -487,9 +496,15 @@ class NervousSystem:
         layer_act_types = []
         layer_act_args = []
         for i, layer_pars in enumerate(nn_parameters):
+            # Only applies to conv layer
+            # conv_recurrent and conv_reservoir don't use activator parameter sharing
             if layer_pars['layer_type'] == 'conv':
                 layer_act_types.append(ACTMAP[act_type].value)
                 layer_act_args.append((interpreted_shapes[i+1], *act_args))
+            elif 'reservoir' in layer_pars['layer_type']:
+                layer_act_types.append(RESERVOIR_ACTMAP[act_type].value)
+                layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args,
+                                       *layer_pars['neuron_parameters']))
             else:
                 layer_act_types.append(act_type.value)
                 layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args))
