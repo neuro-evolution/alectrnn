@@ -691,18 +691,6 @@ class ReservoirIntegrator : public Integrator<TReal> {
     graphs::PredecessorGraph<TReal> network_;
 };
 
-// A hybrid reservoir, where only some of the weights are trained
-// template<typename TReal>
-// class ReservoirHybridIntegrator : public Integrator<TReal> {
-//   typedef Integrator<TReal> super_type;
-//   typedef std::size_t Index;
-//   public:
-
-//   protected:
-//     graphs::PredecessorGraph<TReal> network_;
-//     multi_array::ConstArraySlice<TReal> weights_;
-// };
-
 } // End nervous_system namespace
 
 #endif /* NN_INTEGRATOR_H_ */

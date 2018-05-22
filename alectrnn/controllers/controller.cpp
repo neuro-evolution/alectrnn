@@ -19,7 +19,7 @@ Controller::Controller(ALEInterface* ale, PlayerAgent* agent) : ale_(ale),
     cumulative_score_(0), frame_number_(0) {
   max_num_frames_ = ale_->getInt("max_num_frames");
   max_num_episodes_ = ale_->getInt("max_num_episodes");
-  ale_->environment->reset();
+  ale_->training_reset();
 }
 
 Controller::~Controller() {
@@ -28,7 +28,7 @@ Controller::~Controller() {
 void Controller::Run() {
   Action agent_action;
   bool first_step = true;
-  ale_->environment->reset();
+  ale_->training_reset();
   agent_->Reset();
 
   while (!IsDone()) {
@@ -81,7 +81,7 @@ void Controller::EpisodeStep(Action& action) {
 
 void Controller::EpisodeEnd() {
   agent_->EpisodeEnd();
-  ale_->environment->reset();
+  ale_->training_reset();
 }
 
 void Controller::ApplyActions(Action& action) {
@@ -97,7 +97,7 @@ void Controller::ApplyActions(Action& action) {
       ale_->environment->save();
       break;
     case SYSTEM_RESET:
-      ale_->environment->reset(); // i don't think episode gets incremented....
+      ale_->training_reset(); // i don't think episode gets incremented....
       break;
     default:
       // Pass action to emulator!
