@@ -327,7 +327,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         throw std::invalid_argument("prev layer has wrong number of elements (needs 3)");
       }
 
-      new_integrator = new nervous_system::Conv3DIntegrator<float>(
+      new_integrator = new nervous_system::Conv2DIntegrator<float>(
         multi_array::Array<std::size_t,3>(
         alectrnn::uInt64PyArrayToCArray(filter_shape)),
         multi_array::Array<std::size_t,3>(

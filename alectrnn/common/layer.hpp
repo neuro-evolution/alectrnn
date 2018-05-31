@@ -351,7 +351,7 @@ Factor GetNumOfLinks(const Integrator<TReal>* integrator) {
     }
 
     case CONV_INTEGRATOR: {
-      const Conv3DIntegrator<TReal> *conv_integrator = dynamic_cast<const Conv3DIntegrator<TReal> *>(integrator);
+      const Conv2DIntegrator<TReal> *conv_integrator = dynamic_cast<const Conv2DIntegrator<TReal> *>(integrator);
       const multi_array::Array<std::size_t, 3> filter = conv_integrator->GetFilterShape();
       num_links = filter[0] * filter[1] * filter[2] * conv_integrator->GetMinTarSize();
       break;

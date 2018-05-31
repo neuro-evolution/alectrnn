@@ -181,12 +181,12 @@ class All2AllIntegrator : public Integrator<TReal> {
  * (each 1x1 needs D parameters, with a total of F 1x1 filters)
  */
 template<typename TReal>
-class Conv3DIntegrator : public Integrator<TReal> {
+class Conv2DIntegrator : public Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    Conv3DIntegrator(const multi_array::Array<Index,3>& filter_shape,
+    Conv2DIntegrator(const multi_array::Array<Index,3>& filter_shape,
         const multi_array::Array<Index,3>& layer_shape, 
         const multi_array::Array<Index,3>& prev_layer_shape, Index stride)
         : num_filters_(layer_shape[0]), layer_shape_(layer_shape), 
@@ -217,7 +217,7 @@ class Conv3DIntegrator : public Integrator<TReal> {
       secondpass_buffer_ = multi_array::Tensor<TReal>(
                             {layer_shape[1], layer_shape[2]});
     }
-    virtual ~Conv3DIntegrator()=default;
+    virtual ~Conv2DIntegrator()=default;
 
     virtual void operator()(const multi_array::Tensor<TReal>& src_state,
                             multi_array::Tensor<TReal>& tar_state) {

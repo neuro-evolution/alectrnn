@@ -395,7 +395,7 @@ class IafActivator : public Activator<TReal> {
 
         // if a spike can occur unclamp state and check for action potential
         if (last_spike_time_[iii] > refractory_period_[iii]) {
-          // evaluates the equation: -rtaus * dT * (u - u_reset) + R * I)
+          // evaluates the equation: -rtaus * dT * ((u - u_reset) + R * I))
           subthreshold_state_[iii] += alpha_[iii] * (subthreshold_state_[iii] - reset_)
                                       + resistance_[iii] * input_buffer[iii];
           subthreshold_state_[iii] = utilities::BoundState<TReal>(subthreshold_state_[iii]);
@@ -440,6 +440,7 @@ class IafActivator : public Activator<TReal> {
       }
     }
 
+    /* Parameters are assigned in the order RANGE, RTAUS, REFRACTORY, RESISTANCE */
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       if (parameters_are_set_) {
         return std::vector<PARAMETER_TYPE>(0);
@@ -461,6 +462,7 @@ class IafActivator : public Activator<TReal> {
       }
     }
 
+    /* The spike times and neuron state are reset */
     virtual void Reset() {
       for (Index iii = 0; iii < num_states_; ++iii) {
         last_spike_time_[iii] = std::numeric_limits<TReal>::max();
