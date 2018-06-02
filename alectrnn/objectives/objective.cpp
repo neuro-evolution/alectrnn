@@ -149,10 +149,9 @@ float CalculateTotalCost(const float* parameters, ALEInterface *ale,
     PlayerAgent* agent) {
 
   agent->Configure(parameters);
-  std::unique_ptr<Controller> game_controller =
-      std::make_unique<Controller>(ale, agent);
-  game_controller->Run();
-  float total_cost(-(float)game_controller->getCumulativeScore());
+  Controller game_controller = Controller(ale, agent);
+  game_controller.Run();
+  float total_cost(-(float)game_controller.getCumulativeScore());
 
   return total_cost;
 }
