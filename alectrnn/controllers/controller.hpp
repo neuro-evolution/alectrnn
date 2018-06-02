@@ -33,15 +33,15 @@ class Controller {
     int GetFrameNumber() const;
 
   protected:
-    int max_num_frames_;
-    int max_num_episodes_;
+    const int max_num_frames_;
+    const int max_num_episodes_;
     int episode_score_;
     int cumulative_score_;
     int episode_number_;
     int frame_number_;
     PlayerAgent* agent_;
     ALEInterface* ale_;
-    int frame_skip_;
+    const int frame_skip_;
 };
 
 }
