@@ -22,17 +22,17 @@ class Controller {
     ~Controller();
     void Run();
     int getCumulativeScore() const;
-
+    int GetEpisodeNumber() const;
+    int GetFrameNumber() const;
+    int GetEpisodeFrameNumber() const;
+    int GetRomFrameNumber() const;
+    
   protected:
     void EpisodeStart(Action& action);
     void EpisodeStep(Action& action);
     void EpisodeEnd();
     void ApplyActions(Action& action);
     bool IsDone() const;
-    int GetEpisodeNumber() const;
-    int GetFrameNumber() const;
-    int GetEpisodeFrameNumber() const;
-    int GetRomFrameNumber() const;
 
   protected:
     const int max_num_frames_;
