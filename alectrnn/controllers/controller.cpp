@@ -126,4 +126,8 @@ int Controller::GetEpisodeFrameNumber() const {
   return ale->getEpisodeFrameNumber();
 }
 
+int Controller::GetRomFrameNumber() const {
+  return ale->getFrameNumber();
+}
+
 }

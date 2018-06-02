@@ -32,6 +32,7 @@ class Controller {
     int GetEpisodeNumber() const;
     int GetFrameNumber() const;
     int GetEpisodeFrameNumber() const;
+    int GetRomFrameNumber() const;
 
   protected:
     const int max_num_frames_;
