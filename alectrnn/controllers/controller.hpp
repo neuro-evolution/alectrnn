@@ -31,6 +31,7 @@ class Controller {
     bool IsDone() const;
     int GetEpisodeNumber() const;
     int GetFrameNumber() const;
+    int GetEpisodeFrameNumber() const;
 
   protected:
     const int max_num_frames_;

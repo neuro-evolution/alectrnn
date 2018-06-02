@@ -122,4 +122,8 @@ int Controller::GetFrameNumber() const {
   return frame_number_;
 }
 
+int Controller::GetEpisodeFrameNumber() const {
+  return ale->getEpisodeFrameNumber();
+}
+
 }
