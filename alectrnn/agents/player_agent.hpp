@@ -62,6 +62,7 @@ class PlayerAgent {
 
   protected:
     ALEInterface* ale_;
+    int frame_skip_;
     int max_num_frames_;
     int max_num_episodes_;
     int max_num_frames_per_episode_;

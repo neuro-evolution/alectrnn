@@ -68,6 +68,11 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
     return NULL;
   }
 
+  if (frame_skip < 1) {
+    frame_skip = 1;
+    std::cout << "Warning, frame_skip can't be less than 1, setting to 1" << std::endl;
+  }
+
   ALEInterface* ale = new ALEInterface();
   ale->setInt("random_seed", seed);
   ale->setFloat("repeat_action_probability", repeat_action_probability);

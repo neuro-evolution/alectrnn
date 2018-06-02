@@ -18,7 +18,8 @@
 
 namespace alectrnn {
 
-PlayerAgent::PlayerAgent(ALEInterface* ale) : ale_(ale),
+PlayerAgent::PlayerAgent(ALEInterface* ale)
+    : ale_(ale), frame_skip_(ale_->getInt("frame_skip")),
     frame_number_(0), episode_frame_number_(0), episode_number_(0),
     has_terminated_(false) {
   available_actions_ = ale->getMinimalActionSet();
@@ -41,8 +42,8 @@ Action PlayerAgent::AgentStep() {
   }
 
   Action agent_action(Act());
-  frame_number_++;
-  episode_frame_number_++;
+  frame_number_ += frame_skip_;
+  episode_frame_number_ += frame_skip_;
 
   return agent_action;
 }
@@ -50,8 +51,8 @@ Action PlayerAgent::AgentStep() {
 Action PlayerAgent::EpisodeStart() {
   episode_frame_number_ = 0;
   Action agent_action(Act());
-  frame_number_++;
-  episode_frame_number_++;
+  frame_number_ += frame_skip_;
+  episode_frame_number_ += frame_skip_;
   return agent_action;
 }
 

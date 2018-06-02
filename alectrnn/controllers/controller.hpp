@@ -29,6 +29,8 @@ class Controller {
     void EpisodeEnd();
     void ApplyActions(Action& action);
     bool IsDone() const;
+    int GetEpisodeNumber() const;
+    int GetFrameNumber() const;
 
   protected:
     int max_num_frames_;
@@ -39,6 +41,7 @@ class Controller {
     int frame_number_;
     PlayerAgent* agent_;
     ALEInterface* ale_;
+    int frame_skip_;
 };
 
 }
