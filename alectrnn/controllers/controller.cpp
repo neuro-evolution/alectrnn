@@ -19,7 +19,8 @@ Controller::Controller(ALEInterface* ale, PlayerAgent* agent)
         cumulative_score_(0), frame_number_(0),
         frame_skip_(ale_->getInt("frame_skip")),
         max_num_frames_(ale_->getInt("max_num_frames")),
-        max_num_episodes_(ale_->getInt("max_num_episodes")) {
+        max_num_episodes_(ale_->getInt("max_num_episodes")),
+        stop_episode_(false) {
   ale_->training_reset();
 }
 
@@ -34,9 +35,10 @@ void Controller::Run() {
 
   while (!IsDone()) {
     // Start a new episode: Check for terminal state
-    if (ale_->environment->isTerminal()) {
+    if (ale_->environment->isTerminal() || stop_episode_) {
       EpisodeEnd();
       first_step = true;
+      stop_episode_ = false;
     }
     else {
       if (first_step) {
@@ -51,9 +53,6 @@ void Controller::Run() {
 
       // Apply said actions
       ApplyActions(agent_action);
-      frame_number_ += frame_skip_;
-      episode_score_ += ale_->romSettings->getReward();
-      cumulative_score_ += ale_->romSettings->getReward();
     }
 
     if (ale_->getBool("print_screen")) {
@@ -98,11 +97,17 @@ void Controller::ApplyActions(Action& action) {
       ale_->environment->save();
       break;
     case SYSTEM_RESET:
-      ale_->training_reset(); // i don't think episode gets incremented....
+      stop_episode_= true;
+      break;
+    case RESET:
+      stop_episode_= true; // hault episodes that exceed max length
       break;
     default:
       // Pass action to emulator!
       ale_->environment->minimalAct(action, PLAYER_B_NOOP);
+      frame_number_ += frame_skip_;
+      episode_score_ += ale_->romSettings->getReward();
+      cumulative_score_ += ale_->romSettings->getReward();
       break;
   }
 }
@@ -123,11 +128,11 @@ int Controller::GetFrameNumber() const {
 }
 
 int Controller::GetEpisodeFrameNumber() const {
-  return ale->getEpisodeFrameNumber();
+  return ale_->getEpisodeFrameNumber();
 }
 
 int Controller::GetRomFrameNumber() const {
-  return ale->getFrameNumber();
+  return ale_->getFrameNumber();
 }
 
 }

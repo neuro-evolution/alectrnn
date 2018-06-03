@@ -38,7 +38,8 @@ Action PlayerAgent::AgentStep() {
 
   if (max_num_frames_per_episode_ > 0 &&
       episode_frame_number_ >= max_num_frames_per_episode_) {
-    return RESET; //Pushes reset button on console (Action #40)
+    return RESET; //Returns RESET, gets picked up by controller which implements
+    // the appropriate type of reset (doesn't actually use console reset)
   }
 
   Action agent_action(Act());

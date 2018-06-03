@@ -26,7 +26,7 @@ class Controller {
     int GetFrameNumber() const;
     int GetEpisodeFrameNumber() const;
     int GetRomFrameNumber() const;
-    
+
   protected:
     void EpisodeStart(Action& action);
     void EpisodeStep(Action& action);
@@ -44,6 +44,7 @@ class Controller {
     PlayerAgent* agent_;
     ALEInterface* ale_;
     const int frame_skip_;
+    bool stop_episode_;
 };
 
 }
