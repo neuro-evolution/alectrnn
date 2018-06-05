@@ -18,7 +18,7 @@ python alectrnn_experiment_template.py
 
 """
 
-from evostrat import BoundedRandNumTableES
+from evostrat import SusRandNumTableGA
 from alectrnn import nervous_system as ns
 from alectrnn.handlers import NervousSystemAgentHandler
 from alectrnn.experiment import ALEExperiment
@@ -39,7 +39,7 @@ ale_parameters = {'rom': "atlantis",
                   'frame_skip': 4,
                   'use_environment_distribution': True,
                   'system_reset_steps': 4,
-                  'num_random_environments': 70}
+                  'num_random_environments': 30}
 
 nervous_system_parameters = {'input_shape': [1, 88, 88],
                              'nn_parameters': [{
@@ -77,44 +77,35 @@ ale_experiment = ALEExperiment(ale_parameters=ale_parameters,
                                agent_class=NervousSystemAgentHandler,
                                agent_class_parameters=agent_parameters,
                                objective_parameters=objective_parameters,
-                               script_prefix='pop7_google')
+                               script_prefix='example')
 par_layout = ale_experiment.parameter_layout()
 
 ################################################################################
 # Initiate evolutionary run (requires Experiment parameters)
 ################################################################################
-# Define bounds
-type_bounds = {ns.PARAMETER_TYPE.BIAS: (-100.0, 100.0),
-               ns.PARAMETER_TYPE.RTAUS: (0.0001, 100.0),
-               ns.PARAMETER_TYPE.WEIGHT: (-100.0, 100.0)}
-bounds = ns.boundary_array_for_parameter_layout(par_layout, type_bounds)
-
-# Initial guess
-rng = np.random.RandomState(1)
-guess_bounds = {ns.PARAMETER_TYPE.BIAS: (-10.0, 10.0),
-                ns.PARAMETER_TYPE.RTAUS: (0.01, 1.0),
-                ns.PARAMETER_TYPE.WEIGHT: (-10.0, 10.0)}
-guess_range = ns.boundary_array_for_parameter_layout(par_layout,
-                                                     guess_bounds)
-initial_guess = ns.draw_uniform_initial_guess(guess_range, rng)
-del guess_range
-del par_layout
-
 # Start profiler
 alectrnn_profiler = cProfile.Profile()
 alectrnn_profiler.enable()
 
-es = BoundedRandNumTableES(xo=initial_guess,
-                           step_size=2.0,
-                           bounds=bounds,
-                           objective=ale_experiment.objective_function,
-                           seed=7,
-                           verbose=True,
-                           rand_num_table_size=20000000)
+initial_state_rng = np.random.RandomState(5)
+guess_bounds = {ns.PARAMETER_TYPE.RTAUS: (0.5, 1.5),
+                ns.PARAMETER_TYPE.RANGE: (1.0, 1.0),
+                ns.PARAMETER_TYPE.REFRACTORY: (0.3, 0.3),
+                ns.PARAMETER_TYPE.RESISTANCE: (1.0, 1.0),
+                ns.PARAMETER_TYPE.WEIGHT: (-0.1, 0.1)}
+initial_guess = ale_experiment.draw_initial_guess(guess_bounds,
+                                                  initial_state_rng,
+                                                  normalized_weights=False)
+ga = SusRandNumTableGA(initial_guess=initial_guess,
+                       sigma=0.1,
+                       num_elite=5,
+                       objective=ale_experiment.objective_function,
+                       seed=7,
+                       verbose=True,
+                       rand_num_table_size=20000000)
 
 # Run evolution
-es(5)
-es.save(ale_experiment.script_prefix + ".es")
+ga(100, save=True, save_every=10, save_filename=ale_experiment.script_prefix + ".ga")
 
 # Record results
 alectrnn_profiler.disable()
@@ -128,34 +119,37 @@ if rank == 0:
 ################################################################################
 # Load and continue evolution (requires Experiment parameters) (optional)
 ################################################################################
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
-# es(50, ale_experiment.objective_function)
-# es.save(ale_experiment.script_prefix + ".es")
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
+# ale_experiment.set_game_parameters(seed=15, max_num_frames=10000,
+#                                    max_num_frames_per_episode=10000)
+# ga(50, ale_experiment.objective_function, save=True,
+#    save_filename=ale_experiment.script_prefix + ".ga")
 
 ################################################################################
 # Load and plot results (requires Experiment parameters)
 ################################################################################
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
-# es.plot_cost_over_time(ale_experiment.script_prefix, savefile=True, logy=False)
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
+# ga.plot_cost_over_time(ale_experiment.script_prefix, savefile=True, logy=False)
 
 ################################################################################
 # Evaluate
 ################################################################################
-# In the google paper, they ran for 5min (18000 frames) for 30 games
+# # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
+# trials = 2
 # max_episodes = 10
-# trials = 30
 # new_seed = 32535742
 #
 # # get best
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
 # costs = []
 # # run for number of trials
+# ale_experiment.set_objective_function({'obj_type': 'totalcost'})
 # for i in range(trials):
-#     ale_experiment.set_game_parameters(seed=new_seed + i, max_num_frames=frames,
+#     ale_experiment.set_game_parameters(seed=new_seed+i, max_num_frames=frames,
 #                                        max_num_frames_per_episode=frames,
 #                                        max_num_episodes=max_episodes)
-#     costs.append(ale_experiment.objective_function(es.best))
+#     costs.append(ale_experiment.objective_function(ga.best))
 #     print("trial", i, "complete")
 #
 # print("costs: ", costs)
@@ -172,21 +166,22 @@ if rank == 0:
 #
 # # In the google paper, they ran for 5min (18000 frames) for 30 games
 # frames = 18000
-# max_episodes = 1
+# max_episodes = 2
 # trials = size
 # new_seed = 32535742
 # seeds = [new_seed + i for i in range(size)]
 #
 # # get best
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
 # local_cost = np.empty(1, dtype=np.float32)
+# ale_experiment.set_objective_function({'obj_type': 'totalcost'})
 # ale_experiment.set_game_parameters(seed=seeds[rank], max_num_frames=frames,
 #                                    max_num_frames_per_episode=frames,
 #                                    max_num_episodes=max_episodes)
-# local_cost[0] = ale_experiment.objective_function(es.best)
+# local_cost[0] = ale_experiment.objective_function(ga.best)
 # all_costs = np.empty(size, dtype=np.float32)
 # comm.Allgather([local_cost, MPI.FLOAT],
-#                      [all_costs, MPI.FLOAT])
+#                [all_costs, MPI.FLOAT])
 #
 # if rank == 0:
 #     print("costs: ", all_costs)
@@ -198,26 +193,30 @@ if rank == 0:
 ################################################################################
 # from alectrnn import analysis_tools
 # # get best
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
 # ale_experiment.set_logging(True)
-# ale_experiment.set_game_parameters(max_num_frames=2000,
-#                                    max_num_episodes=2,
-#                                    max_num_frames_per_episode=2000)
+# ale_experiment.set_game_parameters(seed=20, max_num_frames=6000,
+#                                    max_num_episodes=1,
+#                                    max_num_frames_per_episode=6000,
+#                                    frame_skip=2,
+#                                    use_environment_distribution=True,
+#                                    num_random_environments=30)
 #
 # print("running obj")
-# print("cost: ", ale_experiment.objective_function(es.best))
+# print("cost: ", ale_experiment.objective_function(ga.best))
 #
 # # Print screen history
 # screen_history = ale_experiment.screen_history()
 # analysis_tools.animate_screen(screen_history, ale_experiment.script_prefix)
-#
+
 # # Get neural system history
 # for layer_index in range(ale_experiment.num_layers()):
 #     print("layer...", layer_index)
 #     history = ale_experiment.layer_history(layer_index)
 #     print("\t has shape: ", history.shape)
 #     if layer_index == 0:
-#         analysis_tools.animate_input(history, (88, 88), ale_experiment.script_prefix)
+#         # analysis_tools.animate_input(history, (88, 88), ale_experiment.script_prefix)
+#         pass
 #     elif layer_index == (ale_experiment.num_layers() - 1):
 #         analysis_tools.plot_output(history, ale_experiment.script_prefix)
 #     else:
@@ -225,9 +224,9 @@ if rank == 0:
 #                                                         ale_experiment.script_prefix)
 #
 # # Plot trajectories of specific neurons
-# layer_index = 2
+# layer_index = ale_experiment.num_layers()-1
 # history = ale_experiment.layer_history(layer_index)
-# analysis_tools.plot_internal_state(history, index=layer_index,
+# analysis_tools.plot_internal_spike_train(history, index=layer_index,
 #                                    neuron_ids=[1, 2, 3, 4],
 #                                    prefix=ale_experiment.script_prefix)
 
@@ -235,6 +234,6 @@ if rank == 0:
 # Plot parameter distributions
 ################################################################################
 # from alectrnn import analysis_tools
-# es = BoundedRandNumTableES.load(ale_experiment.script_prefix + ".es")
-# analysis_tools.plot_parameter_distributions(es.best, par_layout, marker='None',
+# ga = SusRandNumTableGA.load(ale_experiment.script_prefix + ".ga")
+# analysis_tools.plot_parameter_distributions(ga.best, par_layout, marker='None',
 #                                             prefix=ale_experiment.script_prefix)
