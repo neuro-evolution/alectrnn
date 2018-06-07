@@ -198,7 +198,7 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
     bins = np.arange(0, len(layer_state), bin_width)
     bins = np.append(bins, len(layer_state))
     bin_points = (bins[1:] + bins[:-1]) / 2
-    
+
     if not (neuron_ids is None):
         for neuron_state in layer_state.reshape(-1, layer_state.shape[0])[neuron_ids]:
             spike_times = convert_state_to_spiketimes(neuron_state)
@@ -211,7 +211,7 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
         # view (L)xT matrix
         neurons_states = layer_state.reshape(-1, layer_state.shape[0])
         for neuron_state in neurons_states:
-            total_spikes += convert_state_to_spiketimes(neuron_state)
+            total_spikes += list(convert_state_to_spiketimes(neuron_state))
 
         frequency, edge = np.histogram(total_spikes, bins)
         np.divide(frequency, bin_width * len(neurons_states), out=frequency)
