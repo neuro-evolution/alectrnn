@@ -104,10 +104,10 @@ void Controller::ApplyActions(Action& action) {
       break;
     default:
       // Pass action to emulator!
-      ale_->environment->minimalAct(action, PLAYER_B_NOOP);
+      auto reward(ale_->environment->minimalAct(action, PLAYER_B_NOOP));
       frame_number_ += frame_skip_;
-      episode_score_ += ale_->romSettings->getReward();
-      cumulative_score_ += ale_->romSettings->getReward();
+      episode_score_ += reward;
+      cumulative_score_ += reward;
       break;
   }
 }
