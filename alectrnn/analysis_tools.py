@@ -139,13 +139,15 @@ def plot_internal_state(layer_state, index, neuron_ids, prefix="test"):
     plt.close()
 
 
-def plot_internal_spike_train(layer_state, index, neuron_ids, prefix="test"):
+def plot_internal_spike_train(layer_state, index, neuron_ids, prefix="test",
+                              **kwargs):
     """
     Makes a spike train plot of all the neurons in a given layer
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling)
     :param neuron_ids: the indices location of neurons in the flattened state
     :param prefix: prefix for output file name
+    :param kwargs: key word arguments for scatter
     :return: None
     """
     plt.clf()
@@ -154,13 +156,70 @@ def plot_internal_spike_train(layer_state, index, neuron_ids, prefix="test"):
         spike_indices = np.nonzero(neuron_state)[0]
         if len(spike_indices) != 0:
             plt.scatter(spike_indices, y_pos * np.ones(len(spike_indices)),
-                        color="blue", marker='o')
+                        color="blue",
+                        marker='o', **kwargs)
         y_pos += 1
 
     plt.xlim(0, len(layer_state))
+    plt.ylim(0, y_pos)
     plt.xlabel("time")
     plt.ylabel("neuron")
     plt.savefig(prefix + "_layer" + str(index) + "_spike_train.pdf")
+    plt.clf()
+    plt.close()
+
+
+def convert_state_to_spiketimes(state_array):
+    """
+    Takes an array of state values and returns an array of spike times in units
+    of the len of the state array
+    :return: numpy array
+    """
+
+    return np.nonzero(state_array)[0]
+
+
+def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
+              **kwargs):
+    """
+    Plots the Peristimulus time histogram (PSTH) for single or multiple (average) neurons
+    :param layer_state: a Tx(L) matrix, where L is the shape of the layer
+    :param index: the layer index (for labelling). Default: None (averages over
+        all neurons)
+    :param bin_width: size of bins for making histogram
+    :param neuron_ids: the indices location of neurons in the flattened state
+    :param prefix: prefix for output file name
+    :param kwargs: key word arguments for plot
+    :return: None
+    """
+
+    plt.clf()
+
+    bins = np.arange(0, len(layer_state), bin_width)
+    bins = np.append(bins, len(layer_state))
+    bin_points = (bins[1:] + bins[:-1]) / 2
+    
+    if not (neuron_ids is None):
+        for neuron_state in layer_state.reshape(-1, layer_state.shape[0])[neuron_ids]:
+            spike_times = convert_state_to_spiketimes(neuron_state)
+            if len(spike_times) > 0:
+                frequency, edges = np.histogram(spike_times, bins)
+                np.divide(frequency, bin_width, out=frequency)
+                plt.plot(bin_points, frequency, **kwargs)
+    else:
+        total_spikes = []
+        # view (L)xT matrix
+        neurons_states = layer_state.reshape(-1, layer_state.shape[0])
+        for neuron_state in neurons_states:
+            total_spikes += convert_state_to_spiketimes(neuron_state)
+
+        frequency, edge = np.histogram(total_spikes, bins)
+        np.divide(frequency, bin_width * len(neurons_states), out=frequency)
+        plt.plot(bin_points, frequency, **kwargs)
+
+    plt.xlabel("steps")
+    plt.ylabel("Average firing rate")
+    plt.savefig(prefix + "_layer" + str(index) + "_psth.pdf")
     plt.clf()
     plt.close()
 
