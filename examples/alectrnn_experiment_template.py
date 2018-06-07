@@ -197,10 +197,7 @@ if rank == 0:
 # ale_experiment.set_logging(True)
 # ale_experiment.set_game_parameters(seed=20, max_num_frames=6000,
 #                                    max_num_episodes=1,
-#                                    max_num_frames_per_episode=6000,
-#                                    frame_skip=2,
-#                                    use_environment_distribution=True,
-#                                    num_random_environments=30)
+#                                    max_num_frames_per_episode=6000)
 #
 # print("running obj")
 # print("cost: ", ale_experiment.objective_function(ga.best))
