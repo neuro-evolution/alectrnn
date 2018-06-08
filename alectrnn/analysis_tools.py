@@ -204,8 +204,8 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
             spike_times = convert_state_to_spiketimes(neuron_state)
             if len(spike_times) > 0:
                 frequency, edges = np.histogram(spike_times, bins)
-                np.divide(frequency, bin_width, out=frequency)
-                plt.plot(bin_points, frequency, **kwargs)
+                avg_freq = np.divide(frequency, bin_width)
+                plt.plot(bin_points, avg_freq, **kwargs)
     else:
         total_spikes = []
         # view (L)xT matrix
@@ -214,9 +214,11 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
             total_spikes += list(convert_state_to_spiketimes(neuron_state))
 
         frequency, edge = np.histogram(total_spikes, bins)
-        np.divide(frequency, bin_width * len(neurons_states), out=frequency)
-        plt.plot(bin_points, frequency, **kwargs)
+        avg_freq = np.divide(frequency, bin_width * len(neurons_states))
+        plt.plot(bin_points, avg_freq, **kwargs)
 
+    plt.xlim(0, bin_points[-1])
+    plt.ylim(xmin=0)
     plt.xlabel("steps")
     plt.ylabel("Average firing rate")
     plt.savefig(prefix + "_layer" + str(index) + "_psth.pdf")
