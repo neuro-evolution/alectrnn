@@ -218,7 +218,7 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
         plt.plot(bin_points, avg_freq, **kwargs)
 
     plt.xlim(0, bin_points[-1])
-    plt.ylim(xmin=0)
+    plt.ylim(ymin=0)
     plt.xlabel("steps")
     plt.ylabel("Average firing rate")
     plt.savefig(prefix + "_layer" + str(index) + "_psth.pdf")
