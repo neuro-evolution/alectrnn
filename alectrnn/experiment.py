@@ -23,7 +23,8 @@ class ALEExperiment:
         :param nervous_system_class_parameters: parameters for that class
             instance
         :param agent_class: chosen agent class
-            currently either: SoftMaxAgentHandler or NervousSystemAgentHandler
+            options: SoftMaxAgentHandler, NervousSystemAgentHandler,
+                    SharedMotorAgentHandler
             Any class is fine so long as it inherits the LoggingAndHistoryMixin
         :param agent_class_parameters: dictionary of parameters for
             agent class.
@@ -57,8 +58,14 @@ class ALEExperiment:
         self._ale_handle.create()
 
         # Construct handle (Nervous system)
-        self.nervous_system_class_parameters['num_outputs'] = \
-            self._ale_handle.action_set_size()
+        if isinstance(agent_class, handlers.SharedMotorAgentHandler):
+            # SharedMotorAgents require the legal rather than minimal action
+            # set size to be used for the motor layer
+            self.nervous_system_class_parameters['num_outputs'] = \
+                self._ale_handle.legal_action_set_size()
+        else:
+            self.nervous_system_class_parameters['num_outputs'] = \
+                self._ale_handle.action_set_size()
 
         self._nervous_system = nervous_system_class(**self.nervous_system_class_parameters)
 

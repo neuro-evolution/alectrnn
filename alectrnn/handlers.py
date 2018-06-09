@@ -148,13 +148,18 @@ class AgentHandler(Handler):
     def __init__(self, ale, agent_type, agent_parameters=None):
         """
         Agent parameters:
-          agent_type - "ctrnn", "nervous_system"
+          agent_type - "ctrnn"/"nervous_system"/"softmax"/"shared_motor"
           agent_parameters - dictionary of keyword arguments for the agent
 
             For "ctrnn": (num_neurons, num_sensor_neurons,
                           input_screen_width, input_screen_height,
                           use_color, step_size)
+
             For "nervous_system": (nervous_system, update_rate, logging)
+
+            For "softmax": (nervous_system, update_rate, logging, seed)
+
+            For "shared_motor": (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
             agent_parameters = {}
@@ -165,7 +170,7 @@ class AgentHandler(Handler):
     def create(self):
         """
         Creates the handle:
-        Currently supports "ctrnn" and "nervous_system"
+        Currently supports "ctrnn"/"nervous_system"/"softmax"/"shared_motor"
         """
         # Create Agent handle
         if self._handle_type == "ctrnn":
@@ -177,6 +182,9 @@ class AgentHandler(Handler):
         elif self._handle_type == "softmax":
             self._handle = agent_generator.CreateSoftMaxAgent(self._ale,
                                                               **self._handle_parameters)
+        elif self._handle_type == "shared_motor":
+            self._handle = agent_generator.CreateSharedMotorAgent(self._ale,
+                                                                  **self._handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
         self._handle_exists = True
@@ -244,15 +252,28 @@ class NervousSystemAgentHandler(AgentHandler, LoggingAndHistoryMixin):
                                                  'logging': int(logging)})
 
 
+class SharedMotorAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of SharedMotor
+    agents, which allow a single neural network to be used across games by
+    using the legal action set size for the motor layer. Minimal action sets
+    are still used to play the game.
+    """
+    def __init__(self, ale, nervous_system, update_rate, logging=False):
+        super().__init__(ale, "shared_motor", {'nervous_system': nervous_system,
+                                               'update_rate': update_rate,
+                                               'logging': int(logging)})
+
+
 class SoftMaxAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     """
     Subclass of AgentHandler for easy creation and handling of SoftMaxAgentHandlers
     """
     def __init__(self, ale, nervous_system, update_rate, seed, logging=False):
         super().__init__(ale, "softmax", {'nervous_system': nervous_system,
-                                                 'update_rate': update_rate,
-                                                 'logging': int(logging),
-                                                 'seed': int(seed)})
+                                           'update_rate': update_rate,
+                                           'logging': int(logging),
+                                           'seed': int(seed)})
 
 
 class ALEHandler(Handler):
@@ -296,7 +317,7 @@ class ALEHandler(Handler):
         else:
             sys.exit("Error: " + rom + " is not installed.")
 
-        super().__init__("ale", {'rom': self.rom_path,
+        super().__init__("ale", {'rom_path': self.rom_path,
                                  'seed': seed,
                                  'color_avg': color_avg,
                                  'frame_skip': frame_skip,
@@ -317,6 +338,17 @@ class ALEHandler(Handler):
         :param kwargs: any ale key word value pairs
         :return: None
         """
+
+        # If the user decides to change the rom, we have to update
+        # rom attributes, and add a rom_path
+        if 'rom' in kwargs:
+            if kwargs['rom'] in ALEHandler.installed_roms:
+                self.rom = kwargs['rom']
+                self.rom_path = ALEHandler.installed_roms[self.rom]
+                kwargs.pop('rom')
+                kwargs['rom_path'] = self.rom_path
+            else:
+                sys.exit("Error: " + kwargs['rom'] + " is not installed.")
 
         if self._handle_exists:
             self._handle_parameters.update(kwargs)
@@ -344,7 +376,17 @@ class ALEHandler(Handler):
         self._handle_exists = True
 
     def action_set_size(self):
+        """
+        :return: Minimal number of actions required to play the game
+        """
         return ale_handler.NumOutputs(ale=self._handle)
+
+    def legal_action_set_size(self):
+        """
+        :return: The number of legal acitons for the player, should be the same
+            across games (18)
+        """
+        return ale_handler.LegalActionSetSize(ale=self._handle)
 
     @classmethod
     def print_available_roms(cls):

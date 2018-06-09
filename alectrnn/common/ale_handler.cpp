@@ -35,9 +35,33 @@ static PyObject *NumOutputs(PyObject *self, PyObject *args, PyObject *kwargs) {
   return Py_BuildValue("i", num_outputs);
 }
 
+static PyObject *LegalActionSetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"ale", NULL};
+
+  PyObject *ale_capsule;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list, &ale_capsule)){
+    std::cerr << "Error parsing NumOutput arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(ale_capsule, "ale_generator.ale"))
+  {
+    std::cerr << "Invalid pointer to ALE returned from capsule,"
+    " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  ALEInterface* ale = static_cast<ALEInterface*>(PyCapsule_GetPointer(
+  ale_capsule, "ale_generator.ale"));
+
+  int num_outputs = ale->getLegalActionSet().size();
+  return Py_BuildValue("i", num_outputs);
+}
+
 static PyMethodDef ALEHandlerMethods[] = {
   { "NumOutputs", (PyCFunction) NumOutputs, METH_VARARGS | METH_KEYWORDS,
       "Returns number of controller outputs"},
+  { "LegalActionSetSize", (PyCFunction) LegalActionSetSize, METH_VARARGS | METH_KEYWORDS,
+  "Returns number of legal controller outputs"},
   { NULL, NULL, 0, NULL}
 };
 

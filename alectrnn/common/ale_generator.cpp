@@ -21,7 +21,7 @@ static void DeleteALE(PyObject *ale_capsule) {
 }
 
 static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"rom", "seed", "repeat_action_probability",
+  static char *keyword_list[] = {"rom_path", "seed", "repeat_action_probability",
                                  "display_screen", "sound", "color_avg",
                                  "frame_skip", "max_num_frames", "max_num_episodes",
                                  "max_num_frames_per_episode", "print_screen",
@@ -42,7 +42,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
    *
    */
 
-  char *rom;
+  char *rom_path;
   int seed;
   float repeat_action_probability(0.0);
   int display_screen(0); // int instead of bool because api has problem w/ bool
@@ -58,7 +58,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   int num_random_environments(30);
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|fiiiiiiiiiii", keyword_list,
-                                   &rom, &seed, &repeat_action_probability,
+                                   &rom_path, &seed, &repeat_action_probability,
                                    &display_screen, &sound, &color_avg,
                                    &frame_skip, &max_num_frames, &max_num_episodes,
                                    &max_num_frames_per_episode, &print_screen,
@@ -87,7 +87,7 @@ static PyObject *CreateALE(PyObject *self, PyObject *args, PyObject *kwargs) {
   ale->setInt("system_reset_steps", num_reset_steps);
   ale->setBool("use_environment_distribution", static_cast<bool>(stochastic_environment));
   ale->setInt("num_random_environments", num_random_environments);
-  ale->loadROM(rom);
+  ale->loadROM(rom_path);
 
   PyObject* ale_capsule = PyCapsule_New(static_cast<void*>(ale),
                               "ale_generator.ale", DeleteALE);

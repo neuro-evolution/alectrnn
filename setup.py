@@ -123,7 +123,8 @@ agent_sources = [
     "alectrnn/common/network_constructor.cpp",
     "alectrnn/common/ctrnn.cpp",
     "alectrnn/common/screen_preprocessing.cpp",
-    "alectrnn/agents/soft_max_agent.cpp"
+    "alectrnn/agents/soft_max_agent.cpp",
+    "alectrnn/agents/shared_motor_agent.cpp"
 ]
 
 objective_sources = [
