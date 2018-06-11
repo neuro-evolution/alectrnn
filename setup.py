@@ -99,7 +99,8 @@ include_dirs += [
     cwd + '/alectrnn/agents',
     cwd + '/alectrnn/common',
     cwd + '/alectrnn/controllers',
-    cwd + '/alectrnn/objectives'
+    cwd + '/alectrnn/objectives',
+    cwd + '/alectrnn/Eigen'
 ]
 
 # Libraries
