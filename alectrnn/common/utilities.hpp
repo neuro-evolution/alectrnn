@@ -76,6 +76,7 @@ inline bool is_a_ge_zero_and_a_lt_b(Integer a, Integer b) {
  * Modified from caffe's implementation @
  * https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cpp
  * Uses NCHW memory layout
+ * Applies zero padding
  */
 template <typename Dtype>
 void Im2Col(const Dtype* data_im, const Integer channels,
