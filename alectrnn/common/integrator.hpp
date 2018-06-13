@@ -25,6 +25,7 @@
 #include <numeric>
 #include <functional>
 #include <utility>
+#include <Eigen/Core>
 #include "multi_array.hpp"
 #include "graphs.hpp"
 #include "parameter_types.hpp"
@@ -40,7 +41,8 @@ enum INTEGRATOR_TYPE {
   RECURRENT_INTEGRATOR,
   RESERVOIR_INTEGRATOR,
   RESERVOIR_HYBRID,
-  TRUNCATED_RECURRENT_INTEGRATOR
+  TRUNCATED_RECURRENT_INTEGRATOR,
+  CONV_EIGEN_INTEGRATOR
 };
 
 // Abstract base class
@@ -689,6 +691,88 @@ class ReservoirIntegrator : public Integrator<TReal> {
 
   protected:
     graphs::PredecessorGraph<TReal> network_;
+};
+
+/*
+ * Implements non-separable convolution using im2col and gemm through Eigen
+ * Assumes NCHW memory layout
+ */
+template<typename TReal>
+class ConvEigenIntegrator : public Integrator<TReal> {
+  public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    ConvEigenIntegrator(const multi_array::Array<Index,3>& filter_shape,
+                        const multi_array::Array<Index,3>& layer_shape,
+                        const multi_array::Array<Index,3>& prev_layer_shape,
+                        Index stride)
+                      : num_filters_(layer_shape[0]), layer_shape_(layer_shape),
+                        prev_layer_shape_(prev_layer_shape),
+                        filter_shape_(filter_shape), stride_(stride),
+                        channels_(prev_layer_shape[0]),
+                        height_(prev_layer_shape[1]),
+                        width_(prev_layer_shape[2]),
+                        kernel_h_(filter_shape[1]),
+                        kernel_w_(filter_shape[2]),
+                        pad_h_(kernel_h_/2),
+                        pad_w_(kernel_w_/2),
+                        channel_size_(((height_ + 2 * pad_h_ - kernel_h_)
+                                       / stride_ + 1)
+                                      * ((width_ + 2 * pad_w_ - kernel_w_)
+                                         / stride_ + 1)),
+                        buffer_state_(kernel_h_ * kernel_w_ * channels_,
+                                      channel_size_) {
+      super_type::parameter_count_ = kernel_w_ * kernel_h_ * channels_ * num_filters_;
+      super_type::integrator_type_ = CONV_EIGEN_INTEGRATOR;
+    }
+
+    virtual ~ConvEigenIntegrator()=default;
+
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) override {
+      utilities::Im2Col(src_state.data(), channels_, height_, width_,
+                        kernel_h_, kernel_w_, pad_h_, pad_w_, stride_, stride_,
+                        1, 1, buffer_state_.data());
+      Eigen::Map<Eigen::MatrixXf> output(tar_state.data(), num_filters_,
+                                         channel_size_);
+      Eigen::Map<Eigen::MatrixXf> params(weights_.data() + weights_.start(),
+                                         num_filters_, kernel_w_ * kernel_h_ * channels_);
+      output.no_alias() = params * buffer_state_;
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
+      weights_ = parameters;
+    }
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
+    }
+
+    std::pair<Index, Index> GetWeightIndexRange() const override {
+      return std::make_pair(0, super_type::parameter_count_);
+    };
+
+  protected:
+    const utilities::Integer num_filters_;
+    const utilities::Integer channels_;
+    const multi_array::Array<Index, 3> layer_shape_;
+    const multi_array::Array<Index, 3> prev_layer_shape_;
+    const multi_array::Array<Index, 3> filter_shape_;
+    const utilities::Integer stride_;
+    const utilities::Integer height_;
+    const utilities::Integer width_;
+    const utilities::Integer kernel_h_;
+    const utilities::Integer kernel_w_;
+    const utilities::Integer pad_h_;
+    const utilities::Integer pad_w_;
+    const utilities::Integer channel_size_;
+    Eigen::MatrixXf buffer_state_;
+    multi_array::ConstArraySlice<TReal> weights_;
 };
 
 } // End nervous_system namespace
