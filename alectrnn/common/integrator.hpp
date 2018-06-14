@@ -797,66 +797,69 @@ class ConvEigenIntegrator : public Integrator<TReal> {
 /*
  * Implements an All2All integrator with an Eigen backend
  */
-//template<typename TReal>
-//class All2AllEigenIntegrator : public Integrator<TReal> {
-//  public:
-//    typedef Integrator<TReal> super_type;
-//    typedef typename super_type::Index Index;
-//    typedef typename Eigen::Matrix<TReal, 1, Eigen::Dynamic> RowVector;
-//    typedef typename Eigen::Map<RowVector> RowVectorView;
-//    typedef typename Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-//    typedef typename Eigen::Map<Matrix> MatrixView;
-//
-//    All2AllEigenIntegrator(Index num_states, Index num_prev_states)
-//    : num_states_(num_states), num_prev_states_(num_prev_states) {
-//      super_type::parameter_count_ = num_states_ * num_prev_states_;
-//      super_type::integrator_type_ = ALL2ALL_EIGEN_INTEGRATOR;
-//    }
-//
-//    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
-//                            multi_array::Tensor<TReal>& tar_state) {
-//      if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
-//        std::cerr << "src state size: " << src_state.size() << std::endl;
-//        std::cerr << "prev state size: " << num_prev_states_ << std::endl;
-//        std::cerr << "tar state size: " << tar_state.size() << std::endl;
-//        std::cerr << "state size: " << num_states_ << std::endl;
-//        throw std::invalid_argument("src state size and prev state size "
-//                                    "must be equal. tar state size and state"
-//                                    " size must be equal");
-//      }
-//
-//      RowVectorView prev_states(num_prev_states_);
-//      MatrixView params(weights_.data() + weights_.start(), num_prev_states_, num_states_);
-//      RowVectorView output(tar_state.data(), num_states_);
-//      output.noalias() = prev_states * params;
-//    }
-//
-//    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-//      if (parameters.size() != super_type::parameter_count_) {
-//        std::cerr << "parameter size: " << parameters.size() << std::endl;
-//        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
-//        throw std::invalid_argument("Wrong number of parameters");
-//      }
-//      weights_ = parameters;
-//    }
-//
-//    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
-//      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-//      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
-//        layout[iii] = WEIGHT;
-//      }
-//      return layout;
-//    }
-//
-//    virtual std::pair<Index, Index> GetWeightIndexRange() const {
-//      return std::make_pair(0, super_type::parameter_count_);
-//    }
-//
-//  protected:
-//    Index num_states_;
-//    Index num_prev_states_;
-//    multi_array::ConstArraySlice<TReal> weights_;
-//};
+template<typename TReal>
+class All2AllEigenIntegrator : public Integrator<TReal> {
+  public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef Eigen::Matrix<TReal, Eigen::Dynamic, 1> ColVector;
+    typedef Eigen::Map<ColVector> ColVectorView;
+    typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
+    typedef const Eigen::Map<ConstColVector> ConstColVectorView;
+    typedef const Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> ConstMatrix;
+    typedef const Eigen::Map<ConstMatrix> ConstMatrixView;
+
+    All2AllEigenIntegrator(Index num_states, Index num_prev_states)
+    : num_states_(num_states), num_prev_states_(num_prev_states) {
+      super_type::parameter_count_ = num_states_ * num_prev_states_;
+      super_type::integrator_type_ = ALL2ALL_EIGEN_INTEGRATOR;
+    }
+
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+                            multi_array::Tensor<TReal>& tar_state) {
+      if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
+        std::cerr << "src state size: " << src_state.size() << std::endl;
+        std::cerr << "prev state size: " << num_prev_states_ << std::endl;
+        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+        std::cerr << "state size: " << num_states_ << std::endl;
+        throw std::invalid_argument("src state size and prev state size "
+                                    "must be equal. tar state size and state"
+                                    " size must be equal");
+      }
+
+      ConstColVectorView prev_states(src_state.data(), src_state.size());
+      ConstMatrixView params(weights_.data() + weights_.start(), tar_state.size(),
+                             src_state.size());
+      ColVectorView output(tar_state.data(), tar_state.size());
+      output.noalias() = params * prev_states;
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
+      weights_ = parameters;
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
+    }
+
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, super_type::parameter_count_);
+    }
+
+  protected:
+    Index num_states_;
+    Index num_prev_states_;
+    multi_array::ConstArraySlice<TReal> weights_;
+};
 
 /*
  * Implements a recurrent integrator with Eigen
