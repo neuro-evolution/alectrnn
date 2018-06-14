@@ -26,6 +26,7 @@
 #include <functional>
 #include <utility>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include "multi_array.hpp"
 #include "graphs.hpp"
 #include "parameter_types.hpp"
@@ -705,9 +706,16 @@ class ConvEigenIntegrator : public Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
-    typedef typename Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef typename Eigen::Map<Matrix> MatrixView;
+    typedef Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+    typedef const Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> ConstMatrix;
+    typedef Eigen::Map<Matrix> MatrixView;
+    typedef const Eigen::Map<ConstMatrix> ConstMatrixView;
 
+    /*
+     * Filter shape order: {depth, height, width}
+     * Layer shape order: {# channels, height, width}
+     * Prev Layer order: {# channels, height, width}
+     */
     ConvEigenIntegrator(const multi_array::Array<Index,3>& filter_shape,
                         const multi_array::Array<Index,3>& layer_shape,
                         const multi_array::Array<Index,3>& prev_layer_shape,
@@ -726,24 +734,30 @@ class ConvEigenIntegrator : public Integrator<TReal> {
                                        / stride_ + 1)
                                       * ((width_ + 2 * pad_w_ - kernel_w_)
                                          / stride_ + 1)),
-                        buffer_state_(kernel_h_ * kernel_w_ * channels_,
-                                      channel_size_) {
+                        buffer_state_(channel_size_,
+                                      kernel_h_ * kernel_w_ * channels_) {
       super_type::parameter_count_ = kernel_w_ * kernel_h_ * channels_ * num_filters_;
       super_type::integrator_type_ = CONV_EIGEN_INTEGRATOR;
     }
 
     virtual ~ConvEigenIntegrator()=default;
 
+    /*
+     * Matrix: (# rows, # cols) -> column major
+     * src shape: {channels, height * width}
+     * tar shape: {num_filters, (new height * new width)}
+     */
     void operator()(const multi_array::Tensor<TReal>& src_state,
                     multi_array::Tensor<TReal>& tar_state) override {
 
       utilities::Im2Col(src_state.data(), channels_, height_, width_,
                         kernel_h_, kernel_w_, pad_h_, pad_w_, stride_, stride_,
                         1, 1, buffer_state_.data());
-      MatrixView output(tar_state.data(), num_filters_, channel_size_);
-      MatrixView params(weights_.data() + weights_.start(), num_filters_,
-                  kernel_w_ * kernel_h_ * channels_);
-      output.no_alias() = params * buffer_state_;
+      MatrixView output(tar_state.data(), channel_size_, num_filters_);
+      ConstMatrixView params(weights_.data() + weights_.start(),
+                             kernel_w_ * kernel_h_ * channels_,
+                             num_filters_);
+      output.noalias() = buffer_state_ * params;
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
@@ -764,11 +778,11 @@ class ConvEigenIntegrator : public Integrator<TReal> {
 
   protected:
     const utilities::Integer num_filters_;
-    const utilities::Integer channels_;
     const multi_array::Array<Index, 3> layer_shape_;
     const multi_array::Array<Index, 3> prev_layer_shape_;
     const multi_array::Array<Index, 3> filter_shape_;
     const utilities::Integer stride_;
+    const utilities::Integer channels_;
     const utilities::Integer height_;
     const utilities::Integer width_;
     const utilities::Integer kernel_h_;
@@ -783,66 +797,138 @@ class ConvEigenIntegrator : public Integrator<TReal> {
 /*
  * Implements an All2All integrator with an Eigen backend
  */
-template<typename TReal>
-class All2AllEigenIntegrator : public Integrator<TReal> {
-  public:
-    typedef Integrator<TReal> super_type;
-    typedef typename super_type::Index Index;
-    typedef typename Eigen::Matrix<TReal, 1, Eigen::Dynamic> RowVector;
-    typedef typename Eigen::Map<RowVector> RowVectorView;
-    typedef typename Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef typename Eigen::Map<Matrix> MatrixView;
+//template<typename TReal>
+//class All2AllEigenIntegrator : public Integrator<TReal> {
+//  public:
+//    typedef Integrator<TReal> super_type;
+//    typedef typename super_type::Index Index;
+//    typedef typename Eigen::Matrix<TReal, 1, Eigen::Dynamic> RowVector;
+//    typedef typename Eigen::Map<RowVector> RowVectorView;
+//    typedef typename Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+//    typedef typename Eigen::Map<Matrix> MatrixView;
+//
+//    All2AllEigenIntegrator(Index num_states, Index num_prev_states)
+//    : num_states_(num_states), num_prev_states_(num_prev_states) {
+//      super_type::parameter_count_ = num_states_ * num_prev_states_;
+//      super_type::integrator_type_ = ALL2ALL_EIGEN_INTEGRATOR;
+//    }
+//
+//    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+//                            multi_array::Tensor<TReal>& tar_state) {
+//      if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
+//        std::cerr << "src state size: " << src_state.size() << std::endl;
+//        std::cerr << "prev state size: " << num_prev_states_ << std::endl;
+//        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+//        std::cerr << "state size: " << num_states_ << std::endl;
+//        throw std::invalid_argument("src state size and prev state size "
+//                                    "must be equal. tar state size and state"
+//                                    " size must be equal");
+//      }
+//
+//      RowVectorView prev_states(num_prev_states_);
+//      MatrixView params(weights_.data() + weights_.start(), num_prev_states_, num_states_);
+//      RowVectorView output(tar_state.data(), num_states_);
+//      output.noalias() = prev_states * params;
+//    }
+//
+//    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+//      if (parameters.size() != super_type::parameter_count_) {
+//        std::cerr << "parameter size: " << parameters.size() << std::endl;
+//        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+//        throw std::invalid_argument("Wrong number of parameters");
+//      }
+//      weights_ = parameters;
+//    }
+//
+//    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+//      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+//      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+//        layout[iii] = WEIGHT;
+//      }
+//      return layout;
+//    }
+//
+//    virtual std::pair<Index, Index> GetWeightIndexRange() const {
+//      return std::make_pair(0, super_type::parameter_count_);
+//    }
+//
+//  protected:
+//    Index num_states_;
+//    Index num_prev_states_;
+//    multi_array::ConstArraySlice<TReal> weights_;
+//};
 
-    All2AllEigenIntegrator(Index num_states, Index num_prev_states)
-    : num_states_(num_states), num_prev_states_(num_prev_states) {
-      super_type::parameter_count_ = num_states_ * num_prev_states_;
-      super_type::integrator_type_ = ALL2ALL_EIGEN_INTEGRATOR;
-    }
-
-    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
-                            multi_array::Tensor<TReal>& tar_state) {
-      if (!((src_state.size() == num_prev_states_) && (tar_state.size() == num_states_))) {
-        std::cerr << "src state size: " << src_state.size() << std::endl;
-        std::cerr << "prev state size: " << num_prev_states_ << std::endl;
-        std::cerr << "tar state size: " << tar_state.size() << std::endl;
-        std::cerr << "state size: " << num_states_ << std::endl;
-        throw std::invalid_argument("src state size and prev state size "
-                                    "must be equal. tar state size and state"
-                                    " size must be equal");
-      }
-
-      RowVectorView prev_states(num_prev_states_);
-      MatrixView params(weights_.data() + weights_.start(), num_prev_states_, num_states_);
-      RowVectorView output(tar_state.data(), num_states_);
-      output.no_alias() = prev_states * params;
-    }
-
-    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-      if (parameters.size() != super_type::parameter_count_) {
-        std::cerr << "parameter size: " << parameters.size() << std::endl;
-        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
-        throw std::invalid_argument("Wrong number of parameters");
-      }
-      weights_ = parameters;
-    }
-
-    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
-      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
-        layout[iii] = WEIGHT;
-      }
-      return layout;
-    }
-
-    virtual std::pair<Index, Index> GetWeightIndexRange() const {
-      return std::make_pair(0, super_type::parameter_count_);
-    }
-
-  protected:
-    Index num_states_;
-    Index num_prev_states_;
-    multi_array::ConstArraySlice<TReal> weights_;
-};
+/*
+ * Implements a recurrent integrator with Eigen
+ */
+//template<typename TReal>
+//class RecurrentEigenIntegrator : public Integrator<TReal> {
+//  public:
+//    typedef Integrator<TReal> super_type;
+//    typedef typename super_type::Index Index;
+//    typedef typename Eigen::SparseMatrix<TReal> SparseMatrix;
+//
+//    RecurrentEigenIntegrator(const SparseMatrix& network)
+//    : network_(network) {
+//      super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
+//      super_type::parameter_count_ = network_.NumEdges();//
+//    }
+//
+//    virtual ~RecurrentIntegrator()=default;
+//
+//    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+//                            multi_array::Tensor<TReal>& tar_state) {
+//
+//      /*
+//       * Graph maybe a connector graph or an internal graph.
+//       * In case of connector, the num nodes doesn't need to match tar_state,
+//       * because predecessors should be empty for nodes not in tar_state.
+//       * However, src state does have to be checked using (at) when tar_state
+//       * is larger than src_state, to ensure nothing invalid is accessed.
+//       */
+//      Index edge_id = 0;
+//      for (Index node = 0; node < network_.NumNodes(); ++node) {
+//        for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
+//          tar_state.at(node) += src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id];
+//          tar_state[node] = utilities::BoundState(tar_state[node]);
+//          ++edge_id;
+//        }
+//      }
+//      if (edge_id != network_.NumEdges()) {
+//        throw std::runtime_error("Miss match between number of edges and the"
+//                                 " number integrated");
+//      }
+//    }
+//
+//    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+//      if (parameters.size() != super_type::parameter_count_) {
+//        std::cerr << "parameter size: " << parameters.size() << std::endl;
+//        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+//        throw std::invalid_argument("Wrong number of parameters");
+//      }
+//      weights_ = parameters.slice(0, super_type::parameter_count_);
+//    }
+//
+//    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+//      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+//      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+//        layout[iii] = WEIGHT;
+//      }
+//      return layout;
+//    }
+//
+//    const multi_array::ConstArraySlice<TReal>& GetWeights() const {
+//      return weights_;
+//    }
+//
+//    virtual std::pair<Index, Index> GetWeightIndexRange() const {
+//      return std::make_pair(0, super_type::parameter_count_);
+//    }
+//
+//  protected:
+//    SparseMatrix network_;
+//    multi_array::ConstArraySlice<TReal> weights_;
+//};
 
 } // End nervous_system namespace
 

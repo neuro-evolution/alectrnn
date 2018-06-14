@@ -100,7 +100,7 @@ include_dirs += [
     cwd + '/alectrnn/common',
     cwd + '/alectrnn/controllers',
     cwd + '/alectrnn/objectives',
-    cwd + '/alectrnn/Eigen'
+    cwd + '/alectrnn'  # For Eigen
 ]
 
 # Libraries
