@@ -292,7 +292,8 @@ Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>
   const auto edge_view = edge_list.accessor();
   std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
   for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
-    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][1], edge_view[i][0], 1);
+    matrix_elements[i] = Eigen::Triplet<TReal>(static_cast<int>(edge_view[i][1]),
+                                               static_cast<int>(edge_view[i][0]), 1);
   }
   Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);
   graph.setFromTriplets(matrix_elements.begin(), matrix_elements.end());
@@ -310,7 +311,8 @@ Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>
   const auto weight_view = weights.accessor();
   std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
   for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
-    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][1], edge_view[i][0],
+    matrix_elements[i] = Eigen::Triplet<TReal>(static_cast<int>(edge_view[i][1]),
+                                               static_cast<int>(edge_view[i][0]),
                                                weight_view[i]);
   }
   Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);
