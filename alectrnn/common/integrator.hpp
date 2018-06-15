@@ -877,8 +877,8 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
     typedef const Eigen::SparseMatrix<TReal> ConstSparseMatrix;
     typedef const Eigen::Map<ConstSparseMatrix> ConstSparseMatrixView;
 
-    RecurrentEigenIntegrator(const SparseMatrix& network)
-    : network_(network) {
+    RecurrentEigenIntegrator(SparseMatrix network)
+    : network_(std::move(network)) {
       network_.makeCompressed();
       super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
       super_type::parameter_count_ = network_.nonZeros();
@@ -934,6 +934,57 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
   protected:
     SparseMatrix network_;
     multi_array::ConstArraySlice<TReal> weights_;
+};
+
+/*
+ * Implements a reservior layer using Eigen
+ */
+template<typename TReal>
+class ReservoirEigenIntegrator : public Integrator<TReal> {
+  public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef Eigen::Matrix<TReal, Eigen::Dynamic, 1> ColVector;
+    typedef Eigen::Map <ColVector> ColVectorView;
+    typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
+    typedef const Eigen::Map <ConstColVector> ConstColVectorView;
+    typedef Eigen::SparseMatrix <TReal> SparseMatrix;
+
+    ReservoirEigenIntegrator(SparseMatrix network)
+    : network_(std::move(network)) {
+      network_.makeCompressed();
+      super_type::integrator_type_ = RESERVOIR_EIGEN_INTEGRATOR;
+      super_type::parameter_count_ = 0;
+    }
+
+    ~ReservoirEigenIntegrator()=default;
+
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) {
+
+      if ((network_.cols() != src_state.size())
+          && (network_.rows() != tar_state.size())) {
+        throw std::invalid_argument("src state size and tar state size "
+                                    "incompatible with network");
+      }
+
+      ColVectorView output_vector(tar_state.data(), tar_state.size());
+      ConstColVectorView src_vector(src_state.data(), src_state.size());
+      output_vector.noalias() = network_ * src_vector;
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {}
+
+    std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      return std::vector<PARAMETER_TYPE>(super_type::parameter_count_);
+    }
+
+    std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, 0);
+    }
+
+  protected:
+    SparseMatrix network_;
 };
 
 } // End nervous_system namespace
