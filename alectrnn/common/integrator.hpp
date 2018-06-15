@@ -873,30 +873,31 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
     typedef Eigen::Map<ColVector> ColVectorView;
     typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
     typedef const Eigen::Map<ConstColVector> ConstColVectorView;
+    typedef Eigen::SparseMatrix<TReal> SparseMatrix;
     typedef const Eigen::SparseMatrix<TReal> ConstSparseMatrix;
     typedef const Eigen::Map<ConstSparseMatrix> ConstSparseMatrixView;
 
     RecurrentEigenIntegrator(const SparseMatrix& network)
     : network_(network) {
-      network_.make_compressed();
+      network_.makeCompressed();
       super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
       super_type::parameter_count_ = network_.nonZeros();
     }
 
-    virtual ~RecurrentIntegrator()=default;
+    virtual ~RecurrentEigenIntegrator()=default;
 
     virtual void operator()(const multi_array::Tensor<TReal>& src_state,
                             multi_array::Tensor<TReal>& tar_state) {
 
-      if ((network_.cols() == src_state.size())
-          && (network_.rows() == tar_state.size())) {
+      if ((network_.cols() != src_state.size())
+          && (network_.rows() != tar_state.size())) {
         throw std::invalid_argument("src state size and tar state size "
                                     "incompatible with network");
       }
 
       ConstSparseMatrixView weight_matrix(network_.rows(), network_.cols(),
                                           weights_.size(), network_.outerIndexPtr(),
-                                          network_.innerIndexPrt(),
+                                          network_.innerIndexPtr(),
                                           weights_.data() + weights_.start(),
                                           network_.innerNonZeroPtr());
       ColVectorView output_vector(tar_state.data(), tar_state.size());

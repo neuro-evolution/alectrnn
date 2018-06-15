@@ -273,6 +273,16 @@ PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(const multi<Integer, 2
  * of nodes that act as the sink of the links. For a standard graph this is
  * just the total number of nodes in the graph, else if the graph is
  * bipartite, then one will be larger than the other.
+ * For edge list, the order of the list should be row-major
+ * with shape Ex2 with major axis as the edge with (tail, head) so that
+ * X[edge#][0]=tail, X[edge#][1]=head
+ *
+ * Because Eigen uses Fortran's column major format, the ordering will be
+ * reversed in order to preserve the proper direction of the links in the
+ * sparse matrix.
+ *
+ * The resulting sparse matrix shape is: Head x Tail
+ * Where Tail == # cols, and Head == # rows
  */
 template<typename Integer, typename TReal, template<typename, Index> class multi>
 Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>& edge_list,
@@ -282,7 +292,7 @@ Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>
   const auto edge_view = edge_list.accessor();
   std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
   for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
-    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][0], edge_view[i][1], 1);
+    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][1], edge_view[i][0], 1);
   }
   Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);
   graph.setFromTriplets(matrix_elements.begin(), matrix_elements.end());
@@ -300,7 +310,7 @@ Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>
   const auto weight_view = weights.accessor();
   std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
   for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
-    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][0], edge_view[i][1],
+    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][1], edge_view[i][0],
                                                weight_view[i]);
   }
   Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);

@@ -296,33 +296,19 @@ class NervousSystem:
     Valid back_integrator types:
         INTEGRATOR_TYPE.CONV : args(filter-shape, # filters, stride)
 
-    In the bipartite graph, all tail edges will be interpreted as belonging
-    to the corresponding index state of the previous layer, while all heads will
-    be interpreted as index states of the current layer.
+    :note: In the connector graph, all tail edges will be interpreted as belonging
+        to the corresponding index state of the previous layer, while all heads will
+        be interpreted as index states of the current layer.
 
-    The internal graph, all heads and tails will be interpreted as belongining
-    to the current layer.
+    :note: For the internal graph, all heads and tails will be interpreted as
+        belonging to the current layer.
 
-    All node IDs should start at 0 and correspond to the state index.
+    :note: All node IDs for networks should start at 0 and correspond to the
+        state index.
 
-    No parameters are saved, as this is a waste of space. All layers created and
-    necessary arguments taken are copied and ownership is transfered to the
-    NN.
-
-    Reference:
-
-        back_connections:
-            INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[bipartite]
-            INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
-            INTEGRATOR_TYPE.ALL2ALL
-
-        self_connections:
-            INTEGRATOR_TYPE.RECURRENT - (#nodes, edge_list)[graph]
-            INTEGRATOR_TYPE.RESERVOIR - (#nodes, edge_list), (weights)
-            INTEGRATOR_TYPE.ALL2ALL
-
-        activator:
-            ACTIVATOR_TYPE.CTRNN - (step_size)
+    :note: For input graphs, the order of the numpy array should be row-major
+        with shape Ex2 with major axis as the edge with (tail, head) so that
+        X[edge#][0]=tail, X[edge#][1]=head
     """
 
     def __init__(self, input_shape, num_outputs, nn_parameters,
