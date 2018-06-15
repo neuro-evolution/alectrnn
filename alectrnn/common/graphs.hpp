@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <Eigen/Sparse>
 #include "multi_array.hpp"
 
 namespace graphs {
@@ -257,14 +258,56 @@ template<typename Integer, typename TReal, template<typename, Index> class multi
 PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(const multi<Integer, 2>& edge_list,
     const multi<TReal, 1>& weights) {
   PredecessorGraph<TReal> graph = PredecessorGraph<TReal>();
-  multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
-  multi_array::ArrayView<TReal, 1> weight_view = weights.accessor();
+  const multi_array::ArrayView<Integer, 2> edge_view = edge_list.accessor();
+  const multi_array::ArrayView<TReal, 1> weight_view = weights.accessor();
   for (Index iii = 0; iii < edge_view.extent(0); ++iii) {
     graph.AddEdge(edge_view[iii][0], edge_view[iii][1], weight_view[iii]);
   }
 
   return graph;
 }
+
+/*
+ * Converts an edge list into a sparse matrix. The tail_size, is the number
+ * of nodes that act as the source of the links, and head_size is the number
+ * of nodes that act as the sink of the links. For a standard graph this is
+ * just the total number of nodes in the graph, else if the graph is
+ * bipartite, then one will be larger than the other.
+ */
+template<typename Integer, typename TReal, template<typename, Index> class multi>
+Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>& edge_list,
+                                                         const int num_tail_nodes,
+                                                         const int num_head_nodes) {
+
+  const auto edge_view = edge_list.accessor();
+  std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
+  for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
+    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][0], edge_view[i][1], 1);
+  }
+  Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);
+  graph.setFromTriplets(matrix_elements.begin(), matrix_elements.end());
+
+  return graph;
+};
+
+template<typename Integer, typename TReal, template<typename, Index> class multi>
+Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>& edge_list,
+                                                         const int num_tail_nodes,
+                                                         const int num_head_nodes,
+                                                         const multi<TReal, 1>& weights) {
+
+  const auto edge_view = edge_list.accessor();
+  const auto weight_view = weights.accessor();
+  std::vector<Eigen::Triplet<TReal>> matrix_elements(edge_view.extent(0));
+  for (std::size_t i = 0; i < edge_view.extent(0); ++i) {
+    matrix_elements[i] = Eigen::Triplet<TReal>(edge_view[i][0], edge_view[i][1],
+                                               weight_view[i]);
+  }
+  Eigen::SparseMatrix<TReal> graph(num_head_nodes, num_tail_nodes);
+  graph.setFromTriplets(matrix_elements.begin(), matrix_elements.end());
+
+  return graph;
+};
 
 } // End graphs namespace
 

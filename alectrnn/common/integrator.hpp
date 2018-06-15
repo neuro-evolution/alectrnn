@@ -827,11 +827,11 @@ class All2AllEigenIntegrator : public Integrator<TReal> {
                                     " size must be equal");
       }
 
-      ConstColVectorView prev_states(src_state.data(), src_state.size());
-      ConstMatrixView params(weights_.data() + weights_.start(), tar_state.size(),
-                             src_state.size());
       ColVectorView output(tar_state.data(), tar_state.size());
-      output.noalias() = params * prev_states;
+      output.noalias() = ConstMatrixView(weights_.data() + weights_.start(),
+                                         tar_state.size(),
+                                         src_state.size())
+                         * ConstColVectorView(src_state.data(), src_state.size());
     }
 
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
@@ -864,74 +864,76 @@ class All2AllEigenIntegrator : public Integrator<TReal> {
 /*
  * Implements a recurrent integrator with Eigen
  */
-//template<typename TReal>
-//class RecurrentEigenIntegrator : public Integrator<TReal> {
-//  public:
-//    typedef Integrator<TReal> super_type;
-//    typedef typename super_type::Index Index;
-//    typedef typename Eigen::SparseMatrix<TReal> SparseMatrix;
-//
-//    RecurrentEigenIntegrator(const SparseMatrix& network)
-//    : network_(network) {
-//      super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
-//      super_type::parameter_count_ = network_.NumEdges();//
-//    }
-//
-//    virtual ~RecurrentIntegrator()=default;
-//
-//    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
-//                            multi_array::Tensor<TReal>& tar_state) {
-//
-//      /*
-//       * Graph maybe a connector graph or an internal graph.
-//       * In case of connector, the num nodes doesn't need to match tar_state,
-//       * because predecessors should be empty for nodes not in tar_state.
-//       * However, src state does have to be checked using (at) when tar_state
-//       * is larger than src_state, to ensure nothing invalid is accessed.
-//       */
-//      Index edge_id = 0;
-//      for (Index node = 0; node < network_.NumNodes(); ++node) {
-//        for (Index iii = 0; iii < network_.Predecessors(node).size(); ++iii) {
-//          tar_state.at(node) += src_state.at(network_.Predecessors(node)[iii].source) * weights_[edge_id];
-//          tar_state[node] = utilities::BoundState(tar_state[node]);
-//          ++edge_id;
-//        }
-//      }
-//      if (edge_id != network_.NumEdges()) {
-//        throw std::runtime_error("Miss match between number of edges and the"
-//                                 " number integrated");
-//      }
-//    }
-//
-//    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
-//      if (parameters.size() != super_type::parameter_count_) {
-//        std::cerr << "parameter size: " << parameters.size() << std::endl;
-//        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
-//        throw std::invalid_argument("Wrong number of parameters");
-//      }
-//      weights_ = parameters.slice(0, super_type::parameter_count_);
-//    }
-//
-//    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
-//      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-//      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
-//        layout[iii] = WEIGHT;
-//      }
-//      return layout;
-//    }
-//
-//    const multi_array::ConstArraySlice<TReal>& GetWeights() const {
-//      return weights_;
-//    }
-//
-//    virtual std::pair<Index, Index> GetWeightIndexRange() const {
-//      return std::make_pair(0, super_type::parameter_count_);
-//    }
-//
-//  protected:
-//    SparseMatrix network_;
-//    multi_array::ConstArraySlice<TReal> weights_;
-//};
+template<typename TReal>
+class RecurrentEigenIntegrator : public Integrator<TReal> {
+  public:
+    typedef Integrator<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef Eigen::Matrix<TReal, Eigen::Dynamic, 1> ColVector;
+    typedef Eigen::Map<ColVector> ColVectorView;
+    typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
+    typedef const Eigen::Map<ConstColVector> ConstColVectorView;
+    typedef const Eigen::SparseMatrix<TReal> ConstSparseMatrix;
+    typedef const Eigen::Map<ConstSparseMatrix> ConstSparseMatrixView;
+
+    RecurrentEigenIntegrator(const SparseMatrix& network)
+    : network_(network) {
+      network_.make_compressed();
+      super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
+      super_type::parameter_count_ = network_.nonZeros();
+    }
+
+    virtual ~RecurrentIntegrator()=default;
+
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
+                            multi_array::Tensor<TReal>& tar_state) {
+
+      if ((network_.cols() == src_state.size())
+          && (network_.rows() == tar_state.size())) {
+        throw std::invalid_argument("src state size and tar state size "
+                                    "incompatible with network");
+      }
+
+      ConstSparseMatrixView weight_matrix(network_.rows(), network_.cols(),
+                                          weights_.size(), network_.outerIndexPtr(),
+                                          network_.innerIndexPrt(),
+                                          weights_.data() + weights_.start(),
+                                          network_.innerNonZeroPtr());
+      ColVectorView output_vector(tar_state.data(), tar_state.size());
+      ConstColVectorView src_vector(src_state.data(), src_state.size());
+
+      output_vector.noalias() = weight_matrix * src_vector;
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
+      weights_ = parameters.slice(0, super_type::parameter_count_);
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+      for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
+        layout[iii] = WEIGHT;
+      }
+      return layout;
+    }
+
+    const multi_array::ConstArraySlice<TReal>& GetWeights() const {
+      return weights_;
+    }
+
+    virtual std::pair<Index, Index> GetWeightIndexRange() const {
+      return std::make_pair(0, super_type::parameter_count_);
+    }
+
+  protected:
+    SparseMatrix network_;
+    multi_array::ConstArraySlice<TReal> weights_;
+};
 
 } // End nervous_system namespace
 
