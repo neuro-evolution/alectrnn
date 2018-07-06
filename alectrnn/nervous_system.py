@@ -202,7 +202,7 @@ class NervousSystem:
     Motor layer is the last layer of the network and should have a dictionary
     with the following keys:
         'layer_type' = "motor"
-        'motor_type' = ('standard' | 'softmax')
+        'motor_type' = ('standard' | 'softmax' | 'eigen')
 
     A standard motor layer takes on the same activation types and arguments as
     the other layers. The softmax layer has no memory and implements the softmax
@@ -460,6 +460,13 @@ class NervousSystem:
                         layer_act_types[i],
                         layer_act_args[i],
                     ))
+                elif layer_pars['motor_type'].lower() == 'eigen':
+                layers.append(self._create_eigen_motor_layer(
+                    layer_shapes[i+1],
+                    layer_shapes[i],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                ))
                 elif layer_pars['motor_type'].lower() == 'softmax':
                     layers.append(self._create_softmax_motor_layer(
                         layer_shapes[i+1],
@@ -839,6 +846,20 @@ class NervousSystem:
         size_of_prev_layer = int(np.prod(prev_layer_shape))
         assert(act_args[0] == num_outputs)
         return layer_generator.CreateMotorLayer(
+            int(num_outputs), size_of_prev_layer, act_type, act_args)
+
+    def _create_eigen_motor_layer(self, num_outputs, prev_layer_shape, act_type,
+                                  act_args):
+        """
+        Generates an eigen motor layer for the neural network, which will represent
+        the output of the network. It is fully connected to whatever layer
+        precedes it.
+        act_args needs to be in the correct tuple format for the activator
+        """
+
+        size_of_prev_layer = int(np.prod(prev_layer_shape))
+        assert(act_args[0] == num_outputs)
+        return layer_generator.CreateEigenMotorLayer(
             int(num_outputs), size_of_prev_layer, act_type, act_args)
 
     def _create_softmax_motor_layer(self, num_outputs, prev_layer_shape, temperature=1.0):
