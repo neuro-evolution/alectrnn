@@ -118,6 +118,33 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
   return layer_capsule;
 }
 
+static PyObject *CreateEigenMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "activator_type", "activator_args", NULL};
+
+  int num_outputs;
+  int num_inputs;
+  int activator_type;
+  PyObject* activator_args;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iiiO", keyword_list,
+                                   &num_outputs, &num_inputs, &activator_type,
+                                   &activator_args)) {
+    std::cerr << "Error parsing CreateEigenMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+      (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  nervous_system::Layer<float>* layer = new nervous_system::EigenMotorLayer<float>(
+      num_outputs, num_inputs, activator);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
 static PyObject *CreateSoftMaxMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"num_outputs", "num_inputs",
                                  "temperature", NULL};
@@ -583,6 +610,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateMotorLayer", (PyCFunction) CreateMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a MotorLayer"},
+  { "CreateEigenMotorLayer", (PyCFunction) CreateEigenMotorLayer,
+  METH_VARARGS | METH_KEYWORDS,
+  "Returns a handle to an EigenMotorLayer"},
   { "CreateSoftMaxMotorLayer", (PyCFunction) CreateSoftMaxMotorLayer,
   METH_VARARGS | METH_KEYWORDS,
   "Returns a handle to a SoftMaxMotorLayer"},

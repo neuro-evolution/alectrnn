@@ -256,6 +256,8 @@ class MotorLayer : public Layer<TReal> {
       super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
     }
 
+    virtual ~MotorLayer() {};
+
     virtual void operator()(const Layer<TReal>* prev_layer) {
       // First clear input buffer
       super_type::input_buffer_.Fill(0.0);
@@ -320,6 +322,32 @@ class SoftMaxMotorLayer : public MotorLayer<TReal> {
     SoftMaxMotorLayer(Index num_outputs, Index num_inputs, TReal temperature) {
       super_type::activation_function_ = new nervous_system::SoftMaxActivator<TReal>(temperature);
       super_type::back_integrator_ = new nervous_system::All2AllIntegrator<TReal>(num_outputs, num_inputs);
+      super_type::self_integrator_ = nullptr;
+      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount()
+                                     + super_type::back_integrator_->GetParameterCount();
+      super_type::layer_state_ = multi_array::Tensor<TReal>({num_outputs});
+      super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
+    }
+};
+
+/*
+ * A motor layer that uses the Eigen A2A integrator.
+ */
+template<typename TReal>
+class EigenMotorLayer : public MotorLayer<TReal> {
+  public:
+    typedef MotorLayer<TReal> super_type;
+    typedef typename super_type::Index Index;
+    typedef typename super_type::Factor Factor;
+
+    EigenMotorLayer() : super_type() {
+    }
+
+    EigenMotorLayer(Index num_outputs, Index num_inputs,
+                    Activator<TReal>* activation_function) {
+      super_type::activation_function_ = activation_function;
+      super_type::back_integrator_ = new nervous_system::All2AllEigenIntegrator<TReal>(num_outputs,
+                                                                                       num_inputs);
       super_type::self_integrator_ = nullptr;
       super_type::parameter_count_ = super_type::activation_function_->GetParameterCount()
                                      + super_type::back_integrator_->GetParameterCount();

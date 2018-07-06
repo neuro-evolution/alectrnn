@@ -167,6 +167,10 @@ class INTEGRATOR_TYPE(Enum):
     RESERVOIR=5
     RESERVOIR_HYBRID=6
     TRUNCATED_RECURRENT=7
+    CONV_EIGEN_INTEGRATOR=8
+    ALL2ALL_EIGEN_INTEGRATOR=9
+    RECURRENT_EIGEN_INTEGRATOR=10
+    RESERVOIR_EIGEN_INTEGRATOR=11
 
 
 ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.CONV_IAF,
@@ -511,7 +515,8 @@ class NervousSystem:
         for i, layer_pars in enumerate(nn_parameters):
             if 'conv' in layer_pars['layer_type']:
                 interpreted_shapes.append(calc_conv_layer_shape(interpreted_shapes[i],
-                                                                layer_pars['num_filters'], layer_pars['stride']))
+                                                                layer_pars['num_filters'],
+                                                                layer_pars['stride']))
                 if 'num_internal_nodes' in layer_pars:
                     interpreted_size = np.prod(interpreted_shapes[-1])
                     if layer_pars['num_internal_nodes'] < interpreted_size:
