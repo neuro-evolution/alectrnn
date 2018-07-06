@@ -235,6 +235,13 @@ class NervousSystem:
         'num_internal_nodes' = M
         'internal_graph' = E2x2, dtype=np.uint64 edge array
 
+    Eigen Recurrent layers use eigen integrators.
+    Should have a dictionary with the following keys:
+        'layer_type' = "eigen_recurrent"
+        'input_graph' = E1x2, dtype=np.uint64 bipartite edge graph
+        'num_internal_nodes' = M
+        'internal_graph' = E2x2, dtype=np.uint64 edge array
+
     Truncated Recurrent layers are the same as recurrent layers, except with an
     additional parameter that specifies a weight threshold. When the weights
     are below the thresholds magnitude, the connection is considered non-existent.
@@ -378,6 +385,16 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1]))
+
+            elif layer_pars['layer_type'] == "eigen_recurrent":
+                layers.append(self._create_eigen_recurrent_layer(
+                    layer_pars['input_graph'],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['internal_graph'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1],
+                    layer_shapes[i]))
 
             elif layer_pars['layer_type'] == "truncated_recurrent":
                 layers.append(self._create_truncated_recurrent_layer(
@@ -752,6 +769,36 @@ class NervousSystem:
                                            back_args, self_type, self_args,
                                            act_type, act_args, layer_shape)
 
+    def _create_eigen_recurrent_layer(self, bipartite_input_edge_array,
+                                      num_internal_nodes, internal_edge_array,
+                                      act_type, act_args, layer_shape,
+                                      prev_layer_shape):
+        """
+        Creates a eigen recurrent layer with graphs specifying back and self
+        connections. Uses Eigen integrators
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param bipartite_input_edge_array: array for back-connections (Nx2)
+            dtype=np.uint64
+        :param num_internal_nodes: number of neurons in layer
+        :param internal_edge_array: array for self-connections (Nx2)
+            dtype=np.uint64
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :param prev_layer_shape: shape of last layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.RECURRENT_EIGEN.value
+        back_args = (bipartite_input_edge_array, num_internal_nodes,
+                     int(np.prod(prev_layer_shape)))
+        self_type = INTEGRATOR_TYPE.RECURRENT_EIGEN.value
+        self_args = (internal_edge_array, num_internal_nodes, num_internal_nodes)
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateLayer(back_type,
+                                           back_args, self_type, self_args,
+                                           act_type, act_args, layer_shape)
+
     def _create_truncated_recurrent_layer(self, bipartite_input_edge_array,
                                           num_internal_nodes,
                                           internal_edge_array, act_type,
@@ -808,7 +855,8 @@ class NervousSystem:
                      internal_weight_array)
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type,
-                                           back_args, self_type, self_args, act_type, act_args,
+                                           back_args, self_type, self_args,
+                                           act_type, act_args,
                                            layer_shape)
 
     def _create_trained_input_reservoir_layer(self, bipartite_input_edge_array,

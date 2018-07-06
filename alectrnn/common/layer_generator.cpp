@@ -520,7 +520,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
 
     case nervous_system::RECURRENT_EIGEN_INTEGRATOR: {
       PyArrayObject* edge_list; // Nx2 dimensional array
-      int num_head_states; //states
+      int num_head_states; // states
       int num_tail_states; // states or tail states
       if (!PyArg_ParseTuple(args, "Oii", &edge_list, &num_head_states, &num_tail_states)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
