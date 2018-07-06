@@ -216,6 +216,12 @@ class NervousSystem:
         'num_filters'
         'stride'
 
+    Eigen Convolutional layers uses eigen integrators:
+        'layer_type' = "eigen_conv"
+        'filter_shape' = 2-element list/array with filter dimensions
+        'num_filters'
+        'stride'
+
     Reservoir layers have an untrained set of connections determined the
     input graph. The back connections are determined by the input graph.
     Both must specify weights. Should have a dictionary with the following keys:
@@ -370,6 +376,15 @@ class NervousSystem:
 
             if layer_pars['layer_type'] == "conv":
                 layers.append(self._create_conv_layer(
+                    interpreted_shapes[i],
+                    interpreted_shapes[i+1],
+                    layer_pars['filter_shape'],
+                    layer_pars['stride'],
+                    layer_act_types[i],
+                    layer_act_args[i]))
+
+            if layer_pars['layer_type'] == "eigen_conv":
+                layers.append(self._create_eigen_conv_layer(
                     interpreted_shapes[i],
                     interpreted_shapes[i+1],
                     layer_pars['filter_shape'],
@@ -918,7 +933,40 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
         return layer_generator.CreateLayer(back_type,
-                                           back_args, self_type, self_args, act_type, act_args, interpreted_shape)
+                                           back_args, self_type, self_args,
+                                           act_type, act_args, interpreted_shape)
+
+    def _create_eigen_conv_layer(self, prev_layer_shape, interpreted_shape,
+                                 filter_shape, stride, act_type, act_args):
+        """
+        Creates a layer with convolutional back connections and no self
+        connections. Uses Eigen integrators
+        act_args needs to be in the correct tuple format with properly
+        typed numpy arrays for any arguments
+        filter_shape = 2 element array/list with filter dimenstions
+        Final shape, which includes depth, depends on shape of prev layer
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :return: python capsule with pointer to the layer
+        """
+
+        back_type = INTEGRATOR_TYPE.CONV_EIGEN.value
+        # Appropriate depth is added to filter shape to build the # 3-element 1D array
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64),
+                     interpreted_shape, # layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        return layer_generator.CreateLayer(back_type,
+                                           back_args, self_type, self_args,
+                                           act_type, act_args, interpreted_shape)
 
     def _create_motor_layer(self, num_outputs, prev_layer_shape, act_type, act_args):
         """
