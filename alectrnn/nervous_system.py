@@ -461,7 +461,7 @@ class NervousSystem:
                         layer_act_args[i],
                     ))
                 elif layer_pars['motor_type'].lower() == 'eigen':
-                layers.append(self._create_eigen_motor_layer(
+                    layers.append(self._create_eigen_motor_layer(
                     layer_shapes[i+1],
                     layer_shapes[i],
                     layer_act_types[i],
