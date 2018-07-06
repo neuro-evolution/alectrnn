@@ -167,10 +167,10 @@ class INTEGRATOR_TYPE(Enum):
     RESERVOIR=5
     RESERVOIR_HYBRID=6
     TRUNCATED_RECURRENT=7
-    CONV_EIGEN_INTEGRATOR=8
-    ALL2ALL_EIGEN_INTEGRATOR=9
-    RECURRENT_EIGEN_INTEGRATOR=10
-    RESERVOIR_EIGEN_INTEGRATOR=11
+    CONV_EIGEN=8
+    ALL2ALL_EIGEN=9
+    RECURRENT_EIGEN=10
+    RESERVOIR_EIGEN=11
 
 
 ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.CONV_IAF,
@@ -290,6 +290,12 @@ class NervousSystem:
 
     a2a_ff layer has fully connected back connections and no internal connections.
     It is the same as a standard feed-forward layer.
+    Should have a dictionary with the following keys:
+        'layer_type' = "a2a_ff"
+        'num_internal_nodes'
+
+    eigen_a2a_ff layer has fully connected back connections and no internal connections.
+    It is the same as a standard feed-forward layer. Used Eigen integrators
     Should have a dictionary with the following keys:
         'layer_type' = "a2a_ff"
         'num_internal_nodes'
@@ -442,6 +448,14 @@ class NervousSystem:
                     layer_act_args[i],
                     layer_shapes[i+1]))
 
+            elif layer_pars['layer_type'] == 'eigen_a2a_ff':
+                layers.append(self._create_eigen_a2a_ff_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1]))
+
             elif layer_pars['layer_type'] == 'trained_input_reservoir':
                 layers.append(self._create_trained_input_reservoir_layer(
                     layer_pars['input_graph'],
@@ -462,11 +476,11 @@ class NervousSystem:
                     ))
                 elif layer_pars['motor_type'].lower() == 'eigen':
                     layers.append(self._create_eigen_motor_layer(
-                    layer_shapes[i+1],
-                    layer_shapes[i],
-                    layer_act_types[i],
-                    layer_act_args[i],
-                ))
+                                  layer_shapes[i+1],
+                                  layer_shapes[i],
+                                  layer_act_types[i],
+                                  layer_act_args[i],
+                                  ))
                 elif layer_pars['motor_type'].lower() == 'softmax':
                     layers.append(self._create_softmax_motor_layer(
                         layer_shapes[i+1],
@@ -614,6 +628,29 @@ class NervousSystem:
         :return: python capsule with pointer to the layer
         """
         back_type = INTEGRATOR_TYPE.ALL2ALL.value
+        back_args = (int(num_internal_nodes),
+                     int(np.prod(prev_layer_shape)))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateLayer(back_type, back_args, self_type,
+                                           self_args, act_type, act_args, layer_shape)
+
+    def _create_eigen_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
+                                   act_type, act_args, layer_shape):
+        """
+        Creates a layer with all-to-all back connections, but not internal
+        connections. Uses Eigen integrators.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.ALL2ALL_EIGEN.value
         back_args = (int(num_internal_nodes),
                      int(np.prod(prev_layer_shape)))
         self_type = INTEGRATOR_TYPE.NONE.value
