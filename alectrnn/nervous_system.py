@@ -383,7 +383,7 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i]))
 
-            if layer_pars['layer_type'] == "eigen_conv":
+            elif layer_pars['layer_type'] == "eigen_conv":
                 layers.append(self._create_eigen_conv_layer(
                     interpreted_shapes[i],
                     interpreted_shapes[i+1],
@@ -519,7 +519,8 @@ class NervousSystem:
                         layer_shapes[i],
                         layer_pars['temperature']))
             else:
-                raise NotImplementedError
+                raise NotImplementedError("Doesn't support "
+                                          + layer_pars['layer_type'])
 
         # Generate NN
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
