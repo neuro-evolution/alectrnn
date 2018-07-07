@@ -332,6 +332,8 @@ class NervousSystem:
     :note: For input graphs, the order of the numpy array should be row-major
         with shape Ex2 with major axis as the edge with (tail, head) so that
         X[edge#][0]=tail, X[edge#][1]=head
+
+    TODO: Support even filter shapes
     """
 
     def __init__(self, input_shape, num_outputs, nn_parameters,
@@ -526,6 +528,7 @@ class NervousSystem:
         self.neural_network = nn_generator.CreateNervousSystem(input_shape,
                                                                tuple(layers))
         self.layer_shapes = layer_shapes
+        self.interpreted_shapes = interpreted_shapes
         self.nn_parameters = nn_parameters
 
     def _configure_layer_activations(self, layer_shapes, interpreted_shapes,
@@ -928,7 +931,7 @@ class NervousSystem:
         back_type = INTEGRATOR_TYPE.CONV.value
         # Appropriate depth is added to filter shape to build the # 3-element 1D array
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64),
-                     interpreted_shape, # layer_shape funct outputs dtype=np.uint64
+                     interpreted_shape,  # layer_shape funct outputs dtype=np.uint64
                      np.array(prev_layer_shape, dtype=np.uint64),
                      int(stride))
         self_type = INTEGRATOR_TYPE.NONE.value
@@ -960,7 +963,7 @@ class NervousSystem:
         back_type = INTEGRATOR_TYPE.CONV_EIGEN.value
         # Appropriate depth is added to filter shape to build the # 3-element 1D array
         back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64),
-                     interpreted_shape, # layer_shape funct outputs dtype=np.uint64
+                     interpreted_shape,  # layer_shape funct outputs dtype=np.uint64
                      np.array(prev_layer_shape, dtype=np.uint64),
                      int(stride))
         self_type = INTEGRATOR_TYPE.NONE.value
