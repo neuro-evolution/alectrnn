@@ -541,7 +541,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       }
 
       new_integrator = new nervous_system::RecurrentEigenIntegrator<float>(
-        graphs::ConvertEdgeListToSparseMatrix<Index, float, multi_array::MultiArray>(
+        graphs::ConvertEdgeListToSparseMatrix<float>(
           alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
           num_tail_states, num_head_states));
       break;

@@ -284,7 +284,7 @@ PredecessorGraph<TReal> ConvertEdgeListToPredecessorGraph(const multi<Integer, 2
  * The resulting sparse matrix shape is: Head x Tail
  * Where Tail == # cols, and Head == # rows
  */
-template<typename Integer, typename TReal, template<typename, Index> class multi>
+template<typename TReal, template<typename, Index> class multi, typename Integer>
 Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>& edge_list,
                                                          const int num_tail_nodes,
                                                          const int num_head_nodes) {
@@ -301,11 +301,12 @@ Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>
   return graph;
 };
 
-template<typename Integer, typename TReal, template<typename, Index> class multi>
-Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const multi<Integer, 2>& edge_list,
+template<typename TReal, template<typename, Index> class MultiArray2D,
+         template<typename, Index> class MultiArray1D, typename Integer>
+Eigen::SparseMatrix<TReal> ConvertEdgeListToSparseMatrix(const MultiArray2D<Integer, 2>& edge_list,
                                                          const int num_tail_nodes,
                                                          const int num_head_nodes,
-                                                         const multi<TReal, 1>& weights) {
+                                                         const MultiArray1D<TReal, 1>& weights) {
 
   const auto edge_view = edge_list.accessor();
   const auto weight_view = weights.accessor();
