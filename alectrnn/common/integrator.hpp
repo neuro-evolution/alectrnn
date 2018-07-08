@@ -700,6 +700,7 @@ class ReservoirIntegrator : public Integrator<TReal> {
 /*
  * Implements non-separable convolution using im2col and gemm through Eigen
  * Assumes NCHW memory layout
+ * TODO: Support even filters
  */
 template<typename TReal>
 class ConvEigenIntegrator : public Integrator<TReal> {
