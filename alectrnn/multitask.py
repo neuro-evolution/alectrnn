@@ -107,3 +107,27 @@ class RandomRomObjective:
 
         return self.score_normalizer(self._objective_handler.handle(parameters),
                                      chosen_rom)
+
+
+class MultiRomObjective:
+    """
+    Runs multiple game for each objective and returns the sum of their
+    normalized performance.
+    """
+
+    def __init__(self, rom_objective_map, score_normalizer):
+        """
+        :param rom_objective_map: a dictionary keyed by rom and valued by an
+            objective handler
+        :param score_normalizer: an instance of a score normalizer
+        """
+        self.rom_objective_map = rom_objective_map
+        self.score_normalizer = score_normalizer
+
+    def __call__(self, parameters):
+        """
+        :param parameters: objective parameters
+        :return: sum of normalized scores
+        """
+        return sum([self.score_normalizer(objective.handle(parameters), rom)
+                    for rom, objective in self.rom_objective_map.items()])
