@@ -1,3 +1,6 @@
+from random import Random
+
+
 class HumanNormalizationLog:
     """
     This class contains static dictionary with keys for each game, valued by
@@ -60,3 +63,47 @@ def rescale(x, new_min, new_max, old_min, old_max):
 
     return new_min * (1 - (x-old_min)/(old_max-old_min)) \
            + new_max*((x-old_min)/(old_max-old_min))
+
+
+class RandomRomObjective:
+    """
+    When called it plays a random game and returns a normalized score
+    """
+
+    def __init__(self, roms, ale_handler, agent_handler, objective_handler,
+                 score_normalizer, seed):
+        """
+        :param roms: a sequence of rom names to random choose from
+        :param ale_handler: a built ale handler object
+        :param agent_handler: a built agent handler object
+        :param objective_handler: a built objective handler object
+        :param score_normalizer: an instance of a score normalizer
+        :param seed: seed for the random number generator
+
+        *built means the create() method was called and the handle exists.
+        """
+        self.roms = roms
+        self._ale_handler = ale_handler
+        self._agent_handler = agent_handler
+        self._objective_handler = objective_handler
+        self.score_normalizer = score_normalizer
+        self._rng = Random(seed)
+
+    def __call__(self, parameters):
+        """
+        Selects a random rom from the roms list, updates the handlers, and
+        then runs the objective.
+        :param parameters: parameters for objective function
+        :return: score
+        """
+
+        chosen_rom = self._rng.choice(self.roms)
+        self._ale_handler.set_parameters({'rom': chosen_rom,
+                                         'seed': self._rng.randint(1, 2000000)})
+        # Update handles
+        self._agent_handler.ale = self._ale_handler.handle
+        self._objective_handler.agent = self._agent_handler.handle
+        self._objective_handler.ale = self._ale_handler.handle
+
+        return self.score_normalizer(self._objective_handler.handle(parameters),
+                                     chosen_rom)
