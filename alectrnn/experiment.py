@@ -1,6 +1,7 @@
 from alectrnn import handlers
 from alectrnn import nervous_system as ns
 from abc import ABC, abstractmethod
+from alectrnn import multitask
 
 
 class ALEExperimentBase(ABC):
@@ -53,6 +54,24 @@ class ALEExperimentBase(ABC):
         self.agent_class_parameters = agent_class_parameters
         self.objective_parameters = objective_parameters
         self.script_prefix = script_prefix
+
+        # To be set by derived
+        self._nervous_system = None
+        self._agent_handle = None
+
+    def check_configuration_conflicts(self):
+        """
+        Some configurations maynot be compatible with others, so this function
+        houses a check for such misc issues
+        :return: 1, else raise error
+        """
+
+        # Check to make sure softmax agents get softmax motor layer
+        if (self.agent_class == handlers.SoftMaxAgentHandler) and (
+                self.nervous_system_class_parameters['nn_parameters'][-1]['motor_type'].lower()
+                != 'softmax'):
+
+            raise AssertionError("SoftMaxAgents must have a softmax motor layer.")
 
     def construct_nervous_system(self, nervous_system_class,
                                  nervous_system_parameters, agent_class,
@@ -232,20 +251,6 @@ class ALEExperiment(ALEExperimentBase):
 
         self.check_configuration_conflicts()
 
-    def check_configuration_conflicts(self):
-        """
-        Some configurations maynot be compatible with others, so this function
-        houses a check for such misc issues
-        :return: 1, else raise error
-        """
-
-        # Check to make sure softmax agents get softmax motor layer
-        if (self.agent_class == handlers.SoftMaxAgentHandler) and (
-            self.nervous_system_class_parameters['nn_parameters'][-1]['motor_type'].lower()
-            != 'softmax'):
-
-            raise AssertionError("SoftMaxAgents must have a softmax motor layer.")
-
     def set_objective_function(self, objective_parameters):
         """
         Re-makes the objective handle based on given objective parameters
@@ -285,7 +290,7 @@ class ALEExperiment(ALEExperimentBase):
         :return: None
         """
         super().set_logging(is_logging)
-        
+
     def _update_game_environment(self):
         """
         updates the necessary handles when the game environment is updated
@@ -299,5 +304,91 @@ class ALEExperiment(ALEExperimentBase):
         return self._obj_handle.handle
 
 
-if __name__ == '__main__':
-    pass
+class ALERandomRomExperiment(ALEExperimentBase):
+    """
+
+    """
+    def __init__(self, roms, score_normalizer, seed, **kwargs):
+        """
+        :param roms: a list of roms to choose from randomly
+        :param kwargs: ALEExperimentBase arguments
+        """
+        super().__init__(**kwargs)
+
+        # Construct handles (ALE)
+        self.ale_parameters['rom'] = 'seaquest'  # give dummy rom for initialization
+        self._ale_handle = self.construct_ale_handle(self.ale_parameters)
+
+        # Construct handle (Nervous system)
+        self._nervous_system = self.construct_nervous_system(self.nervous_system_class,
+                                                             self.nervous_system_class_parameters,
+                                                             self.agent_class,
+                                                             self._ale_handle)
+
+        # Construct handle (Agent)
+        self._agent_handle = self.construct_agent_handle(self.agent_class,
+                                                         self.agent_class_parameters,
+                                                         self._nervous_system.neural_network,
+                                                         self._ale_handle)
+
+        # Construct handle (objective)
+        self._obj_handle = self.construct_objective_handle(self.objective_parameters,
+                                                           self._ale_handle,
+                                                           self._agent_handle)
+
+        self.script_prefix = self.script_prefix + "_" \
+                             + self._ale_handle.rom + "_npar" \
+                             + str(self.get_parameter_count())
+
+        self.check_configuration_conflicts()
+
+        self.roms = roms
+        self.score_normalizer = score_normalizer
+        self.seed = seed
+        self._objective = multitask.RandomRomObjective(self.roms,
+                                                       self._ale_handle,
+                                                       self._agent_handle,
+                                                       self._obj_handle,
+                                                       self.score_normalizer,
+                                                       self.seed)
+
+    @property
+    def objective_function(self):
+        return self._objective
+
+    def set_logging(self, is_logging):
+        """
+        Changes the logging state of the experiment. Requires remaking the agent
+        and objective handles.
+        :param is_logging: True/False
+        :return: None
+        """
+        super().set_logging(is_logging)
+
+
+class ALEMultiRomExperiment(ALEExperimentBase):
+    """
+
+    """
+    def __init__(self, roms, **kwargs):
+        """
+
+        :param roms: a list of roms to run when the objective is called
+        :param kwargs: ALEExperimentBase arguments
+        """
+        super().__init__(**kwargs)
+
+        self._objective = multitask.MultiRomObjective
+
+    @property
+    def objective_function(self):
+        return self._objective
+
+    def set_logging(self, is_logging):
+        """
+        Changes the logging state of the experiment. Requires remaking the agent
+        and objective handles.
+        :param is_logging: True/False
+        :return: None
+        """
+        pass
