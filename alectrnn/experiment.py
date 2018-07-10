@@ -2,6 +2,7 @@ from alectrnn import handlers
 from alectrnn import nervous_system as ns
 from abc import ABC, abstractmethod
 from alectrnn import multitask
+import copy
 
 
 class ALEExperimentBase(ABC):
@@ -306,12 +307,16 @@ class ALEExperiment(ALEExperimentBase):
 
 class ALERandomRomExperiment(ALEExperimentBase):
     """
-
+    An ALE experiment
     """
     def __init__(self, roms, score_normalizer, seed, **kwargs):
         """
         :param roms: a list of roms to choose from randomly
+        :param score_normalizer: a ScoreNormalizer
+        :param seed: seed for drawing random roms to play
         :param kwargs: ALEExperimentBase arguments
+
+        *ale parameters don't have to include rom (it will be overwritten)
         """
         super().__init__(**kwargs)
 
@@ -337,7 +342,7 @@ class ALERandomRomExperiment(ALEExperimentBase):
                                                            self._agent_handle)
 
         self.script_prefix = self.script_prefix + "_" \
-                             + self._ale_handle.rom + "_npar" \
+                             + "randrom" + "_npar" \
                              + str(self.get_parameter_count())
 
         self.check_configuration_conflicts()
@@ -368,17 +373,62 @@ class ALERandomRomExperiment(ALEExperimentBase):
 
 class ALEMultiRomExperiment(ALEExperimentBase):
     """
-
+    An ALE experiment that runs several ROMs for each objective call.
+    The sum of the performance on all tasks is returned.
     """
-    def __init__(self, roms, **kwargs):
+    def __init__(self, roms, score_normalizer, **kwargs):
         """
-
         :param roms: a list of roms to run when the objective is called
-        :param kwargs: ALEExperimentBase arguments
+        :param score_normalizer: a ScoreNormalizer
+        :param kwargs: ALEExperimentBase arguments, except agent class
+
+        *ale parameters don't have to include rom (it will be overwritten)
         """
+        kwargs['agent_class'] = handlers.SharedMotorAgentHandler
         super().__init__(**kwargs)
 
-        self._objective = multitask.MultiRomObjective
+        # Construct handles (ALE)
+        self._ale_handlers = []
+        for rom in roms:
+            ale_parameters = copy.copy(self.ale_parameters)
+            ale_parameters['rom'] = rom
+            self._ale_handlers.append(self.construct_ale_handle(ale_parameters))
+
+        # Construct handle (Nervous system)
+        self._nervous_system = self.construct_nervous_system(self.nervous_system_class,
+                                                             self.nervous_system_class_parameters,
+                                                             self.agent_class,
+                                                             self._ale_handlers[0])
+
+        # Construct handles (Agent)
+        self._agent_handlers = []
+        for ale_handler in self._ale_handlers:
+            self._agent_handlers.append(self.construct_agent_handle(
+                self.agent_class,
+                self.agent_class_parameters,
+                self._nervous_system.neural_network,
+                ale_handler))
+
+        # Construct handles (objective)
+        self._objective_handlers = []
+        for i in range(len(roms)):
+            self._objective_handlers.append(self.construct_objective_handle(
+                self.objective_parameters,
+                self._ale_handlers[i],
+                self._agent_handlers[i]))
+
+        self.script_prefix = self.script_prefix + "_" \
+                             + "multirom" + "_npar" \
+                             + str(self.get_parameter_count())
+
+        self.check_configuration_conflicts()
+
+        self.roms = roms
+        self.rom_objective_map = {self.roms[i]: self._objective_handlers[i]
+                                  for i in range(len(self.roms))}
+        self.score_normalizer = score_normalizer
+        self._objective = multitask.MultiRomObjective(self.rom_objective_map,
+                                                      self.score_normalizer)
 
     @property
     def objective_function(self):
@@ -391,4 +441,4 @@ class ALEMultiRomExperiment(ALEExperimentBase):
         :param is_logging: True/False
         :return: None
         """
-        pass
+        raise NotImplementedError("Currently haven't made logging function")
