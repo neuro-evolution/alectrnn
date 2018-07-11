@@ -92,7 +92,7 @@ class CostNormalizer:
 
         self.normalization_log = normalization_log
 
-    def normalize_score(self, cost, rom, clip=False):
+    def __call__(self, cost, rom, clip=False):
         """
         :param cost: a scalar
         :param rom: string representing rom name
@@ -100,12 +100,12 @@ class CostNormalizer:
         :return: the normalized cost
         """
 
-        normalize_score = ((cost - self.normalization_log.log[rom])
+        normalize_cost = ((cost - self.normalization_log.log[rom])
                            / -self.normalization_log.log[rom]) - 1
         if clip:
-            return max(-1., normalize_score)
+            return max(-1., normalize_cost)
 
-        return normalize_score
+        return normalize_cost
 
 
 def rescale(x, new_min, new_max, old_min, old_max):
