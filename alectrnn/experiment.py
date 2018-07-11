@@ -238,7 +238,7 @@ class ALEExperiment(ALEExperimentBase):
         # Construct handle (Agent)
         self._agent_handle = self.construct_agent_handle(self.agent_class,
                                                          self.agent_class_parameters,
-                                                         self._nervous_system.neural_network,
+                                                         self._nervous_system,
                                                          self._ale_handle)
 
         # Construct handle (objective)
@@ -314,10 +314,12 @@ class ALERandomRomExperiment(ALEExperimentBase):
         :param roms: a list of roms to choose from randomly
         :param cost_normalizer: a CostNormalizer
         :param seed: seed for drawing random roms to play
-        :param kwargs: ALEExperimentBase arguments
+        :param kwargs: ALEExperimentBase arguments, except for agent class
+            which must be a shared motor handler
 
         *ale parameters don't have to include rom (it will be overwritten)
         """
+        kwargs['agent_class'] = handlers.SharedMotorAgentHandler
         super().__init__(**kwargs)
 
         # Construct handles (ALE)
@@ -333,7 +335,7 @@ class ALERandomRomExperiment(ALEExperimentBase):
         # Construct handle (Agent)
         self._agent_handle = self.construct_agent_handle(self.agent_class,
                                                          self.agent_class_parameters,
-                                                         self._nervous_system.neural_network,
+                                                         self._nervous_system,
                                                          self._ale_handle)
 
         # Construct handle (objective)
@@ -380,7 +382,8 @@ class ALEMultiRomExperiment(ALEExperimentBase):
         """
         :param roms: a list of roms to run when the objective is called
         :param cost_normalizer: a CostNormalizer
-        :param kwargs: ALEExperimentBase arguments, except agent class
+        :param kwargs: ALEExperimentBase arguments, except agent class, which
+            must be a shared motor handler
 
         *ale parameters don't have to include rom (it will be overwritten)
         """
@@ -406,7 +409,7 @@ class ALEMultiRomExperiment(ALEExperimentBase):
             self._agent_handlers.append(self.construct_agent_handle(
                 self.agent_class,
                 self.agent_class_parameters,
-                self._nervous_system.neural_network,
+                self._nervous_system,
                 ale_handler))
 
         # Construct handles (objective)

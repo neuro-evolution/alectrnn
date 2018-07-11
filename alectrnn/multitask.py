@@ -167,7 +167,7 @@ class RandomRomObjective:
         self._objective_handler.ale = self._ale_handler.handle
 
         return self.cost_normalizer(self._objective_handler.handle(parameters),
-                                     chosen_rom)
+                                    chosen_rom)
 
 
 class MultiRomObjective:
