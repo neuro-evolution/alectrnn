@@ -309,10 +309,10 @@ class ALERandomRomExperiment(ALEExperimentBase):
     """
     An ALE experiment
     """
-    def __init__(self, roms, score_normalizer, seed, **kwargs):
+    def __init__(self, roms, cost_normalizer, seed, **kwargs):
         """
         :param roms: a list of roms to choose from randomly
-        :param score_normalizer: a ScoreNormalizer
+        :param cost_normalizer: a CostNormalizer
         :param seed: seed for drawing random roms to play
         :param kwargs: ALEExperimentBase arguments
 
@@ -348,13 +348,13 @@ class ALERandomRomExperiment(ALEExperimentBase):
         self.check_configuration_conflicts()
 
         self.roms = roms
-        self.score_normalizer = score_normalizer
+        self.cost_normalizer = cost_normalizer
         self.seed = seed
         self._objective = multitask.RandomRomObjective(self.roms,
                                                        self._ale_handle,
                                                        self._agent_handle,
                                                        self._obj_handle,
-                                                       self.score_normalizer,
+                                                       self.cost_normalizer,
                                                        self.seed)
 
     @property
@@ -376,10 +376,10 @@ class ALEMultiRomExperiment(ALEExperimentBase):
     An ALE experiment that runs several ROMs for each objective call.
     The sum of the performance on all tasks is returned.
     """
-    def __init__(self, roms, score_normalizer, **kwargs):
+    def __init__(self, roms, cost_normalizer, **kwargs):
         """
         :param roms: a list of roms to run when the objective is called
-        :param score_normalizer: a ScoreNormalizer
+        :param cost_normalizer: a CostNormalizer
         :param kwargs: ALEExperimentBase arguments, except agent class
 
         *ale parameters don't have to include rom (it will be overwritten)
@@ -426,9 +426,9 @@ class ALEMultiRomExperiment(ALEExperimentBase):
         self.roms = roms
         self.rom_objective_map = {self.roms[i]: self._objective_handlers[i]
                                   for i in range(len(self.roms))}
-        self.score_normalizer = score_normalizer
+        self.cost_normalizer = cost_normalizer
         self._objective = multitask.MultiRomObjective(self.rom_objective_map,
-                                                      self.score_normalizer)
+                                                      self.cost_normalizer)
 
     @property
     def objective_function(self):

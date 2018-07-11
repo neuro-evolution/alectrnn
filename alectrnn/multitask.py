@@ -4,7 +4,7 @@ from random import Random
 class HumanNormalizationLog:
     """
     This class contains static dictionary with keys for each game, valued by
-    the best human score.
+    the best human cost.
     """
 
     log = {'air_raid': None,
@@ -73,15 +73,16 @@ class HumanNormalizationLog:
 class BestAINormalizationLog:
     """
     This class contains static dictionary with keys for each game, valued by
-    the best AI score.
+    the best AI cost.
     """
 
     log = {}
 
 
-class ScoreNormalizer:
+class CostNormalizer:
     """
-    Contains methods for normalizing scores based on a log
+    Contains methods for normalizing costs based on a log.
+    Assumes lower scores are better (e.g. uses Cost)
     """
 
     def __init__(self, normalization_log):
@@ -91,18 +92,18 @@ class ScoreNormalizer:
 
         self.normalization_log = normalization_log
 
-    def normalize_score(self, score, rom, clip=False):
+    def normalize_score(self, cost, rom, clip=False):
         """
-        :param score: a scalar
+        :param cost: a scalar
         :param rom: string representing rom name
-        :param clip: whether to clip the maximum score to 1. Default: F
-        :return: the normalized score
+        :param clip: whether to clip the maximum cost to -1. Default: F
+        :return: the normalized cost
         """
 
-        normalize_score = (score - self.normalization_log.log[rom]) \
-                          / self.normalization_log.log[rom]
+        normalize_score = ((cost - self.normalization_log.log[rom])
+                           / -self.normalization_log.log[rom]) - 1
         if clip:
-            return min(1., normalize_score)
+            return max(-1., normalize_score)
 
         return normalize_score
 
@@ -131,13 +132,13 @@ class RandomRomObjective:
     """
 
     def __init__(self, roms, ale_handler, agent_handler, objective_handler,
-                 score_normalizer, seed):
+                 cost_normalizer, seed):
         """
         :param roms: a sequence of rom names to random choose from
         :param ale_handler: a built ale handler object
         :param agent_handler: a built agent handler object
         :param objective_handler: a built objective handler object
-        :param score_normalizer: an instance of a score normalizer
+        :param cost_normalizer: an instance of a cost normalizer
         :param seed: seed for the random number generator
 
         *built means the create() method was called and the handle exists.
@@ -146,7 +147,7 @@ class RandomRomObjective:
         self._ale_handler = ale_handler
         self._agent_handler = agent_handler
         self._objective_handler = objective_handler
-        self.score_normalizer = score_normalizer
+        self.cost_normalizer = cost_normalizer
         self._rng = Random(seed)
 
     def __call__(self, parameters):
@@ -154,7 +155,7 @@ class RandomRomObjective:
         Selects a random rom from the roms list, updates the handlers, and
         then runs the objective.
         :param parameters: parameters for objective function
-        :return: score
+        :return: cost
         """
 
         chosen_rom = self._rng.choice(self.roms)
@@ -165,7 +166,7 @@ class RandomRomObjective:
         self._objective_handler.agent = self._agent_handler.handle
         self._objective_handler.ale = self._ale_handler.handle
 
-        return self.score_normalizer(self._objective_handler.handle(parameters),
+        return self.cost_normalizer(self._objective_handler.handle(parameters),
                                      chosen_rom)
 
 
@@ -175,19 +176,19 @@ class MultiRomObjective:
     normalized performance.
     """
 
-    def __init__(self, rom_objective_map, score_normalizer):
+    def __init__(self, rom_objective_map, cost_normalizer):
         """
         :param rom_objective_map: a dictionary keyed by rom and valued by an
             objective handler
-        :param score_normalizer: an instance of a score normalizer
+        :param cost_normalizer: an instance of a cost normalizer
         """
         self.rom_objective_map = rom_objective_map
-        self.score_normalizer = score_normalizer
+        self.cost_normalizer = cost_normalizer
 
     def __call__(self, parameters):
         """
         :param parameters: objective parameters
         :return: sum of normalized scores
         """
-        return sum([self.score_normalizer(objective.handle(parameters), rom)
+        return sum([self.cost_normalizer(objective.handle(parameters), rom)
                     for rom, objective in self.rom_objective_map.items()])
