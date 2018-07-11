@@ -159,8 +159,8 @@ class RandomRomObjective:
         """
 
         chosen_rom = self._rng.choice(self.roms)
-        self._ale_handler.set_parameters({'rom': chosen_rom,
-                                         'seed': self._rng.randint(1, 2000000)})
+        self._ale_handler.set_parameters(rom=chosen_rom,
+                                         seed=self._rng.randint(1, 2000000))
         # Update handles
         self._agent_handler.ale = self._ale_handler.handle
         self._objective_handler.agent = self._agent_handler.handle
