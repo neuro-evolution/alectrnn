@@ -56,10 +56,6 @@ class ALEExperimentBase(ABC):
         self.objective_parameters = objective_parameters
         self.script_prefix = script_prefix
 
-        # To be set by derived
-        self._nervous_system = None
-        self._agent_handle = None
-
     def check_configuration_conflicts(self):
         """
         Some configurations maynot be compatible with others, so this function
@@ -148,19 +144,6 @@ class ALEExperimentBase(ABC):
         """
         return self._nervous_system.get_parameter_count()
 
-    def screen_history(self):
-        """
-        :return: numpy array of the screen state for each time-step
-        """
-        return self._agent_handle.screen_history()
-
-    def layer_history(self, layer_index):
-        """
-        :param layer_index: The index of the layer you want to get the history of
-        :return: a numpy array of the state for each time-step
-        """
-        return self._agent_handle.layer_history(layer_index)
-
     def print_layer_shapes(self):
         """
         Prints the shapes calculated for each layer
@@ -193,18 +176,6 @@ class ALEExperimentBase(ABC):
         return ns.draw_initial_guess(type_bounds,
                                      self._nervous_system,
                                      rng, normalized_weights, norm_type)
-
-    @abstractmethod
-    def set_logging(self, is_logging):
-        """
-        Changes the logging state of the experiment. Requires remaking the agent
-        and objective handles.
-        :param is_logging: True/False
-        :return: None
-        """
-
-        self._agent_handle.logging = is_logging
-        self._obj_handle.agent = self._agent_handle.handle
 
     @property
     @abstractmethod
@@ -252,6 +223,19 @@ class ALEExperiment(ALEExperimentBase):
 
         self.check_configuration_conflicts()
 
+    def screen_history(self):
+        """
+        :return: numpy array of the screen state for each time-step
+        """
+        return self._agent_handle.screen_history()
+
+    def layer_history(self, layer_index):
+        """
+        :param layer_index: The index of the layer you want to get the history of
+        :return: a numpy array of the state for each time-step
+        """
+        return self._agent_handle.layer_history(layer_index)
+
     def set_objective_function(self, objective_parameters):
         """
         Re-makes the objective handle based on given objective parameters
@@ -290,7 +274,9 @@ class ALEExperiment(ALEExperimentBase):
         :param is_logging: True/False
         :return: None
         """
-        super().set_logging(is_logging)
+
+        self._agent_handle.logging = is_logging
+        self._obj_handle.agent = self._agent_handle.handle
 
     def _update_game_environment(self):
         """
@@ -363,15 +349,6 @@ class ALERandomRomExperiment(ALEExperimentBase):
     def objective_function(self):
         return self._objective
 
-    def set_logging(self, is_logging):
-        """
-        Changes the logging state of the experiment. Requires remaking the agent
-        and objective handles.
-        :param is_logging: True/False
-        :return: None
-        """
-        super().set_logging(is_logging)
-
 
 class ALEMultiRomExperiment(ALEExperimentBase):
     """
@@ -436,12 +413,3 @@ class ALEMultiRomExperiment(ALEExperimentBase):
     @property
     def objective_function(self):
         return self._objective
-
-    def set_logging(self, is_logging):
-        """
-        Changes the logging state of the experiment. Requires remaking the agent
-        and objective handles.
-        :param is_logging: True/False
-        :return: None
-        """
-        raise NotImplementedError("Currently haven't made logging function")
