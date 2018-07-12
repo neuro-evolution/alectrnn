@@ -699,7 +699,7 @@ class SigmoidActivator : public Activator<TReal> {
       if (is_shared_) {
         input_gain_ = parameters.slice(0, num_states_);
         input_bias_ = parameters.slice(parameters.stride() * num_states_, num_states_);
-        decay_ = 
+        decay_ =
       }
     }
 
