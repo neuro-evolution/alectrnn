@@ -246,7 +246,8 @@ class Conv3DCTRNNActivator : public Activator<TReal> {
       super_type::activator_type_ = CONV_CTRNN_ACTIVATOR;
     }
 
-    virtual void operator()(multi_array::Tensor<TReal>& state, const multi_array::Tensor<TReal>& input_buffer) {
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
 
       if (!((state.shape() == shape_) && (input_buffer.shape() == shape_))) {
         std::cerr << "Activator incompatible with state: " <<
@@ -641,6 +642,11 @@ class Conv3DIafActivator : public Activator<TReal> {
     std::vector<TReal> vthresh_;
     multi_array::Tensor<TReal> subthreshold_state_;
 };
+
+/*
+ * Sigmoid activation function
+ */
+
 
 } // End nervous_system namespace
 

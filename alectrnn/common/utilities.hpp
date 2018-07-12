@@ -42,6 +42,12 @@ TReal sigmoid(TReal x) {
   return 1 / (1 + std::exp(-x));
 }
 
+template <typename TReal>
+TReal approx_sigmoid(const TReal x, const TReal scale=0.5, const TReal bias=0.5,
+                     const TReal curve=1.0) {
+  return scale * x / (curve + std::fabs(x)) + bias;
+}
+
 /*
  * Takes a reference to some iterable and replaces the elements with their
  * corresponding softmax values
