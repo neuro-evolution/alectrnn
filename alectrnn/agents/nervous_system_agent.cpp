@@ -30,7 +30,7 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
   is_configured_ = false;
 
   // Check that NN input is correct dim
-  if (neural_net_[0].shape().size() == 3) {
+  if (neural_net_[0].shape().size() != 3) {
     throw std::invalid_argument("NervousSystemAgent needs input layer with "
                                 "3 dimensions");
   }
