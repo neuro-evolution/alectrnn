@@ -648,6 +648,8 @@ class Conv3DIafActivator : public Activator<TReal> {
  * Sigmoid activation function
  * Toggle parameter sharing.
  * Assigns parameters into internal memory.
+ * It auto wraps the DECAY parameter between 0-1 since those are the only
+ * values that guarantee bound behavior.
  */
 template <typename TReal>
 class SigmoidActivator : public Activator<TReal> {
