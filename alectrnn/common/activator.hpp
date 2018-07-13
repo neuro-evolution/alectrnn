@@ -699,7 +699,7 @@ class TanhActivator: public Activator<TReal> {
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           for (Index jjj = 0; jjj < num_copies; ++iii) {
             input_gain_[iii * num_copies + jjj] = parameters[iii];
-            input_gain_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
+            input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
           }
         }
       }
@@ -707,11 +707,22 @@ class TanhActivator: public Activator<TReal> {
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
-      for (Index iii = 0; iii < num_states_; ++iii) {
-        layout[iii] = BIAS;
+
+      if (is_shared_) {
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*shape_[0]; ++iii) {
+          layout[iii] = GAIN;
+        }
       }
-      for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
-        layout[iii] = GAIN;
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
+          layout[iii] = GAIN;
+        }
       }
 
       return layout;
