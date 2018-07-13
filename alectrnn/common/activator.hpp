@@ -660,10 +660,10 @@ class TanhActivator: public Activator<TReal> {
           is_shared_(is_shared) {
 
       if (is_shared_) {
-        super_type::parameter_count_ = shape_[0] * 3;
+        super_type::parameter_count_ = shape_[0] * 2;
       }
       else {
-        super_type::parameter_count_ = num_states_ * 3;
+        super_type::parameter_count_ = num_states_ * 2;
       }
       // Parameters are copied into these tensors during configuration
       input_bias_ = multi_array::Tensor<TReal>({num_states_});
