@@ -69,6 +69,13 @@ class NervousSystem {
     }
 
     /*
+     * Get state for a layer
+     */
+    multi_array::Tensor<TReal>& GetLayerState(const Index layer) {
+      return network_layers_[layer]->state();
+    }
+
+    /*
      * It is assumed that the last layer is the output of the network
      * Its states will be returned as a const Tensor reference.
      */

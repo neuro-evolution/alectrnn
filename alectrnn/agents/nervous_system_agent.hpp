@@ -34,6 +34,7 @@ class NervousSystemAgent : public PlayerAgent {
   protected:
     Action Act();
     Action GetActionFromNervousSystem();
+    void UpdateNervousSystemInput();
     void StepNervousSystem();
     void UpdateScreen();
 
@@ -41,7 +42,7 @@ class NervousSystemAgent : public PlayerAgent {
     nervous_system::NervousSystem<float>& neural_net_;
     nervous_system::StateLogger<float> log_;
     std::vector<std::uint8_t> grey_screen_;
-    std::vector<std::uint8_t> color_screen_;
+    std::vector<std::uint8_t> color_screen_; // for logging
     std::vector<float> buffer_screen1_;
     std::vector<float> buffer_screen2_;
     std::vector<float> downsized_screen_;
