@@ -12,12 +12,13 @@
 namespace nervous_system {
 
 enum PARAMETER_TYPE {
-  BIAS, // CTRNN activator
+  BIAS, // CTRNN activator - or input bias
   RTAUS, // CTRNN activator
   WEIGHT, // ALL2ALL, CONV3D, RECURRENT integrators
   RANGE, // difference between reset value and threshold for IF models
   REFRACTORY, // refractory period for IF models
-  RESISTANCE // resistance for IF models
+  RESISTANCE, // resistance for IF models
+  GAIN // input bias
 };
 
 } // End nervous_system namespace
