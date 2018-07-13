@@ -642,6 +642,37 @@ class Conv3DIafActivator : public Activator<TReal> {
     multi_array::Tensor<TReal> subthreshold_state_;
 };
 
+/*
+ * A memoryless/stateless tanh activator
+ */
+template <typename TReal>
+class TanhActivator: public Activator<TReal> {
+  public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    TanhActivator() {
+      
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+
+    }
+
+    virtual void Reset() {
+
+    }
+};
+
 } // End nervous_system namespace
 
 #endif /* NN_ACTIVATOR_H_ */
