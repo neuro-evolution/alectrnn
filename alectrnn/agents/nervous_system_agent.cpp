@@ -41,7 +41,7 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
         ale_->environment->getScreenWidth());
   grey_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
-  downsized_screen_.resize(neural_net_[0].shape(1) * neural_net_[0].shape(2));
+  downsized_screen_.resize(neural_net_[0].shape()[1] * neural_net_[0].shape()[2]);
 
   if (is_logging_) {
     log_ = nervous_system::StateLogger<float>(neural_net_);
