@@ -18,6 +18,8 @@ enum PARAMETER_TYPE {
   RANGE, // difference between reset value and threshold for IF models
   REFRACTORY, // refractory period for IF models
   RESISTANCE // resistance for IF models
+  GAIN,
+  DECAY
 };
 
 } // End nervous_system namespace
