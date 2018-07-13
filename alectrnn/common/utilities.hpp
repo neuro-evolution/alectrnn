@@ -49,6 +49,14 @@ TReal approx_sigmoid(const TReal x, const TReal scale=0.5, const TReal bias=0.5,
 }
 
 /*
+ * Wraps in put value between 0 and 1
+ */
+template <typename TReal>
+TReal Wrap0to1(TReal x) {
+  return fabs(fmod(fabs(x), 2.0) - 1.0) * -1.0 + 1.0;
+}
+
+/*
  * Takes a reference to some iterable and replaces the elements with their
  * corresponding softmax values
  */

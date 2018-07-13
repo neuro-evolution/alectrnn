@@ -700,7 +700,7 @@ class SigmoidActivator : public Activator<TReal> {
         for (Index iii = 0; iii < num_states_; ++iii) {
           input_gain_[iii] = parameters[num_states_];
           input_bias_[iii] = parameters[num_states_ + num_states_];
-          decay_[iii] = parameters[num_states_ + 2*num_states_];
+          decay_[iii] = utilities::Wrap0to1(parameters[num_states_ + 2*num_states_]);
         }
       } else {
         auto num_copies = shape_[1] * shape_[2];
@@ -708,7 +708,7 @@ class SigmoidActivator : public Activator<TReal> {
           for (Index jjj = 0; jjj < num_copies; ++iii) {
             input_gain_[iii * num_copies + jjj] = parameters[iii];
             input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
-            decay_[iii * num_copies + jjj] = parameters[iii + 2*shape_[0]];
+            decay_[iii * num_copies + jjj] = utilities::Wrap0to1(parameters[iii + 2*shape_[0]]);
           }
         }
       }
