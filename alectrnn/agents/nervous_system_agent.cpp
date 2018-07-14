@@ -7,6 +7,7 @@
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
 
+
 namespace alectrnn {
 
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
@@ -17,8 +18,10 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
 /*
  * The neural network's first layer needs to be a 3-dimensional layer where the
  * first layer is the # of channels and following layers are the height and
- * width of the screen respectively. If gray-screen is used then there must be
- * only one channel.
+ * width of the screen respectively. The # of channels represent temporal channels
+ * where 0th channel is the most recent screen input, the ith is the ith most
+ * recent screen. Note: these need not be contiguous screens, as controller
+ * has control over what screens the NervousSystem receives.
  */
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
     nervous_system::NervousSystem<float>& neural_net, 
@@ -27,12 +30,10 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
 
   is_configured_ = false;
 
-  // If grayscreen input
-  // Check that NN input is correct dim and # channels
-  if (!((neural_net_[0].shape().size() == 4) || (neural_net_[0].shape()[0] == 1))) {
-    throw std::invalid_argument("NervousSystemAgent received screen input "
-                                "dimensions that do not match available inputs."
-                                " e.g. 4 and 1");
+  // Check that NN input is correct dim
+  if (neural_net_[0].shape().size() != 3) {
+    throw std::invalid_argument("NervousSystemAgent needs input layer with "
+                                "3 dimensions");
   }
 
   buffer_screen1_.resize(ale_->environment->getScreenHeight() *
@@ -41,12 +42,7 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
         ale_->environment->getScreenWidth());
   grey_screen_.resize(ale_->environment->getScreenHeight() *
         ale_->environment->getScreenWidth());
-  downsized_screen_.resize(neural_net_[0].NumNeurons());
-
-  // TO DO: Colored + luminance input (check use_color_ & nn dim/#channels)
-  // ALE color axis: HxWx3
-  // Luminance == ale->getScreenGrayscale
-  // End shape will be HxWx4 -> needs to be reshaped to 4xHxW for NN
+  downsized_screen_.resize(neural_net_[0].shape()[1] * neural_net_[0].shape()[2]);
 
   if (is_logging_) {
     log_ = nervous_system::StateLogger<float>(neural_net_);
@@ -113,9 +109,38 @@ Action NervousSystemAgent::GetActionFromNervousSystem() {
   return preferred_action;
 }
 
+void NervousSystemAgent::UpdateNervousSystemInput() {
+
+  auto& input_state(neural_net_.GetLayerState(0));
+  auto input_layer_view = input_state.accessor();
+  Index filter = 1;
+  // if temporal channels exist, move contents of each input forward one channel
+  while (filter != input_layer_view.extent(0)) {
+    for (Index iii = 0; iii < input_layer_view.extent(1); ++iii) {
+      for (Index jjj = 0; jjj < input_layer_view.extent(2); ++jjj) {
+        input_layer_view[filter-1][iii][jjj] = input_layer_view[filter][iii][jjj];
+      }
+    }
+    ++filter;
+  }
+
+  // Write in new screen input into last input channel
+  auto end_channel = input_layer_view.extent(0) - 1;
+  auto screen_width = ale_->environment->getScreenWidth();
+  for (Index iii = 0; iii < input_layer_view.extent(1); ++iii) {
+    for (Index jjj = 0; jjj < input_layer_view.extent(2); ++jjj) {
+      input_layer_view[end_channel][iii][jjj] = downsized_screen_[iii * input_layer_view.extent(2)
+                                                                  + jjj];
+    }
+  }
+}
+
 void NervousSystemAgent::StepNervousSystem() {
-  // The neural network will be updates update_rate_ times before output is read
-  neural_net_.SetInput(downsized_screen_);
+  /*
+   * Screen is updated once, but the network can be updated multiple times for
+   * each screen update.
+   */
+  UpdateNervousSystemInput();
   for (std::size_t iii = 0; iii < update_rate_; iii++) {
     neural_net_.Step();
     if (is_logging_) {
