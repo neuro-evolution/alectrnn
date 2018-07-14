@@ -7,6 +7,7 @@
 #include "../common/nervous_system.hpp"
 #include "../common/state_logger.hpp"
 
+
 namespace alectrnn {
 
 NervousSystemAgent::NervousSystemAgent(ALEInterface* ale, 
@@ -113,7 +114,7 @@ void NervousSystemAgent::UpdateNervousSystemInput() {
   auto& input_state(neural_net_.GetLayerState(0));
   auto input_layer_view = input_state.accessor();
   Index filter = 1;
-  // if temporal channels exist, move contents of each input back one channel
+  // if temporal channels exist, move contents of each input forward one channel
   while (filter != input_layer_view.extent(0)) {
     for (Index iii = 0; iii < input_layer_view.extent(1); ++iii) {
       for (Index jjj = 0; jjj < input_layer_view.extent(2); ++jjj) {
@@ -123,12 +124,13 @@ void NervousSystemAgent::UpdateNervousSystemInput() {
     ++filter;
   }
 
-  // Write in new screen input into first input channel
+  // Write in new screen input into last input channel
+  auto end_channel = input_layer_view.extent(0) - 1;
   auto screen_width = ale_->environment->getScreenWidth();
   for (Index iii = 0; iii < input_layer_view.extent(1); ++iii) {
     for (Index jjj = 0; jjj < input_layer_view.extent(2); ++jjj) {
-      input_layer_view[0][iii][jjj] = downsized_screen_[iii * input_layer_view.extent(2)
-                                                        + jjj];
+      input_layer_view[end_channel][iii][jjj] = downsized_screen_[iii * input_layer_view.extent(2)
+                                                                  + jjj];
     }
   }
 }
