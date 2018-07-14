@@ -183,8 +183,12 @@ RESERVOIR_ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.RESERVOIR_IAF_ACTIVATOR,
 class NervousSystem:
     """
     Builds a nervous system. A single activator is chosen for the whole network.
+
     input_shape determines the dimensions of the input the network will receive.
-    num_outputs will determine motor_layer size.
+    num_outputs will determine motor_layer size. The first dimension is the
+    number of temporal channels, e.g. how many instances of time are maintained
+    in the input. The following two dimensions are H and W respectively, with
+    W being the major axis dimension.
 
     Both input and output layers will be generated automatically.
     nn_parameters should contain parameters for the internal layers of the
