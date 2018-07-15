@@ -318,6 +318,28 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
     }
 
+    case nervous_system::SIGMOID_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      float saturation_point;
+      if (!PyArg_ParseTuple(args, "Oif", &shape, &is_shared, &saturation_point)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("SIGMOID_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " SIGMOID_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::SigmoidActivator<float>(
+          multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
+          shape)), static_cast<bool>(is_shared), saturation_point);
+      break;
+    }
+
     default: {
       std::cerr << "Activator case not supported... exiting." << std::endl;
       throw std::invalid_argument("Not an activator");

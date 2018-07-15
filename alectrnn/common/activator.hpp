@@ -741,6 +741,125 @@ class TanhActivator: public Activator<TReal> {
     multi_array::Tensor<TReal> input_bias_;
 };
 
+/*
+ * Sigmoid activation function
+ * Toggle parameter sharing.
+ * Assigns parameters into internal memory.
+ * It auto wraps the DECAY parameter between 0-1 since those are the only
+ * values that guarantee bound behavior.
+ */
+template <typename TReal>
+class SigmoidActivator : public Activator<TReal> {
+  public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    SigmoidActivator(const multi_array::Array<Index, 3>& shape,
+                     bool is_shared, const TReal saturation_point)
+    : shape_(shape), saturation_point_(saturation_point),
+      num_states_(0), is_shared_(is_shared) {
+
+      for (Index iii = 0; iii < shape.size(); ++iii) {
+        num_states_ *= shape[iii];
+      }
+
+      if (is_shared_) {
+        super_type::parameter_count_ = shape_[0] * 3;
+      }
+      else {
+        super_type::parameter_count_ = num_states_ * 3;
+      }
+
+      // Parameters are copied into these tensors during configuration
+      input_bias_ = multi_array::Tensor<TReal>({num_states_});
+      input_gain_ = multi_array::Tensor<TReal>({num_states_});
+      decay_ = multi_array::Tensor<TReal>({num_states_});
+
+      super_type::activator_type_ = SIGMOID_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] += -decay_[iii] * state[iii]
+                      + (saturation_point_ - state[iii])
+                        * utilities::approx_sigmoid(input_bias_[iii]
+                                                    + input_gain_[iii]
+                                                      * input_buffer[iii]);
+      }
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Number of parameters must equal parameter"
+                                    " count");
+      }
+
+      // Roll decay between 0-1
+      if (is_shared_) {
+        auto num_copies = shape_[1] * shape_[2];
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          for (Index jjj = 0; jjj < num_copies; ++iii) {
+            input_gain_[iii * num_copies + jjj] = parameters[iii];
+            input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
+            decay_[iii * num_copies + jjj] = utilities::Wrap0to1(parameters[iii + 2*shape_[0]]);
+          }
+        }
+      } else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          input_gain_[iii] = parameters[iii];
+          input_bias_[iii] = parameters[iii + num_states_];
+          decay_[iii] = utilities::Wrap0to1(parameters[iii + 2*num_states_]);
+        }
+      }
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+      if (is_shared_) {
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*shape_[0]; ++iii) {
+          layout[iii] = GAIN;
+        }
+        for (Index iii = num_states_; iii < 3*shape_[0]; ++iii) {
+          layout[iii] = DECAY;
+        }
+      }
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
+          layout[iii] = GAIN;
+        }
+        for (Index iii = num_states_; iii < 3*num_states_; ++iii) {
+          layout[iii] = DECAY;
+        }
+      }
+
+      return layout;
+    }
+
+    virtual void Reset() {};
+
+  private:
+    multi_array::Array<Index, 3> shape_;
+    const TReal saturation_point_;
+    Index num_states_;
+    const bool is_shared_;
+    multi_array::Tensor<TReal> input_gain_;
+    multi_array::Tensor<TReal> input_bias_;
+    multi_array::Tensor<TReal> decay_;
+};
+
+// Second Noise activator
+
 } // End nervous_system namespace
 
 #endif /* NN_ACTIVATOR_H_ */
