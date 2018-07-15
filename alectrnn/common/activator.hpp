@@ -655,7 +655,7 @@ class TanhActivator: public Activator<TReal> {
     typedef Activator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    TanhActivator(const multi_array::Array<Index, 3>& shape,
+    TanhActivator(const std::vector<Index>& shape,
                   bool is_shared)
         : shape_(shape), num_states_(1), is_shared_(is_shared) {
 
@@ -754,7 +754,7 @@ class SigmoidActivator : public Activator<TReal> {
     typedef Activator<TReal> super_type;
     typedef typename super_type::Index Index;
 
-    SigmoidActivator(const multi_array::Array<Index, 3>& shape,
+    SigmoidActivator(const std::vector<Index>& shape,
                      bool is_shared, const TReal saturation_point)
     : shape_(shape), saturation_point_(saturation_point),
       num_states_(1), is_shared_(is_shared) {

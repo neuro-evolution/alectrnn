@@ -373,7 +373,7 @@ class NervousSystem:
         # to know how to interpret the layer for convolution
         interpreted_shapes, layer_shapes = self._configure_layer_shapes(
             input_shape, nn_parameters)
-        # Layer act types doesn't include input layer, so (
+
         layer_act_types, layer_act_args = ActivationAPIMap.layer_config[act_type.value](
             layer_shapes, interpreted_shapes, nn_parameters, act_type, act_args)
 
@@ -1028,7 +1028,7 @@ def configure_layer_activations(layer_shapes, interpreted_shapes,
     for i, layer_pars in enumerate(nn_parameters):
         # Only applies to conv layer
         # conv_recurrent and conv_reservoir don't use activator parameter sharing
-        if layer_pars['layer_type'] == 'conv':
+        if 'conv' in layer_pars['layer_type']:
             layer_act_types.append(act_type.value)
             layer_act_args.append((interpreted_shapes[i+1], True, *act_args))
         elif 'reservoir' in layer_pars['layer_type']:
@@ -1058,7 +1058,7 @@ def configure_oldstyle_layer_activations(layer_shapes, interpreted_shapes,
     for i, layer_pars in enumerate(nn_parameters):
         # Only applies to conv layer
         # conv_recurrent and conv_reservoir don't use activator parameter sharing
-        if layer_pars['layer_type'] == 'conv':
+        if 'conv' in layer_pars['layer_type']:
             layer_act_types.append(ACTMAP[act_type].value)
             layer_act_args.append((interpreted_shapes[i+1], *act_args))
         elif 'reservoir' in layer_pars['layer_type']:

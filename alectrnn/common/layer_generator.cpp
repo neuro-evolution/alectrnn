@@ -313,8 +313,8 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       }
 
       new_activator = new nervous_system::TanhActivator<float>(
-          multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
-          shape)), static_cast<bool>(is_shared));
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared));
       break;
     }
 
@@ -335,8 +335,8 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       }
 
       new_activator = new nervous_system::SigmoidActivator<float>(
-          multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
-          shape)), static_cast<bool>(is_shared), saturation_point);
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared), saturation_point);
       break;
     }
 
