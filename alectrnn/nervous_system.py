@@ -22,6 +22,7 @@ class PARAMETER_TYPE(Enum):
     RANGE = 3  # difference between reset value and threshold for IF models
     REFRACTORY = 4  # refractory period for IF models
     RESISTANCE = 5  # resistance for IF models
+    GAIN = 6  # input gain parameters
 
 
 def draw_uniform_initial_guess(boundary_array, rng):
