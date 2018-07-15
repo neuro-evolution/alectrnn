@@ -668,7 +668,6 @@ class TanhActivator: public Activator<TReal> {
       // Parameters are copied into these tensors during configuration
       input_bias_ = multi_array::Tensor<TReal>({num_states_});
       input_gain_ = multi_array::Tensor<TReal>({num_states_});
-
       super_type::activator_type_ = TANH_ACTIVATOR;
     }
 
@@ -676,7 +675,8 @@ class TanhActivator: public Activator<TReal> {
                             const multi_array::Tensor<TReal>& input_buffer) {
 
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] = std::tanh(input_gain_ * input_buffer[iii] + input_bias_);
+        state[iii] = std::tanh(input_gain_[iii] * input_buffer[iii]
+                               + input_bias_[iii]);
       }
     }
 
@@ -688,18 +688,18 @@ class TanhActivator: public Activator<TReal> {
                                     " count");
       }
       if (is_shared_) {
-        for (Index iii = 0; iii < num_states_; ++iii) {
-          input_gain_[iii] = parameters[num_states_];
-          input_bias_[iii] = parameters[num_states_ + num_states_];
-        }
-      }
-      else {
         auto num_copies = shape_[1] * shape_[2];
         for (Index iii = 0; iii < shape_[0]; ++iii) {
-          for (Index jjj = 0; jjj < num_copies; ++iii) {
+          for (Index jjj = 0; jjj < num_copies; ++jjj) {
             input_gain_[iii * num_copies + jjj] = parameters[iii];
             input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
           }
+        }
+      }
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          input_gain_[iii] = parameters[iii];
+          input_bias_[iii] = parameters[iii + num_states_];
         }
       }
     }

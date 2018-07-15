@@ -149,11 +149,11 @@ class ACTIVATOR_TYPE(Enum):
     CONV_CTRNN=3
     IAF=4
     CONV_IAF=5
-    SOFT_MAX_ACTIVATOR = 6
-    RESERVOIR_CTRNN_ACTIVATOR = 7
-    RESERVOIR_IAF_ACTIVATOR = 8
-    SIGMOID_ACTIVATOR = 9
-    TANH_ACTIVATOR = 10
+    SOFT_MAX = 6
+    RESERVOIR_CTRNN = 7
+    RESERVOIR_IAF = 8
+    SIGMOID = 9
+    TANH = 10
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -178,8 +178,8 @@ class INTEGRATOR_TYPE(Enum):
 ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.CONV_IAF,
            ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.CONV_CTRNN}
 
-RESERVOIR_ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.RESERVOIR_IAF_ACTIVATOR,
-                    ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.RESERVOIR_CTRNN_ACTIVATOR}
+RESERVOIR_ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.RESERVOIR_IAF,
+                    ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.RESERVOIR_CTRNN}
 
 
 class NervousSystem:
@@ -1079,11 +1079,11 @@ class ActivationAPIMap:
                     ACTIVATOR_TYPE.CONV_CTRNN.value: configure_oldstyle_layer_activations,
                     ACTIVATOR_TYPE.IAF.value: configure_oldstyle_layer_activations,
                     ACTIVATOR_TYPE.CONV_IAF.value: configure_oldstyle_layer_activations,
-                    ACTIVATOR_TYPE.SOFT_MAX_ACTIVATOR.value: configure_oldstyle_layer_activations,
-                    ACTIVATOR_TYPE.RESERVOIR_CTRNN_ACTIVATOR.value: configure_oldstyle_layer_activations,
-                    ACTIVATOR_TYPE.RESERVOIR_IAF_ACTIVATOR.value: configure_oldstyle_layer_activations,
-                    ACTIVATOR_TYPE.SIGMOID_ACTIVATOR.value: configure_layer_activations,
-                    ACTIVATOR_TYPE.TANH_ACTIVATOR.value: configure_layer_activations}
+                    ACTIVATOR_TYPE.SOFT_MAX.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.RESERVOIR_CTRNN.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.RESERVOIR_IAF.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.SIGMOID.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.TANH.value: configure_layer_activations}
 
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
