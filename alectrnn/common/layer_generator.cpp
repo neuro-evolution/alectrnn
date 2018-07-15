@@ -302,14 +302,14 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       int is_shared;
       if (!PyArg_ParseTuple(args, "Oi", &shape, &is_shared)) {
         std::cerr << "Error parsing Activator arguments" << std::endl;
-        throw std::invalid_argument("RESERVOIR_IAF_ACTIVATOR couldn't parse tuple");
+        throw std::invalid_argument("TANH_ACTIVATOR couldn't parse tuple");
       }
 
       // Make sure the numpy array is the correct size
       npy_intp num_shape_elements = PyArray_SIZE(shape);
       if (num_shape_elements != 3) {
         throw std::invalid_argument("Invalid number of shape elements for"
-                                    " CONV IAF ACTIVATOR (needs 3)");
+                                    " TANH_ACTIVATOR (needs 3)");
       }
 
       new_activator = new nervous_system::TanhActivator<float>(
