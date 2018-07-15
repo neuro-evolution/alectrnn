@@ -657,7 +657,7 @@ class TanhActivator: public Activator<TReal> {
 
     TanhActivator(const multi_array::Array<Index, 3>& shape,
                   bool is_shared)
-        : shape_(shape), is_shared_(is_shared), num_states_(0) {
+        : shape_(shape), num_states_(1), is_shared_(is_shared) {
 
       for (Index iii = 0; iii < shape.size(); ++iii) {
         num_states_ *= shape[iii];
@@ -715,7 +715,7 @@ class TanhActivator: public Activator<TReal> {
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           layout[iii] = BIAS;
         }
-        for (Index iii = num_states_; iii < 2*shape_[0]; ++iii) {
+        for (Index iii = shape_[0]; iii < 2*shape_[0]; ++iii) {
           layout[iii] = GAIN;
         }
       }
@@ -757,7 +757,7 @@ class SigmoidActivator : public Activator<TReal> {
     SigmoidActivator(const multi_array::Array<Index, 3>& shape,
                      bool is_shared, const TReal saturation_point)
     : shape_(shape), saturation_point_(saturation_point),
-      num_states_(0), is_shared_(is_shared) {
+      num_states_(1), is_shared_(is_shared) {
 
       for (Index iii = 0; iii < shape.size(); ++iii) {
         num_states_ *= shape[iii];
@@ -802,7 +802,7 @@ class SigmoidActivator : public Activator<TReal> {
       if (is_shared_) {
         auto num_copies = shape_[1] * shape_[2];
         for (Index iii = 0; iii < shape_[0]; ++iii) {
-          for (Index jjj = 0; jjj < num_copies; ++iii) {
+          for (Index jjj = 0; jjj < num_copies; ++jjj) {
             input_gain_[iii * num_copies + jjj] = parameters[iii];
             input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
             decay_[iii * num_copies + jjj] = utilities::Wrap0to1(parameters[iii + 2*shape_[0]]);
@@ -824,10 +824,10 @@ class SigmoidActivator : public Activator<TReal> {
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           layout[iii] = BIAS;
         }
-        for (Index iii = num_states_; iii < 2*shape_[0]; ++iii) {
+        for (Index iii = shape_[0]; iii < 2*shape_[0]; ++iii) {
           layout[iii] = GAIN;
         }
-        for (Index iii = num_states_; iii < 3*shape_[0]; ++iii) {
+        for (Index iii = 2*shape_[0]; iii < 3*shape_[0]; ++iii) {
           layout[iii] = DECAY;
         }
       }
@@ -838,7 +838,7 @@ class SigmoidActivator : public Activator<TReal> {
         for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
           layout[iii] = GAIN;
         }
-        for (Index iii = num_states_; iii < 3*num_states_; ++iii) {
+        for (Index iii = 2*num_states_; iii < 3*num_states_; ++iii) {
           layout[iii] = DECAY;
         }
       }
