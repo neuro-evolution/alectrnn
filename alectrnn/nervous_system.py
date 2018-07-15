@@ -16,13 +16,14 @@ class PARAMETER_TYPE(Enum):
     parameter_types.hpp
     """
     __order__ = 'BIAS RTAUS WEIGHT RANGE REFRACTORY RESISTANCE'
-    BIAS = 0
-    RTAUS = 1
+    BIAS = 0  # bias or input bias
+    RTAUS = 1  # inverse of tau, time-constant
     WEIGHT = 2
     RANGE = 3  # difference between reset value and threshold for IF models
     REFRACTORY = 4  # refractory period for IF models
     RESISTANCE = 5  # resistance for IF models
     GAIN = 6  # input gain parameters
+    DECAY = 7  # 0-1 how quickly state decays.
 
 
 def draw_uniform_initial_guess(boundary_array, rng):
