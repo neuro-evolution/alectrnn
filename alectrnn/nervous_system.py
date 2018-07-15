@@ -152,6 +152,8 @@ class ACTIVATOR_TYPE(Enum):
     SOFT_MAX_ACTIVATOR = 6
     RESERVOIR_CTRNN_ACTIVATOR = 7
     RESERVOIR_IAF_ACTIVATOR = 8
+    SIGMOID_ACTIVATOR = 9
+    TANH_ACTIVATOR = 10
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -370,7 +372,7 @@ class NervousSystem:
         interpreted_shapes, layer_shapes = self._configure_layer_shapes(
             input_shape, nn_parameters)
         # Layer act types doesn't include input layer, so (
-        layer_act_types, layer_act_args = self._configure_layer_activations(
+        layer_act_types, layer_act_args = ActivationAPIMap.layer_config[act_type.value](
             layer_shapes, interpreted_shapes,
             nn_parameters,
             act_type, act_args)
@@ -534,33 +536,6 @@ class NervousSystem:
         self.layer_shapes = layer_shapes
         self.interpreted_shapes = interpreted_shapes
         self.nn_parameters = nn_parameters
-
-    def _configure_layer_activations(self, layer_shapes, interpreted_shapes,
-                                     nn_parameters, act_type, act_args):
-        """
-        outputs the necessary tuples for layer activations of both conv and
-        non-conv layers
-        layer_shapes includes input layer, so i+1 is synced with nn_params
-        no nn_params are included for input layer
-        """
-
-        layer_act_types = []
-        layer_act_args = []
-        for i, layer_pars in enumerate(nn_parameters):
-            # Only applies to conv layer
-            # conv_recurrent and conv_reservoir don't use activator parameter sharing
-            if layer_pars['layer_type'] == 'conv':
-                layer_act_types.append(ACTMAP[act_type].value)
-                layer_act_args.append((interpreted_shapes[i+1], *act_args))
-            elif 'reservoir' in layer_pars['layer_type']:
-                layer_act_types.append(RESERVOIR_ACTMAP[act_type].value)
-                layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args,
-                                       *layer_pars['neuron_parameters']))
-            else:
-                layer_act_types.append(act_type.value)
-                layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args))
-
-        return layer_act_types, layer_act_args
 
     def _configure_layer_shapes(self, input_shape, nn_parameters):
         """
@@ -1037,6 +1012,78 @@ class NervousSystem:
         """
 
         return nn_handler.GetParameterLayout(self.neural_network)
+
+
+def configure_layer_activations(layer_shapes, interpreted_shapes,
+                                nn_parameters, act_type, act_args):
+    """
+    outputs the necessary tuples for layer activations of both conv and
+    non-conv layers
+    layer_shapes includes input layer, so i+1 is synced with nn_params
+    no nn_params are included for input layer
+    """
+
+    layer_act_types = []
+    layer_act_args = []
+    for i, layer_pars in enumerate(nn_parameters):
+        # Only applies to conv layer
+        # conv_recurrent and conv_reservoir don't use activator parameter sharing
+        if layer_pars['layer_type'] == 'conv':
+            layer_act_types.append(ACTMAP[act_type].value)
+            layer_act_args.append((interpreted_shapes[i+1], True, *act_args))
+        elif 'reservoir' in layer_pars['layer_type']:
+            layer_act_types.append(RESERVOIR_ACTMAP[act_type].value)
+            layer_act_args.append((layer_shapes[i+1], False, *act_args,
+                                  *layer_pars['neuron_parameters']))
+        else:
+            layer_act_types.append(act_type.value)
+            layer_act_args.append((layer_shapes[i+1], False, *act_args))
+
+    return layer_act_types, layer_act_args
+
+
+def configure_oldstyle_layer_activations(layer_shapes, interpreted_shapes,
+                                         nn_parameters, act_type, act_args):
+    """
+    USED FOR OLD API
+
+    outputs the necessary tuples for layer activations of both conv and
+    non-conv layers
+    layer_shapes includes input layer, so i+1 is synced with nn_params
+    no nn_params are included for input layer
+    """
+
+    layer_act_types = []
+    layer_act_args = []
+    for i, layer_pars in enumerate(nn_parameters):
+        # Only applies to conv layer
+        # conv_recurrent and conv_reservoir don't use activator parameter sharing
+        if layer_pars['layer_type'] == 'conv':
+            layer_act_types.append(ACTMAP[act_type].value)
+            layer_act_args.append((interpreted_shapes[i+1], *act_args))
+        elif 'reservoir' in layer_pars['layer_type']:
+            layer_act_types.append(RESERVOIR_ACTMAP[act_type].value)
+            layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args,
+                                   *layer_pars['neuron_parameters']))
+        else:
+            layer_act_types.append(act_type.value)
+            layer_act_args.append((int(np.prod(layer_shapes[i+1])), *act_args))
+
+    return layer_act_types, layer_act_args
+
+
+class ActivationAPIMap:
+
+    layer_config = {ACTIVATOR_TYPE.IDENTITY.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.CTRNN.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.CONV_CTRNN.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.IAF.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.CONV_IAF.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.SOFT_MAX_ACTIVATOR.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.RESERVOIR_CTRNN_ACTIVATOR.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.RESERVOIR_IAF_ACTIVATOR.value: configure_oldstyle_layer_activations,
+                    ACTIVATOR_TYPE.SIGMOID_ACTIVATOR.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.TANH_ACTIVATOR.value: configure_layer_activations}
 
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):

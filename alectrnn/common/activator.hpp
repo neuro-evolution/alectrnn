@@ -687,7 +687,6 @@ class TanhActivator: public Activator<TReal> {
         throw std::invalid_argument("Number of parameters must equal parameter"
                                     " count");
       }
-      // Roll decay between 0-1
       if (is_shared_) {
         for (Index iii = 0; iii < num_states_; ++iii) {
           input_gain_[iii] = parameters[num_states_];
