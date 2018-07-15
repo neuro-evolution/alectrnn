@@ -307,9 +307,9 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
 
       // Make sure the numpy array is the correct size
       npy_intp num_shape_elements = PyArray_SIZE(shape);
-      if (num_shape_elements != 3) {
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
         throw std::invalid_argument("Invalid number of shape elements for"
-                                    " TANH_ACTIVATOR (needs 3)");
+                                    " TANH_ACTIVATOR (needs 3 when shared)");
       }
 
       new_activator = new nervous_system::TanhActivator<float>(

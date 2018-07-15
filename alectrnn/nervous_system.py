@@ -374,9 +374,7 @@ class NervousSystem:
             input_shape, nn_parameters)
         # Layer act types doesn't include input layer, so (
         layer_act_types, layer_act_args = ActivationAPIMap.layer_config[act_type.value](
-            layer_shapes, interpreted_shapes,
-            nn_parameters,
-            act_type, act_args)
+            layer_shapes, interpreted_shapes, nn_parameters, act_type, act_args)
 
         # Build layers
         for i, layer_pars in enumerate(nn_parameters):
@@ -1030,10 +1028,10 @@ def configure_layer_activations(layer_shapes, interpreted_shapes,
         # Only applies to conv layer
         # conv_recurrent and conv_reservoir don't use activator parameter sharing
         if layer_pars['layer_type'] == 'conv':
-            layer_act_types.append(ACTMAP[act_type].value)
+            layer_act_types.append(act_type.value)
             layer_act_args.append((interpreted_shapes[i+1], True, *act_args))
         elif 'reservoir' in layer_pars['layer_type']:
-            layer_act_types.append(RESERVOIR_ACTMAP[act_type].value)
+            layer_act_types.append(act_type.value)
             layer_act_args.append((layer_shapes[i+1], False, *act_args,
                                   *layer_pars['neuron_parameters']))
         else:

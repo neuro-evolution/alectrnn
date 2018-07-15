@@ -656,8 +656,11 @@ class TanhActivator: public Activator<TReal> {
 
     TanhActivator(const multi_array::Array<Index, 3>& shape,
                   bool is_shared)
-        : shape_(shape), num_states_(shape_[0] * shape_[1] * shape_[2]),
-          is_shared_(is_shared) {
+        : shape_(shape), is_shared_(is_shared), num_states_(0) {
+
+      for (Index iii = 0; iii < shape.size(); ++iii) {
+        num_states_ *= shape[iii];
+      }
 
       if (is_shared_) {
         super_type::parameter_count_ = shape_[0] * 2;
@@ -731,7 +734,7 @@ class TanhActivator: public Activator<TReal> {
 
   private:
     multi_array::Array<Index, 3> shape_;
-    const Index num_states_;
+    Index num_states_;
     const bool is_shared_;
     multi_array::Tensor<TReal> input_gain_;
     multi_array::Tensor<TReal> input_bias_;
