@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <limits>
 #include <iostream>
+#include <cmath>
 #include "multi_array.hpp"
 #include "utilities.hpp"
 #include "parameter_types.hpp"
@@ -34,7 +35,9 @@ enum ACTIVATOR_TYPE {
   CONV_IAF_ACTIVATOR,
   SOFT_MAX_ACTIVATOR,
   RESERVOIR_CTRNN_ACTIVATOR,
-  RESERVOIR_IAF_ACTIVATOR
+  RESERVOIR_IAF_ACTIVATOR,
+  SIGMOID_ACTIVATOR,
+  TANH_ACTIVATOR
 };
 
 template<typename TReal>
@@ -643,6 +646,100 @@ class Conv3DIafActivator : public Activator<TReal> {
     multi_array::Tensor<TReal> subthreshold_state_;
 };
 
+/*
+ * A memoryless/stateless tanh activator
+ */
+template <typename TReal>
+class TanhActivator: public Activator<TReal> {
+  public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    TanhActivator(const multi_array::Array<Index, 3>& shape,
+                  bool is_shared)
+        : shape_(shape), is_shared_(is_shared), num_states_(0) {
+
+      for (Index iii = 0; iii < shape.size(); ++iii) {
+        num_states_ *= shape[iii];
+      }
+
+      if (is_shared_) {
+        super_type::parameter_count_ = shape_[0] * 2;
+      }
+      else {
+        super_type::parameter_count_ = num_states_ * 2;
+      }
+      // Parameters are copied into these tensors during configuration
+      input_bias_ = multi_array::Tensor<TReal>({num_states_});
+      input_gain_ = multi_array::Tensor<TReal>({num_states_});
+      super_type::activator_type_ = TANH_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] = std::tanh(input_gain_[iii] * input_buffer[iii]
+                               + input_bias_[iii]);
+      }
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Number of parameters must equal parameter"
+                                    " count");
+      }
+      if (is_shared_) {
+        auto num_copies = shape_[1] * shape_[2];
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          for (Index jjj = 0; jjj < num_copies; ++jjj) {
+            input_gain_[iii * num_copies + jjj] = parameters[iii];
+            input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
+          }
+        }
+      }
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          input_gain_[iii] = parameters[iii];
+          input_bias_[iii] = parameters[iii + num_states_];
+        }
+      }
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+      if (is_shared_) {
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*shape_[0]; ++iii) {
+          layout[iii] = GAIN;
+        }
+      }
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = BIAS;
+        }
+        for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
+          layout[iii] = GAIN;
+        }
+      }
+
+      return layout;
+    }
+
+    virtual void Reset() {}
+
+  private:
+    multi_array::Array<Index, 3> shape_;
+    Index num_states_;
+    const bool is_shared_;
+    multi_array::Tensor<TReal> input_gain_;
+    multi_array::Tensor<TReal> input_bias_;
+};
 
 } // End nervous_system namespace
 

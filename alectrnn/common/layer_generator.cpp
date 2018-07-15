@@ -172,6 +172,8 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
    * CONV activators should take a shape argument
    * Non-conv activators should take a # states argument
    * Identity is an exception
+   * New Standard is everyone takes shape and conv determine whether params are
+   * shared.
    */
 
   nervous_system::Activator<float>* new_activator;  
@@ -292,6 +294,27 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
           alectrnn::float32PyArrayToVector<float>(rtaus),
           alectrnn::float32PyArrayToVector<float>(refractory),
           alectrnn::float32PyArrayToVector<float>(resistance));
+      break;
+    }
+
+    case nervous_system::TANH_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      if (!PyArg_ParseTuple(args, "Oi", &shape, &is_shared)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("TANH_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " TANH_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::TanhActivator<float>(
+          multi_array::Array<std::size_t,3>(alectrnn::uInt64PyArrayToCArray(
+          shape)), static_cast<bool>(is_shared));
       break;
     }
 
