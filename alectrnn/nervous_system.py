@@ -207,6 +207,9 @@ class NervousSystem:
     Activator types:
         ACTIVATION_TYPE.CTRNN: (float(step_size),)
         ACTIVATION_TYPE.IAF: (float(step_size), float(peak), float(reset))
+        ACTIVATION_TYPE.TANH: ()
+        ACTIVATION_TYPE.SIGMOID: (float(saturation_point),)
+        ACTIvATION_TYPE.RELU: ()
 
     Motor layer is the last layer of the network and should have a dictionary
     with the following keys:
