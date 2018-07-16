@@ -156,6 +156,7 @@ class ACTIVATOR_TYPE(Enum):
     RESERVOIR_IAF = 8
     SIGMOID = 9
     TANH = 10
+    RELU = 11
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -1083,7 +1084,8 @@ class ActivationAPIMap:
                     ACTIVATOR_TYPE.RESERVOIR_CTRNN.value: configure_oldstyle_layer_activations,
                     ACTIVATOR_TYPE.RESERVOIR_IAF.value: configure_oldstyle_layer_activations,
                     ACTIVATOR_TYPE.SIGMOID.value: configure_layer_activations,
-                    ACTIVATOR_TYPE.TANH.value: configure_layer_activations}
+                    ACTIVATOR_TYPE.TANH.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.RELU.value: configure_layer_activations}
 
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):

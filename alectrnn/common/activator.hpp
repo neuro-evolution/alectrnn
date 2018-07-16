@@ -20,6 +20,7 @@
 #include <limits>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 #include "multi_array.hpp"
 #include "utilities.hpp"
 #include "parameter_types.hpp"
@@ -37,7 +38,8 @@ enum ACTIVATOR_TYPE {
   RESERVOIR_CTRNN_ACTIVATOR,
   RESERVOIR_IAF_ACTIVATOR,
   SIGMOID_ACTIVATOR,
-  TANH_ACTIVATOR
+  TANH_ACTIVATOR,
+  RELU_ACTIVATOR
 };
 
 template<typename TReal>
@@ -664,14 +666,13 @@ class TanhActivator: public Activator<TReal> {
       }
 
       if (is_shared_) {
-        super_type::parameter_count_ = shape_[0] * 2;
+        super_type::parameter_count_ = shape_[0];
       }
       else {
-        super_type::parameter_count_ = num_states_ * 2;
+        super_type::parameter_count_ = num_states_;
       }
       // Parameters are copied into these tensors during configuration
       input_bias_ = multi_array::Tensor<TReal>({num_states_});
-      input_gain_ = multi_array::Tensor<TReal>({num_states_});
       super_type::activator_type_ = TANH_ACTIVATOR;
     }
 
@@ -679,7 +680,7 @@ class TanhActivator: public Activator<TReal> {
                             const multi_array::Tensor<TReal>& input_buffer) {
 
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] = std::tanh(input_gain_[iii] * input_buffer[iii]
+        state[iii] = std::tanh(input_buffer[iii]
                                + input_bias_[iii]);
       }
     }
@@ -695,15 +696,13 @@ class TanhActivator: public Activator<TReal> {
         auto num_copies = shape_[1] * shape_[2];
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           for (Index jjj = 0; jjj < num_copies; ++jjj) {
-            input_gain_[iii * num_copies + jjj] = parameters[iii];
-            input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
+            input_bias_[iii * num_copies + jjj] = parameters[iii];
           }
         }
       }
       else {
         for (Index iii = 0; iii < num_states_; ++iii) {
-          input_gain_[iii] = parameters[iii];
-          input_bias_[iii] = parameters[iii + num_states_];
+          input_bias_[iii] = parameters[iii];
         }
       }
     }
@@ -715,16 +714,10 @@ class TanhActivator: public Activator<TReal> {
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           layout[iii] = BIAS;
         }
-        for (Index iii = shape_[0]; iii < 2*shape_[0]; ++iii) {
-          layout[iii] = GAIN;
-        }
       }
       else {
         for (Index iii = 0; iii < num_states_; ++iii) {
           layout[iii] = BIAS;
-        }
-        for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
-          layout[iii] = GAIN;
         }
       }
 
@@ -734,10 +727,9 @@ class TanhActivator: public Activator<TReal> {
     virtual void Reset() {}
 
   private:
-    multi_array::Array<Index, 3> shape_;
+    const std::vector<Index> shape_;
     Index num_states_;
     const bool is_shared_;
-    multi_array::Tensor<TReal> input_gain_;
     multi_array::Tensor<TReal> input_bias_;
 };
 
@@ -764,15 +756,14 @@ class SigmoidActivator : public Activator<TReal> {
       }
 
       if (is_shared_) {
-        super_type::parameter_count_ = shape_[0] * 3;
+        super_type::parameter_count_ = shape_[0] * 2;
       }
       else {
-        super_type::parameter_count_ = num_states_ * 3;
+        super_type::parameter_count_ = num_states_ * 2;
       }
 
       // Parameters are copied into these tensors during configuration
       input_bias_ = multi_array::Tensor<TReal>({num_states_});
-      input_gain_ = multi_array::Tensor<TReal>({num_states_});
       decay_ = multi_array::Tensor<TReal>({num_states_});
 
       super_type::activator_type_ = SIGMOID_ACTIVATOR;
@@ -785,8 +776,7 @@ class SigmoidActivator : public Activator<TReal> {
         state[iii] += -decay_[iii] * state[iii]
                       + (saturation_point_ - state[iii])
                         * utilities::approx_sigmoid(input_bias_[iii]
-                                                    + input_gain_[iii]
-                                                      * input_buffer[iii]);
+                                                    + input_buffer[iii]);
       }
     }
 
@@ -803,16 +793,14 @@ class SigmoidActivator : public Activator<TReal> {
         auto num_copies = shape_[1] * shape_[2];
         for (Index iii = 0; iii < shape_[0]; ++iii) {
           for (Index jjj = 0; jjj < num_copies; ++jjj) {
-            input_gain_[iii * num_copies + jjj] = parameters[iii];
-            input_bias_[iii * num_copies + jjj] = parameters[iii + shape_[0]];
-            decay_[iii * num_copies + jjj] = utilities::Wrap0to1(parameters[iii + 2*shape_[0]]);
+            input_bias_[iii * num_copies + jjj] = parameters[iii];
+            decay_[iii * num_copies + jjj] = utilities::Wrap0to1(parameters[iii + shape_[0]]);
           }
         }
       } else {
         for (Index iii = 0; iii < num_states_; ++iii) {
-          input_gain_[iii] = parameters[iii];
-          input_bias_[iii] = parameters[iii + num_states_];
-          decay_[iii] = utilities::Wrap0to1(parameters[iii + 2*num_states_]);
+          input_bias_[iii] = parameters[iii];
+          decay_[iii] = utilities::Wrap0to1(parameters[iii + num_states_]);
         }
       }
     }
@@ -825,9 +813,6 @@ class SigmoidActivator : public Activator<TReal> {
           layout[iii] = BIAS;
         }
         for (Index iii = shape_[0]; iii < 2*shape_[0]; ++iii) {
-          layout[iii] = GAIN;
-        }
-        for (Index iii = 2*shape_[0]; iii < 3*shape_[0]; ++iii) {
           layout[iii] = DECAY;
         }
       }
@@ -836,9 +821,6 @@ class SigmoidActivator : public Activator<TReal> {
           layout[iii] = BIAS;
         }
         for (Index iii = num_states_; iii < 2*num_states_; ++iii) {
-          layout[iii] = GAIN;
-        }
-        for (Index iii = 2*num_states_; iii < 3*num_states_; ++iii) {
           layout[iii] = DECAY;
         }
       }
@@ -849,16 +831,102 @@ class SigmoidActivator : public Activator<TReal> {
     virtual void Reset() {};
 
   private:
-    multi_array::Array<Index, 3> shape_;
+    const std::vector<Index> shape_;
     const TReal saturation_point_;
     Index num_states_;
     const bool is_shared_;
-    multi_array::Tensor<TReal> input_gain_;
     multi_array::Tensor<TReal> input_bias_;
     multi_array::Tensor<TReal> decay_;
 };
 
-// Second Noise activator
+/*
+ * ReLu activation function
+ * Toggle parameter sharing.
+ * Assigns parameters into internal memory.
+ */
+template <typename TReal>
+class ReLuActivator : public Activator<TReal> {
+  public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    ReLuActivator(const std::vector<Index>& shape,
+                     bool is_shared)
+    : shape_(shape), num_states_(1), is_shared_(is_shared) {
+
+      for (Index iii = 0; iii < shape.size(); ++iii) {
+        num_states_ *= shape[iii];
+      }
+
+      if (is_shared_) {
+        super_type::parameter_count_ = shape_[0];
+      }
+      else {
+        super_type::parameter_count_ = num_states_;
+      }
+
+      // Parameters are copied into these tensors during configuration
+      input_bias_ = multi_array::Tensor<TReal>({num_states_});
+
+      super_type::activator_type_ = RELU_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] = std::max(0, input_buffer[iii] + input_bias_[iii]);
+      }
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Number of parameters must equal parameter"
+                                    " count");
+      }
+
+      // Roll decay between 0-1
+      if (is_shared_) {
+        auto num_copies = shape_[1] * shape_[2];
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          for (Index jjj = 0; jjj < num_copies; ++jjj) {
+            input_bias_[iii * num_copies + jjj] = parameters[iii];
+          }
+        }
+      } else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          input_bias_[iii] = parameters[iii];
+        }
+      }
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+      if (is_shared_) {
+        for (Index iii = 0; iii < shape_[0]; ++iii) {
+          layout[iii] = BIAS;
+        }
+      }
+      else {
+        for (Index iii = 0; iii < num_states_; ++iii) {
+          layout[iii] = BIAS;
+        }
+      }
+
+      return layout;
+    }
+
+    virtual void Reset() {};
+
+  private:
+    std::vector<Index> shape_;
+    Index num_states_;
+    const bool is_shared_;
+    multi_array::Tensor<TReal> input_bias_;
+};
 
 } // End nervous_system namespace
 
