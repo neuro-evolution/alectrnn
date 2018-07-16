@@ -126,7 +126,6 @@ void NervousSystemAgent::UpdateNervousSystemInput() {
 
   // Write in new screen input into last input channel
   auto end_channel = input_layer_view.extent(0) - 1;
-  auto screen_width = ale_->environment->getScreenWidth();
   for (Index iii = 0; iii < input_layer_view.extent(1); ++iii) {
     for (Index jjj = 0; jjj < input_layer_view.extent(2); ++jjj) {
       input_layer_view[end_channel][iii][jjj] = downsized_screen_[iii * input_layer_view.extent(2)
