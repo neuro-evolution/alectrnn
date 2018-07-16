@@ -875,7 +875,7 @@ class ReLuActivator : public Activator<TReal> {
                             const multi_array::Tensor<TReal>& input_buffer) {
 
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] = std::max(0, input_buffer[iii] + input_bias_[iii]);
+        state[iii] = std::max<TReal>(0, input_buffer[iii] + input_bias_[iii]);
       }
     }
 
