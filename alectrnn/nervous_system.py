@@ -15,7 +15,7 @@ class PARAMETER_TYPE(Enum):
     Class for specifying parameter types. Should match those in the C++ code:
     parameter_types.hpp
     """
-    __order__ = 'BIAS RTAUS WEIGHT RANGE REFRACTORY RESISTANCE'
+    __order__ = 'BIAS RTAUS WEIGHT RANGE REFRACTORY RESISTANCE GAIN DECAY'
     BIAS = 0  # bias or input bias
     RTAUS = 1  # inverse of tau, time-constant
     WEIGHT = 2
@@ -145,12 +145,12 @@ class ACTIVATOR_TYPE(Enum):
     Class for distinguishing the various types of neural activators
     Should keep in sync with ACTIVATOR_TYPE in activator.hpp
     """
-    BASE=0
-    IDENTITY=1
-    CTRNN=2
-    CONV_CTRNN=3
-    IAF=4
-    CONV_IAF=5
+    BASE = 0
+    IDENTITY = 1
+    CTRNN = 2
+    CONV_CTRNN = 3
+    IAF = 4
+    CONV_IAF = 5
     SOFT_MAX = 6
     RESERVOIR_CTRNN = 7
     RESERVOIR_IAF = 8
@@ -163,22 +163,22 @@ class INTEGRATOR_TYPE(Enum):
     Class for distinguishing the various types of neural integrators
     Should keep in sync with INTEGRATOR_TYPE in integrator.hpp
     """
-    BASE=0
-    NONE=1
-    ALL2ALL=2
-    CONV=3
-    RECURRENT=4
-    RESERVOIR=5
-    RESERVOIR_HYBRID=6
-    TRUNCATED_RECURRENT=7
-    CONV_EIGEN=8
+    BASE = 0
+    NONE = 1
+    ALL2ALL = 2
+    CONV = 3
+    RECURRENT = 4
+    RESERVOIR = 5
+    RESERVOIR_HYBRID = 6
+    TRUNCATED_RECURRENT = 7
+    CONV_EIGEN = 8
     ALL2ALL_EIGEN=9
-    RECURRENT_EIGEN=10
-    RESERVOIR_EIGEN=11
+    RECURRENT_EIGEN = 10
+    RESERVOIR_EIGEN = 11
 
 
 ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.CONV_IAF,
-           ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.CONV_CTRNN}
+          ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.CONV_CTRNN}
 
 RESERVOIR_ACTMAP = {ACTIVATOR_TYPE.IAF: ACTIVATOR_TYPE.RESERVOIR_IAF,
                     ACTIVATOR_TYPE.CTRNN: ACTIVATOR_TYPE.RESERVOIR_CTRNN}
