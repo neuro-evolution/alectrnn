@@ -86,6 +86,7 @@ class ALEExperimentManager:
         comm.Allgather([local_cost, MPI.FLOAT],
                        [all_costs, MPI.FLOAT])
         if rank == 0:
+            print("rom: ", rom)
             print("costs: ", all_costs)
             print("mean cost: ", np.mean(all_costs))
             print("total cost: ", np.sum(all_costs))
