@@ -1,13 +1,23 @@
 from random import Random
+from abc import ABC, abstractmethod
+from statistics import mean
 
 
-class HumanNormalizationLog:
+class NormalizationLogInterface(ABC):
+
+    @classmethod
+    @abstractmethod
+    def log(cls, rom):
+        pass
+
+
+class HumanNormalizationLog(NormalizationLogInterface):
     """
     This class contains static dictionary with keys for each game, valued by
     the best human cost.
     """
 
-    log = {'air_raid': None,
+    internal_log = {'air_raid': None,
            'alien': -6857,
            'amidar': -1676,
            'assault': -1496,
@@ -69,6 +79,10 @@ class HumanNormalizationLog:
            'yars_revenge': None,
            'zaxxon': -9173}
 
+    @classmethod
+    def log(cls, key):
+        return HumanNormalizationLog.internal_log[key]
+
 
 class BestAINormalizationLog:
     """
@@ -76,7 +90,7 @@ class BestAINormalizationLog:
     the best AI cost.
     """
 
-    log = {'air_raid': None,
+    internal_log = {'air_raid': None,
            'alien': None,
            'amidar': None,
            'assault': None,
@@ -138,6 +152,10 @@ class BestAINormalizationLog:
            'yars_revenge': None,
            'zaxxon': None}
 
+    @classmethod
+    def log(cls, key):
+        return BestAINormalizationLog.internal_log[key]
+
 
 class CostNormalizer:
     """
@@ -160,8 +178,8 @@ class CostNormalizer:
         :return: the normalized cost
         """
 
-        normalize_cost = ((cost - self.normalization_log.log[rom])
-                           / -self.normalization_log.log[rom]) - 1
+        normalize_cost = ((cost - self.normalization_log.log(rom))
+                          / -self.normalization_log.log(rom)) - 1
         if clip:
             return max(-1., normalize_cost)
 
@@ -248,7 +266,7 @@ class MultiRomObjective:
     def __call__(self, parameters):
         """
         :param parameters: objective parameters
-        :return: sum of normalized scores
+        :return: mean of normalized scores
         """
-        return sum([self.cost_normalizer(objective.handle(parameters), rom)
+        return mean([self.cost_normalizer(objective.handle(parameters), rom)
                     for rom, objective in self.rom_objective_map.items()])
