@@ -716,6 +716,9 @@ class ConvEigenIntegrator : public Integrator<TReal> {
      * Filter shape order: {depth, height, width}
      * Layer shape order: {# channels, height, width}
      * Prev Layer order: {# channels, height, width}
+     * Note: This is a bit confusing because my tensors us C++ memory order
+     * and Eigen uses Fortran. So I list shapes here with last element of shape
+     * being the major axis. This is reversed in Eigen, where first is the major.
      */
     ConvEigenIntegrator(const multi_array::Array<Index,3>& filter_shape,
                         const multi_array::Array<Index,3>& layer_shape,
@@ -745,8 +748,12 @@ class ConvEigenIntegrator : public Integrator<TReal> {
 
     /*
      * Matrix: (# rows, # cols) -> column major
-     * src shape: {channels, height * width}
-     * tar shape: {num_filters, (new height * new width)}
+     * src shape: {height * width, channels}
+     * tar shape: {(new height * new width), num_filters}
+     * Note: If you check tensor shape is will be the reverse, since I use C's
+     * order, while Eigen uses Fortran's. Sorry for the confusion, but Eigen
+     * got added in latter and I am not sure why they choose Fortran's way for a
+     * C++ API.
      */
     void operator()(const multi_array::Tensor<TReal>& src_state,
                     multi_array::Tensor<TReal>& tar_state) override {
