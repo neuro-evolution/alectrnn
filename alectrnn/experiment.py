@@ -363,6 +363,8 @@ class ALEMultiRomExperiment(ALEExperimentBase):
             must be a shared motor handler
 
         *ale parameters don't have to include rom (it will be overwritten)
+        *agents are built from a specific rom, so we need 1 agent and 1 objective
+        for each rom. The nervous system can be shared.
         """
         kwargs['agent_class'] = handlers.SharedMotorAgentHandler
         super().__init__(**kwargs)
