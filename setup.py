@@ -99,6 +99,7 @@ include_dirs += [
     cwd + '/alectrnn/agents',
     cwd + '/alectrnn/common',
     cwd + '/alectrnn/nervous_system',
+    cwd + '/alectrnn/random',
     cwd + '/alectrnn/controllers',
     cwd + '/alectrnn/objectives',
     cwd + '/alectrnn'  # For Eigen
