@@ -98,6 +98,7 @@ include_dirs += [
     ale_install_path + '/include/ale',
     cwd + '/alectrnn/agents',
     cwd + '/alectrnn/common',
+    cwd + '/alectrnn/nervous_system',
     cwd + '/alectrnn/controllers',
     cwd + '/alectrnn/objectives',
     cwd + '/alectrnn'  # For Eigen
@@ -138,17 +139,17 @@ objective_sources = [
 ]
 
 layer_sources = [
-    "alectrnn/common/layer_generator.cpp",
+    "alectrnn/nervous_system/layer_generator.cpp",
     "alectrnn/common/capi_tools.cpp"
 ]
 
 nn_sources = [
-    "alectrnn/common/nervous_system_generator.cpp",
+    "alectrnn/nervous_system/nervous_system_generator.cpp",
     "alectrnn/common/capi_tools.cpp"
 ]
 
 nn_handler_sources = [
-    "alectrnn/common/nervous_system_handler.cpp"
+    "alectrnn/nervous_system/nervous_system_handler.cpp"
 ]
 
 ale_handler_sources = [

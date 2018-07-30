@@ -21,8 +21,8 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
-#include "multi_array.hpp"
-#include "utilities.hpp"
+#include "../common/multi_array.hpp"
+#include "../common/utilities.hpp"
 #include "parameter_types.hpp"
 
 namespace nervous_system {

@@ -4,8 +4,8 @@
 #include "player_agent.hpp"
 #include "../common/multi_array.hpp"
 #include "../common/screen_preprocessing.hpp"
-#include "../common/nervous_system.hpp"
-#include "../common/state_logger.hpp"
+#include "../nervous_system/nervous_system.hpp"
+#include "../nervous_system/state_logger.hpp"
 
 
 namespace alectrnn {

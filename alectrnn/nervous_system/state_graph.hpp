@@ -8,7 +8,7 @@
 
 #include <cstddef>
 #include <vector>
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 
 namespace graphs {
 

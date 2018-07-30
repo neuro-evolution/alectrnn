@@ -10,8 +10,8 @@
 #include <vector>
 #include <ale_interface.hpp>
 #include "player_agent.hpp"
-#include "../common/nervous_system.hpp"
-#include "../common/state_logger.hpp"
+#include "../nervous_system/nervous_system.hpp"
+#include "../nervous_system/state_logger.hpp"
 #include "../common/screen_logger.hpp"
 
 namespace alectrnn {

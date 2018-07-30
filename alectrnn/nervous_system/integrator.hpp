@@ -27,10 +27,10 @@
 #include <utility>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include "multi_array.hpp"
-#include "graphs.hpp"
+#include "../common/multi_array.hpp"
+#include "../common/graphs.hpp"
 #include "parameter_types.hpp"
-#include "utilities.hpp"
+#include "../common/utilities.hpp"
 
 namespace nervous_system {
 

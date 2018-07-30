@@ -7,7 +7,7 @@
 #include <vector>
 #include <initializer_list>
 #include "layer.hpp"
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 #include "parameter_types.hpp"
 
 namespace nervous_system {

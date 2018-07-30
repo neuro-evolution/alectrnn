@@ -23,9 +23,9 @@
 #include "../controllers/controller.hpp"
 #include "../agents/player_agent.hpp"
 #include "../agents/nervous_system_agent.hpp"
-#include "../common/nervous_system.hpp"
+#include "../nervous_system/nervous_system.hpp"
 #include "../common/capi_tools.hpp"
-#include "../common/integrator.hpp"
+#include "../nervous_system/integrator.hpp"
 #include "../common/multi_array.hpp"
 
 static PyObject *TotalCostObjective(PyObject *self, PyObject *args,

@@ -34,9 +34,9 @@
 #include "layer_generator.hpp"
 #include "numpy/arrayobject.h"
 #include "layer.hpp"
-#include "graphs.hpp"
-#include "capi_tools.hpp"
-#include "multi_array.hpp"
+#include "../common/graphs.hpp"
+#include "../common/capi_tools.hpp"
+#include "../common/multi_array.hpp"
 #include "activator.hpp"
 #include "integrator.hpp"
 

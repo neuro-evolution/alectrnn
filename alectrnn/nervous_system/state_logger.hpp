@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <vector>
 #include "nervous_system.hpp"
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 
 namespace nervous_system {
 

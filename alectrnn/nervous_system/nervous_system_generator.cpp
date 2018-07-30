@@ -18,7 +18,7 @@
 #include "nervous_system_generator.hpp"
 #include "layer.hpp"
 #include "nervous_system.hpp"
-#include "capi_tools.hpp"
+#include "../common/capi_tools.hpp"
 
 /*
  * DeleteLayer can be shared among the Layers as a destructor

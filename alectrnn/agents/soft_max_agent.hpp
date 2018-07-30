@@ -8,7 +8,7 @@
 #include <ale_interface.hpp>
 #include <random>
 #include "nervous_system_agent.hpp"
-#include "../common/nervous_system.hpp"
+#include "../nervous_system/nervous_system.hpp"
 
 namespace alectrnn {
 

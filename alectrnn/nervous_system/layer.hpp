@@ -7,10 +7,10 @@
 #include <initializer_list>
 #include <iostream>
 #include <utility>
-#include "graphs.hpp"
+#include "../common/graphs.hpp"
 #include "activator.hpp"
 #include "integrator.hpp"
-#include "multi_array.hpp"
+#include "../common/multi_array.hpp"
 #include "parameter_types.hpp"
 
 namespace nervous_system {
