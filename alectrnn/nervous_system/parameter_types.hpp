@@ -15,7 +15,7 @@ enum PARAMETER_TYPE {
   BIAS, // CTRNN activator - or input bias
   RTAUS, // CTRNN activator
   WEIGHT, // ALL2ALL, CONV3D, RECURRENT integrators
-  RANGE, // difference between reset value and threshold for IF models
+  RANGE, // difference between reset value and threshold for IF models (and bounded relu)
   REFRACTORY, // refractory period for IF models
   RESISTANCE, // resistance for IF models
   GAIN,

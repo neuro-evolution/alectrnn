@@ -15,6 +15,11 @@ namespace utilities {
 typedef int Integer; // Can be signed or unsigned
 
 template <typename TReal>
+TReal UpperThreshold(const TReal x, const TReal upper_bound) {
+  return (x > upper_bound) ? upper_bound : x;
+}
+
+template <typename TReal>
 bool OverBound(TReal x) {
   return (x > std::numeric_limits<TReal>::max()) ? true : false;
 }

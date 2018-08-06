@@ -157,6 +157,7 @@ class ACTIVATOR_TYPE(Enum):
     SIGMOID = 9
     TANH = 10
     RELU = 11
+    BOUNDED_RELU = 12
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -209,7 +210,8 @@ class NervousSystem:
         ACTIVATION_TYPE.IAF: (float(step_size), float(peak), float(reset))
         ACTIVATION_TYPE.TANH: ()
         ACTIVATION_TYPE.SIGMOID: (float(saturation_point),)
-        ACTIvATION_TYPE.RELU: ()
+        ACTIVATION_TYPE.RELU: ()
+        ACTIVATION_TYPE.BOUNDED_RELU: (bound,)
 
     Motor layer is the last layer of the network and should have a dictionary
     with the following keys:
@@ -1088,7 +1090,8 @@ class ActivationAPIMap:
                     ACTIVATOR_TYPE.RESERVOIR_IAF.value: configure_oldstyle_layer_activations,
                     ACTIVATOR_TYPE.SIGMOID.value: configure_layer_activations,
                     ACTIVATOR_TYPE.TANH.value: configure_layer_activations,
-                    ACTIVATOR_TYPE.RELU.value: configure_layer_activations}
+                    ACTIVATOR_TYPE.RELU.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.BOUNDED_RELU.value: configure_layer_activations}
 
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):

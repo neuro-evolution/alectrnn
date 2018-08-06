@@ -39,7 +39,8 @@ enum ACTIVATOR_TYPE {
   RESERVOIR_IAF_ACTIVATOR,
   SIGMOID_ACTIVATOR,
   TANH_ACTIVATOR,
-  RELU_ACTIVATOR
+  RELU_ACTIVATOR,
+  BOUNDED_RELU_ACTIVATOR
 };
 
 template<typename TReal>
@@ -726,7 +727,7 @@ class TanhActivator: public Activator<TReal> {
 
     virtual void Reset() {}
 
-  private:
+  protected:
     const std::vector<Index> shape_;
     Index num_states_;
     const bool is_shared_;
@@ -830,7 +831,7 @@ class SigmoidActivator : public Activator<TReal> {
 
     virtual void Reset() {};
 
-  private:
+  protected:
     const std::vector<Index> shape_;
     const TReal saturation_point_;
     Index num_states_;
@@ -921,11 +922,41 @@ class ReLuActivator : public Activator<TReal> {
 
     virtual void Reset() {};
 
-  private:
+  protected:
     std::vector<Index> shape_;
     Index num_states_;
     const bool is_shared_;
     multi_array::Tensor<TReal> input_bias_;
+};
+
+/*
+ * Bounded ReLu activation function
+ * Toggle parameter sharing.
+ * Assigns parameters into internal memory.
+ */
+template <typename TReal>
+class BoundedReLuActivator : public ReLuActivator<TReal> {
+  public:
+    typedef ReLuActivator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    BoundedReLuActivator(const std::vector<Index>& shape, bool is_shared,
+                         TReal bound) : super_type(shape, is_shared), bound_(bound) {
+
+      super_type::activator_type_ = BOUNDED_RELU_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < super_type::num_states_; iii++) {
+        state[iii] = utilities::UpperThreshold(std::max<TReal>(0,
+                         input_buffer[iii] + super_type::input_bias_[iii]), bound_);
+      }
+    }
+
+  protected:
+    const TReal bound_;
 };
 
 } // End nervous_system namespace
