@@ -43,7 +43,8 @@ enum ACTIVATOR_TYPE {
   TANH_ACTIVATOR,
   RELU_ACTIVATOR,
   BOUNDED_RELU_ACTIVATOR,
-  NOISY_RELU_ACTIVATOR
+  NOISY_RELU_ACTIVATOR,
+  NOISY_SIGMOID_ACTIVATOR
 };
 
 template<typename TReal>
@@ -843,6 +844,42 @@ class SigmoidActivator : public Activator<TReal> {
     multi_array::Tensor<TReal> decay_;
 };
 
+template <typename TReal>
+class NoisySigmoidActivator : public Activator<TReal> {
+  public:
+    typedef Activator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    NoisySigmoidActivator(const std::vector<Index>& shape,
+                          bool is_shared, const TReal saturation_point,
+                          const TReal standard_deviation,
+                          const std::uint64_t seed)
+        : super_type(shape, is_shared, saturation_point),
+          standard_deviation_(standard_deviation), rng_(seed),
+          normal_distribution_() {
+
+      super_type::activator_type_ = NOISY_SIGMOID_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] += -decay_[iii] * state[iii]
+                      + (saturation_point_ - state[iii])
+                        * utilities::approx_sigmoid(input_bias_[iii]
+                                                    + input_buffer[iii]
+                                                    + standard_deviation_
+                                                      * normal_distribution_(rng_));
+      }
+    }
+
+  protected:
+    const TReal standard_deviation_;
+    pcg32_fast rng_;
+    std::normal_distribution<TReal> normal_distribution_;
+};
+
 /*
  * ReLu activation function
  * Toggle parameter sharing.
@@ -951,8 +988,9 @@ class NoisyReLuActivator : public ReLuActivator<TReal> {
                             const multi_array::Tensor<TReal>& input_buffer) {
 
       for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] = std::max<TReal>(0, input_buffer[iii] + input_bias_[iii])
-                     + standard_deviation_ * normal_distribution_(rng_);
+        state[iii] = std::max<TReal>(0, input_buffer[iii] + input_bias_[iii]
+                                        + standard_deviation_
+                                          * normal_distribution_(rng_));
       }
     }
 
