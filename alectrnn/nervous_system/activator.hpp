@@ -21,9 +21,11 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <random>
 #include "../common/multi_array.hpp"
 #include "../common/utilities.hpp"
 #include "parameter_types.hpp"
+#include "../random/pcg_random.hpp"
 
 namespace nervous_system {
 
@@ -40,7 +42,8 @@ enum ACTIVATOR_TYPE {
   SIGMOID_ACTIVATOR,
   TANH_ACTIVATOR,
   RELU_ACTIVATOR,
-  BOUNDED_RELU_ACTIVATOR
+  BOUNDED_RELU_ACTIVATOR,
+  NOISY_RELU_ACTIVATOR
 };
 
 template<typename TReal>
@@ -852,8 +855,8 @@ class ReLuActivator : public Activator<TReal> {
     typedef typename super_type::Index Index;
 
     ReLuActivator(const std::vector<Index>& shape,
-                     bool is_shared)
-    : shape_(shape), num_states_(1), is_shared_(is_shared) {
+                  bool is_shared) : shape_(shape), num_states_(1),
+                                    is_shared_(is_shared) {
 
       for (Index iii = 0; iii < shape.size(); ++iii) {
         num_states_ *= shape[iii];
@@ -927,6 +930,36 @@ class ReLuActivator : public Activator<TReal> {
     Index num_states_;
     const bool is_shared_;
     multi_array::Tensor<TReal> input_bias_;
+};
+
+template <typename TReal>
+class NoisyReLuActivator : public ReLuActivator<TReal> {
+  public:
+    typedef ReLuActivator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    NoisyReLuActivator(const std::vector<Index>& shape, bool is_shared,
+                       const TReal standard_deviation,
+                       const std::uint64_t seed) : super_type(shape, is_shared),
+                                                   standard_deviation_(standard_deviation),
+                                                   rng_(seed),
+                                                   normal_distribution_() {
+      super_type::activator_type_ = NOISY_RELU_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < num_states_; iii++) {
+        state[iii] = std::max<TReal>(0, input_buffer[iii] + input_bias_[iii])
+                     + standard_deviation_ * normal_distribution_(rng_);
+      }
+    }
+
+  protected:
+    const TReal standard_deviation_;
+    pcg32_fast rng_;
+    std::normal_distribution<TReal> normal_distribution_;
 };
 
 /*
