@@ -340,6 +340,32 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
     }
 
+    case nervous_system::NOISY_SIGMOID_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      float saturation_point;
+      float standard_deviation;
+      int seed;
+      if (!PyArg_ParseTuple(args, "Oiffi", &shape, &is_shared, &saturation_point,
+                            &standard_deviation, &seed)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("NOISY_SIGMOID_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " NOISY_SIGMOID_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::SigmoidActivator<float>(
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared), saturation_point,
+          standard_deviation, static_cast<std::uint64_t>(seed));
+      break;
+    }
+
     case nervous_system::RELU_ACTIVATOR: {
       PyArrayObject* shape;
       int is_shared;
@@ -358,6 +384,31 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       new_activator = new nervous_system::ReLuActivator<float>(
           alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
           static_cast<bool>(is_shared));
+      break;
+    }
+
+    case nervous_system::NOISY_RELU_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      float standard_deviation;
+      int seed;
+      if (!PyArg_ParseTuple(args, "Oifi", &shape, &is_shared,
+                            &standard_deviation, &seed)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("NOISY_RELU_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " NOISY_RELU_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::NoisyReLuActivator<float>(
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared), standard_deviation,
+          static_cast<std::uint64_t>(seed));
       break;
     }
 
