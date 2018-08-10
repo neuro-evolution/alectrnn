@@ -158,6 +158,8 @@ class ACTIVATOR_TYPE(Enum):
     TANH = 10
     RELU = 11
     BOUNDED_RELU = 12
+    NOISY_RELU = 13
+    NOISY_SIGMOID = 14
 
 
 class INTEGRATOR_TYPE(Enum):
@@ -1091,7 +1093,9 @@ class ActivationAPIMap:
                     ACTIVATOR_TYPE.SIGMOID.value: configure_layer_activations,
                     ACTIVATOR_TYPE.TANH.value: configure_layer_activations,
                     ACTIVATOR_TYPE.RELU.value: configure_layer_activations,
-                    ACTIVATOR_TYPE.BOUNDED_RELU.value: configure_layer_activations}
+                    ACTIVATOR_TYPE.BOUNDED_RELU.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.NOISY_RELU.value: configure_layer_activations,
+                    ACTIVATOR_TYPE.NOISY_SIGMOID.value: configure_layer_activations}
 
 
 def calc_conv_layer_shape(prev_layer_shape, num_filters, stride):
