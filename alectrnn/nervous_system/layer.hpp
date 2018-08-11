@@ -196,6 +196,33 @@ class Layer {
     std::size_t parameter_count_;
 };
 
+template <typename TReal>
+class RewardModulatedLayer : public Layer<TReal> {
+  public:
+    typedef Layer<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    RewardModulatedLayer(const std::vector<Index>& shape,
+                         Integrator<TReal>* back_integrator,
+                         Integrator<TReal>* self_integrator,
+                         Activator<TReal>* activation_function)
+        : super_type(shape, back_integrator, self_integrator,
+                     activation_function) {
+    }
+
+    UpdateWeights() {
+      // Cast integrators as AdaptiveWeightIntegrator and then call
+      // weight update function
+    }
+
+  protected:
+    const TReal learning_rate_;
+    const TReal reward_smoothing_factor_;
+    const TReal activation_smoothing_factor_;
+    TReal reward_average_;
+    std::vector<TReal> activation_average_;
+};
+
 template<typename TReal>
 class InputLayer : public Layer<TReal> {
   public:

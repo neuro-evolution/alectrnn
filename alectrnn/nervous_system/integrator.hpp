@@ -46,7 +46,8 @@ enum INTEGRATOR_TYPE {
   CONV_EIGEN_INTEGRATOR,
   ALL2ALL_EIGEN_INTEGRATOR,
   RECURRENT_EIGEN_INTEGRATOR,
-  RESERVOIR_EIGEN_INTEGRATOR
+  RESERVOIR_EIGEN_INTEGRATOR,
+  ADAPTIVE_WEIGHT_INTEGRATOR
 };
 
 // Abstract base class
@@ -83,6 +84,19 @@ class Integrator {
   protected:
     INTEGRATOR_TYPE integrator_type_;
     std::size_t parameter_count_;
+};
+
+template <typename TReal>
+class AdaptiveWeightIntegrator : public Integrator {
+  public:
+    typedef std::size_t Index;
+    typedef Integrator<TReal> super_type;
+
+    AdaptiveWeightIntegrator() : super_type() {
+      super_type::integrator_type_ = ADAPTIVE_WEIGHT_INTEGRATOR;
+    }
+    virtual ~AdaptiveWeightIntegrator()= default;
+    virtual void UpdateWeights()=0;
 };
 
 // None integrator - does nothing
