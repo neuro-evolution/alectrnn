@@ -203,8 +203,8 @@ class RewardModulatedLayer : public Layer<TReal> {
     typedef typename super_type::Index Index;
 
     RewardModulatedLayer(const std::vector<Index>& shape,
-                         Integrator<TReal>* back_integrator,
-                         Integrator<TReal>* self_integrator,
+                         RewardModulatedIntegrator<TReal>* back_integrator,
+                         RewardModulatedIntegrator<TReal>* self_integrator,
                          Activator<TReal>* activation_function)
         : super_type(shape, back_integrator, self_integrator,
                      activation_function) {
@@ -213,14 +213,14 @@ class RewardModulatedLayer : public Layer<TReal> {
     UpdateWeights() {
       // Cast integrators as AdaptiveWeightIntegrator and then call
       // weight update function
+      // update rolling avg
     }
 
   protected:
-    const TReal learning_rate_;
+    multi_array::Tensor<TReal> activation_averages_;
+    TReal reward_average_;
     const TReal reward_smoothing_factor_;
     const TReal activation_smoothing_factor_;
-    TReal reward_average_;
-    std::vector<TReal> activation_average_;
 };
 
 template<typename TReal>

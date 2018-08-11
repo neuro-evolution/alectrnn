@@ -47,7 +47,8 @@ enum INTEGRATOR_TYPE {
   ALL2ALL_EIGEN_INTEGRATOR,
   RECURRENT_EIGEN_INTEGRATOR,
   RESERVOIR_EIGEN_INTEGRATOR,
-  ADAPTIVE_WEIGHT_INTEGRATOR
+  REWARD_MODULATED_INTEGRATOR,
+  REWARD_MODULATED_ALL2ALL_INTEGRATOR
 };
 
 // Abstract base class
@@ -87,16 +88,30 @@ class Integrator {
 };
 
 template <typename TReal>
-class AdaptiveWeightIntegrator : public Integrator {
+class RewardModulatedIntegrator : public virtual Integrator {
   public:
     typedef std::size_t Index;
     typedef Integrator<TReal> super_type;
 
-    AdaptiveWeightIntegrator() : super_type() {
-      super_type::integrator_type_ = ADAPTIVE_WEIGHT_INTEGRATOR;
+    RewardModulatedIntegrator(const TReal learning_rate,
+                              const TReal reward_smoothing_factor,
+                              const TReal activation_smoothing_factor)
+        : super_type(), learning_rate_(learning_rate),
+          reward_smoothing_factor_(reward_smoothing_factor),
+          activation_smoothing_factor_(activation_smoothing_factor) {
+      super_type::integrator_type_ = REWARD_MODULATED_INTEGRATOR;
     }
-    virtual ~AdaptiveWeightIntegrator()= default;
-    virtual void UpdateWeights()=0;
+    RewardModulatedIntegrator() : RewardModulatedIntegrator(0.0, 0.0, 0.0) {
+    }
+    virtual ~RewardModulatedIntegrator()= default;
+    virtual void UpdateWeights(const TReal reward,
+                               const TReal reward_average,
+                               const multi_array::Tensor<TReal>& src_state,
+                               const multi_array::Tensor<TReal>& tar_state,
+                               const multi_array::Tensor<TReal>& tar_state_averages)=0;
+
+  protected:
+    const TReal learning_rate_;
 };
 
 // None integrator - does nothing
@@ -776,14 +791,14 @@ class ConvEigenIntegrator : public Integrator<TReal> {
                         kernel_h_, kernel_w_, pad_h_, pad_w_, stride_, stride_,
                         1, 1, buffer_state_.data());
       MatrixView output(tar_state.data(), channel_size_, num_filters_);
-      ConstMatrixView params(weights_.data() + weights_.start(),
+      ConstMatrixView params(weight_view_.data() + weight_view_.start(),
                              kernel_w_ * kernel_h_ * channels_,
                              num_filters_);
       output.noalias() = buffer_state_ * params;
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
-      weights_ = parameters;
+      weight_view_ = parameters;
     }
 
     std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
@@ -813,14 +828,14 @@ class ConvEigenIntegrator : public Integrator<TReal> {
     const utilities::Integer pad_w_;
     const utilities::Integer channel_size_;
     Matrix buffer_state_;
-    multi_array::ConstArraySlice<TReal> weights_;
+    multi_array::ConstArraySlice<TReal> weight_view_;
 };
 
 /*
  * Implements an All2All integrator with an Eigen backend
  */
 template<typename TReal>
-class All2AllEigenIntegrator : public Integrator<TReal> {
+class All2AllEigenIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -850,7 +865,7 @@ class All2AllEigenIntegrator : public Integrator<TReal> {
       }
 
       ColVectorView output(tar_state.data(), tar_state.size());
-      output.noalias() = ConstMatrixView(weights_.data() + weights_.start(),
+      output.noalias() = ConstMatrixView(weight_view_.data() + weight_view_.start(),
                                          tar_state.size(),
                                          src_state.size())
                          * ConstColVectorView(src_state.data(), src_state.size());
@@ -862,7 +877,7 @@ class All2AllEigenIntegrator : public Integrator<TReal> {
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
         throw std::invalid_argument("Wrong number of parameters");
       }
-      weights_ = parameters;
+      weight_view_ = parameters;
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
@@ -880,7 +895,7 @@ class All2AllEigenIntegrator : public Integrator<TReal> {
   protected:
     Index num_states_;
     Index num_prev_states_;
-    multi_array::ConstArraySlice<TReal> weights_;
+    multi_array::ConstArraySlice<TReal> weight_view_;
 };
 
 /*
@@ -918,9 +933,9 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
       }
 
       ConstSparseMatrixView weight_matrix(network_.rows(), network_.cols(),
-                                          weights_.size(), network_.outerIndexPtr(),
+                                          weight_view_.size(), network_.outerIndexPtr(),
                                           network_.innerIndexPtr(),
-                                          weights_.data() + weights_.start(),
+                                          weight_view_.data() + weight_view_.start(),
                                           network_.innerNonZeroPtr());
       ColVectorView output_vector(tar_state.data(), tar_state.size());
       ConstColVectorView src_vector(src_state.data(), src_state.size());
@@ -934,7 +949,7 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
         throw std::invalid_argument("Wrong number of parameters");
       }
-      weights_ = parameters.slice(0, super_type::parameter_count_);
+      weight_view_ = parameters.slice(0, super_type::parameter_count_);
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
@@ -946,7 +961,7 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
     }
 
     const multi_array::ConstArraySlice<TReal>& GetWeights() const {
-      return weights_;
+      return weight_view_;
     }
 
     virtual std::pair<Index, Index> GetWeightIndexRange() const {
@@ -955,7 +970,7 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
 
   protected:
     SparseMatrix network_;
-    multi_array::ConstArraySlice<TReal> weights_;
+    multi_array::ConstArraySlice<TReal> weight_view_;
 };
 
 /*
@@ -1007,6 +1022,72 @@ class ReservoirEigenIntegrator : public Integrator<TReal> {
 
   protected:
     SparseMatrix network_;
+};
+
+template <typename TReal>
+class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
+                                         public RewardModulatedIntegrator<TReal> {
+  public:
+    typedef All2AllEigenIntegrator<TReal> all2all_type;
+    typedef RewardModulatedIntegrator<TReal> reward_modulator_type;
+    typedef typename all2all_type::Index Index;
+    typedef all2all_type::ColVector ColVector;
+    typedef all2all_type::ColVectorView ColVectorView;
+    typedef const all2all_type::ConstColVector ConstColVector;
+    typedef const all2all_type::ConstColVectorView ConstColVectorView;
+    typedef const all2all_type::ConstMatrix ConstMatrix;
+    typedef const all2all_type::ConstMatrixView ConstMatrixView;
+    typedef Eigen::Matrix<TReal, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+    typedef Eigen::Map<Matrix> MatrixView;
+
+    RewardModulatedAll2AllIntegrator(const Index num_states,
+                                     const Index num_prev_states,
+                                     const TReal learning_rate,
+                                     const TReal reward_smoothing_factor,
+                                     const TReal activation_smoothing_factor)
+      : all2all_type(num_states, num_prev_states),
+        reward_modulator_type(learning_rate, reward_smoothing_factor,
+                              activation_smoothing_factor),
+        weight_({all2all_type::parameter_count_}) {
+      all2all_type::integrator_type_ = REWARD_MODULATED_ALL2ALL_INTEGRATOR;
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
+      for (Index iii = 0; iii < parameters.size(); ++iii) {
+        weights_[iii] = parameters[iii];
+      }
+      weight_view_ = multi_array::ConstArraySlice<TReal>(weights_.data(), 0,
+                                                         weights_.size());
+    }
+
+    void UpdateWeights(const TReal reward,
+                       const TReal reward_average,
+                       const multi_array::Tensor<TReal>& src_state,
+                       const multi_array::Tensor<TReal>& tar_state,
+                       const multi_array::Tensor<TReal>& tar_state_averages) {
+
+      ConstColVectorView src_view(src_state.data(), src_state.size());
+      ConstColVectorView tar_view(tar_state.data(), tar_state.size());
+      ConstColVectorView tar_avg_view(tar_state_averages.data(), tar_state_averages.size());
+      MatrixView weight_view(weights_.data(), tar_state.size(), src_state.size());
+      const TReal reward_modulated_learning_factor = (reward - reward_average)
+                                                   * reward_modulator_type::learning_rate_;
+      for (Index s = 0; s < src_state.size(); ++s) {
+        for (Index t = 0; t < tar_state.size(); ++t) {
+          weight_view(t, s) += src_view(s)
+                               * (tar_view(t) - tar_avg_view(t))
+                               * reward_modulated_learning_factor;
+        }
+      }
+    }
+
+  protected:
+    multi_array::Tensor<TReal> weights_;
 };
 
 } // End nervous_system namespace
