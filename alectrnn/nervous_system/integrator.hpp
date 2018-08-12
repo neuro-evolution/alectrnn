@@ -48,7 +48,8 @@ enum INTEGRATOR_TYPE {
   RECURRENT_EIGEN_INTEGRATOR,
   RESERVOIR_EIGEN_INTEGRATOR,
   REWARD_MODULATED_INTEGRATOR,
-  REWARD_MODULATED_ALL2ALL_INTEGRATOR
+  REWARD_MODULATED_ALL2ALL_INTEGRATOR,
+  REWARD_MODULATED_RECURRENT_INTEGRATOR
 };
 
 // Abstract base class
@@ -93,15 +94,11 @@ class RewardModulatedIntegrator : public virtual Integrator {
     typedef std::size_t Index;
     typedef Integrator<TReal> super_type;
 
-    RewardModulatedIntegrator(const TReal learning_rate,
-                              const TReal reward_smoothing_factor,
-                              const TReal activation_smoothing_factor)
-        : super_type(), learning_rate_(learning_rate),
-          reward_smoothing_factor_(reward_smoothing_factor),
-          activation_smoothing_factor_(activation_smoothing_factor) {
+    RewardModulatedIntegrator(const TReal learning_rate)
+        : super_type(), learning_rate_(learning_rate) {
       super_type::integrator_type_ = REWARD_MODULATED_INTEGRATOR;
     }
-    RewardModulatedIntegrator() : RewardModulatedIntegrator(0.0, 0.0, 0.0) {
+    RewardModulatedIntegrator() : RewardModulatedIntegrator(0.0) {
     }
     virtual ~RewardModulatedIntegrator()= default;
     virtual void UpdateWeights(const TReal reward,
@@ -914,8 +911,7 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
     typedef const Eigen::SparseMatrix<TReal> ConstSparseMatrix;
     typedef const Eigen::Map<ConstSparseMatrix> ConstSparseMatrixView;
 
-    RecurrentEigenIntegrator(SparseMatrix network)
-    : network_(std::move(network)) {
+    RecurrentEigenIntegrator(SparseMatrix network) : network_(std::move(network)) {
       network_.makeCompressed();
       super_type::integrator_type_ = RECURRENT_EIGEN_INTEGRATOR;
       super_type::parameter_count_ = network_.nonZeros();
@@ -977,7 +973,7 @@ class RecurrentEigenIntegrator : public Integrator<TReal> {
  * Implements a reservior layer using Eigen
  */
 template<typename TReal>
-class ReservoirEigenIntegrator : public Integrator<TReal> {
+class ReservoirEigenIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -1042,17 +1038,14 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
 
     RewardModulatedAll2AllIntegrator(const Index num_states,
                                      const Index num_prev_states,
-                                     const TReal learning_rate,
-                                     const TReal reward_smoothing_factor,
-                                     const TReal activation_smoothing_factor)
+                                     const TReal learning_rate)
       : all2all_type(num_states, num_prev_states),
-        reward_modulator_type(learning_rate, reward_smoothing_factor,
-                              activation_smoothing_factor),
+        reward_modulator_type(learning_rate),
         weight_({all2all_type::parameter_count_}) {
       all2all_type::integrator_type_ = REWARD_MODULATED_ALL2ALL_INTEGRATOR;
     }
 
-    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
       if (parameters.size() != super_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
@@ -1082,6 +1075,71 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
           weight_view(t, s) += src_view(s)
                                * (tar_view(t) - tar_avg_view(t))
                                * reward_modulated_learning_factor;
+        }
+      }
+    }
+
+  protected:
+    multi_array::Tensor<TReal> weights_;
+};
+
+template <typename TReal>
+class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal>,
+                                           public RewardModulatedIntegrator<TReal> {
+  public:
+    typedef RecurrentEigenIntegrator<TReal> recurrent_type;
+    typedef RewardModulatedIntegrator<TReal> reward_modulator_type;
+    typedef typename recurrent_type::Index Index;
+    typedef recurrent_type::ColVector ColVector;
+    typedef recurrent_type::ColVectorView ColVectorView;
+    typedef const recurrent_type::ConstColVector ConstColVector;
+    typedef const recurrent_type::ConstColVectorView ConstColVectorView;
+    typedef recurrent_type::SparseMatrix SparseMatrix;
+    typedef Eigen::Map<SparseMatrix> SparseMatrixView;
+    typedef const recurrent_type::ConstSparseMatrix ConstSparseMatrix;
+    typedef const recurrent_type::ConstSparseMatrixView ConstSparseMatrixView;
+
+    RewardModulatedRecurrentIntegrator(SparseMatrix network, const TReal learning_rate)
+        : recurrent_type(network), reward_modulator_type(learning_rate),
+          weights_({recurrent_type::parameter_count_}) {
+      recurrent_type::integrator_type_ = REWARD_MODULATED_RECURRENT_INTEGRATOR;
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
+
+      for (Index iii = 0; iii < parameters.size(); ++iii) {
+        weights_[iii] = parameters[iii];
+      }
+      weight_view_ = multi_array::ConstArraySlice<TReal>(weights_.data(), 0,
+                                                         weights_.size());
+    }
+
+    void UpdateWeights(const TReal reward,
+                       const TReal reward_average,
+                       const multi_array::Tensor<TReal>& src_state,
+                       const multi_array::Tensor<TReal>& tar_state,
+                       const multi_array::Tensor<TReal>& tar_state_averages) {
+
+      SparseMatrixView weight_matrix(network_.rows(), network_.cols(),
+                                     weight_view_.size(), network_.outerIndexPtr(),
+                                     network_.innerIndexPtr(),
+                                     weight_view_.data() + weight_view_.start(),
+                                     network_.innerNonZeroPtr());
+      ConstColVectorView src_view(src_state.data(), src_state.size());
+      ConstColVectorView tar_view(tar_state.data(), tar_state.size());
+      ConstColVectorView tar_avg_view(tar_state_averages.data(), tar_state_averages.size());
+      const TReal reward_modulated_learning_factor = (reward - reward_average)
+                                                     * reward_modulator_type::learning_rate_;
+      for (Index s = 0; s < weight_matrix.outerSize(); ++s) {
+        for (SparseMatrix<TReal>::InnerIterator it(weight_matrix, s); it; ++it) {
+          it.valueRef() += src_view(s)
+                           * (tar_view(it.row()) - tar_avg_view(it.row()))
+                           * reward_modulated_learning_factor;
         }
       }
     }
