@@ -206,17 +206,28 @@ class RewardModulatedLayer : public Layer<TReal> {
                          RewardModulatedIntegrator<TReal>* back_integrator,
                          RewardModulatedIntegrator<TReal>* self_integrator,
                          Activator<TReal>* activation_function)
-        : super_type(shape, back_integrator, self_integrator,
+        : super_type(shape, dynamic_cast<Integrator<TReal>*>(back_integrator),
+                     dynamic_cast<Integrator<TReal>*>(self_integrator),
                      activation_function) {
     }
 
     /*
      * Called after all integrators and activators have been called.
      */
-    UpdateWeights() {
-      // Cast integrators as AdaptiveWeightIntegrator and then call
-      // weight update function
-      // update rolling avg
+    UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
+      // call weight update function
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
+
+      // update rolling avgerages
+      reward_average_ = utilities::ExponentialRollingAverage(reward, reward_average_, reward_smoothing_factor_);
+      for (Index i = 0; i < activation_averages_.size(); ++i) {
+        activation_averages_[i] = utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
+                                                                       activation_averages_[i],
+                                                                       activation_smoothing_factor_);
+      }
     }
 
   protected:

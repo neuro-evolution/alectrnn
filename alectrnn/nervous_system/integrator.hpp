@@ -879,7 +879,7 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
 
       // find max index tar state, updates single filter
       const Index max_neuron_index = utilities::IndexOfMaxElement(tar_state);
-      // Need the filter this neuron belongs too for weights
+      // Get the filter index for the max neuron
       const Index max_filter = max_neuron_index / channel_size_;
       // Alternatively find max index tar state for each filter, updates each filter
 

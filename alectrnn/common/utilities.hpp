@@ -15,6 +15,17 @@ namespace utilities {
 typedef int Integer; // Can be signed or unsigned
 typedef std::uint64_t Index;
 
+
+/*
+ * Calculates the rolling average
+ */
+template <typename TReal>
+TReal ExponentialRollingAverage(const TReal new_value, const TReal prev_average,
+                                const TReal alpha) {
+  return alpha * new_value + (1 - alpha) * prev_average;
+}
+
+
 /*
  * Returns the index of the element with the largest value.
  */
