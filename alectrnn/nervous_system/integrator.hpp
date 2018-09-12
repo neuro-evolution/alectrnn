@@ -49,7 +49,8 @@ enum INTEGRATOR_TYPE {
   RESERVOIR_EIGEN_INTEGRATOR,
   REWARD_MODULATED_INTEGRATOR,
   REWARD_MODULATED_ALL2ALL_INTEGRATOR,
-  REWARD_MODULATED_RECURRENT_INTEGRATOR
+  REWARD_MODULATED_RECURRENT_INTEGRATOR,
+  REWARD_MODULATED_CONV_INTEGRATOR
 };
 
 // Abstract base class
@@ -729,7 +730,7 @@ class ReservoirIntegrator : public Integrator<TReal> {
  * TODO: Support even filters
  */
 template<typename TReal>
-class ConvEigenIntegrator : public Integrator<TReal> {
+class ConvEigenIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -826,6 +827,74 @@ class ConvEigenIntegrator : public Integrator<TReal> {
     const utilities::Integer channel_size_;
     Matrix buffer_state_;
     multi_array::ConstArraySlice<TReal> weight_view_;
+};
+
+template <typename TReal>
+class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
+                                      RewardModulatedIntegrator<TReal> {
+  public:
+    typedef RewardModulatedIntegrator<TReal> reward_modulator_type;
+    typedef ConvEigenIntegrator<TReal> conv_type;
+    typedef typename conv_type::Index Index;
+    typedef conv_type::Matrix Matrix;
+    typedef const conv_type::ConstMatrix ConstMatrix;
+    typedef conv_type::MatrixView MatrixView;
+    typedef const conv_type::ConstMatrixView ConstMatrixView;
+
+    RewardModulatedConvIntegrator(const multi_array::Array<Index,3>& filter_shape,
+                                  const multi_array::Array<Index,3>& layer_shape,
+                                  const multi_array::Array<Index,3>& prev_layer_shape,
+                                  Index stride, const TReal learning_rate)
+        : conv_type(filter_shape, layer_shape, prev_layer_shape, stride),
+          reward_modulator_type(learning_rate),
+          weights_({conv_type::parameter_count_}) {
+      conv_type::integrator_type_ = REWARD_MODULATED_CONV_INTEGRATOR;
+    }
+
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (parameters.size() != super_type::parameter_count_) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters");
+      }
+
+      for (Index iii = 0; iii < parameters.size(); ++iii) {
+        weights_[iii] = parameters[iii];
+      }
+      weight_view_ = multi_array::ConstArraySlice<TReal>(weights_.data(), 0,
+                                                         weights_.size());
+    }
+
+    void UpdateWeights(const TReal reward,
+                       const TReal reward_average,
+                       const multi_array::Tensor<TReal>& src_state,
+                       const multi_array::Tensor<TReal>& tar_state,
+                       const multi_array::Tensor<TReal>& tar_state_averages) {
+
+      MatrixView weights(weights_.data() + weights_.start(),
+                         kernel_w_ * kernel_h_ * channels_,
+                         num_filters_);
+      ConstMatrixView tar_view(tar_state.data(), channel_size_, num_filters_);
+      ConstMatrixView tar_avg_view(tar_state_averages.data(), channel_size_, num_filters_);
+
+      // find max index tar state, updates single filter
+      const Index max_neuron_index = utilities::IndexOfMaxElement(tar_state);
+      // Need the filter this neuron belongs too for weights
+      const Index max_filter = max_neuron_index / channel_size_;
+      // Alternatively find max index tar state for each filter, updates each filter
+
+      // Loops through src neuron states
+      const TReal reward_modulated_learning_factor = (reward - reward_average)
+                                                     * reward_modulator_type::learning_rate_;
+      for (auto src_neuron = 0; src_neuron < conv_type::buffer_state_.cols(); ++src_neuron) {
+        weights(src_neuron, max_filter) = buffer_state_(max_neuron_index, src_neuron)
+                                 * (tar_view(max_neuron_index) - tar_avg_view(max_neuron_index))
+                                 * reward_modulated_learning_factor;
+      }
+    }
+
+  protected:
+    multi_array::Tensor<TReal> weights_;
 };
 
 /*
@@ -1126,9 +1195,9 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
                        const multi_array::Tensor<TReal>& tar_state_averages) {
 
       SparseMatrixView weight_matrix(network_.rows(), network_.cols(),
-                                     weight_view_.size(), network_.outerIndexPtr(),
+                                     weights_.size(), network_.outerIndexPtr(),
                                      network_.innerIndexPtr(),
-                                     weight_view_.data() + weight_view_.start(),
+                                     weights_.data(),
                                      network_.innerNonZeroPtr());
       ConstColVectorView src_view(src_state.data(), src_state.size());
       ConstColVectorView tar_view(tar_state.data(), tar_state.size());

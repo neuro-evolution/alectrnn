@@ -210,6 +210,9 @@ class RewardModulatedLayer : public Layer<TReal> {
                      activation_function) {
     }
 
+    /*
+     * Called after all integrators and activators have been called.
+     */
     UpdateWeights() {
       // Cast integrators as AdaptiveWeightIntegrator and then call
       // weight update function
