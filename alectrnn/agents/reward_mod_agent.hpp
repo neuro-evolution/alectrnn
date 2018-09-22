@@ -1,0 +1,8 @@
+//
+// Created by nathaniel on 9/15/18.
+//
+
+#ifndef ALECTRNN_REWARD_MOD_AGENT_HPP
+#define ALECTRNN_REWARD_MOD_AGENT_HPP
+
+#endif //ALECTRNN_REWARD_MOD_AGENT_HPP

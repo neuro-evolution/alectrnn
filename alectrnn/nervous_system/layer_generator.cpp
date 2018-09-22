@@ -92,6 +92,51 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   return layer_capsule;
 }
 
+static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
+                                            PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+                                 "self_integrator", "self_integrator_args",
+                                 "activator_type", "activator_args", "shape", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOO", keyword_list,
+                                   &back_integrator_type, &back_integrator_args,
+                                   &self_integrator_type,
+                                   &self_integrator_args, &activator_type,
+                                   &activator_args,
+                                   &shape)) {
+    std::cerr << "Error parsing CreateLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+
+  nervous_system::RewardModulatedIntegrator<float>* back_integrator = IntegratorParser(
+      (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
+
+  nervous_system::RewardModulatedIntegrator<float>* self_integrator = IntegratorParser(
+      (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args);
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+      (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transfered to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedLayer<float>(
+      layer_shape, back_integrator, self_integrator, activator);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "rm_layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
 static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"num_outputs", "num_inputs", 
                                 "activator_type", "activator_args", NULL};

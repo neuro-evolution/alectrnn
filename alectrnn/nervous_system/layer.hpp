@@ -208,7 +208,32 @@ class RewardModulatedLayer : public Layer<TReal> {
                          Activator<TReal>* activation_function)
         : super_type(shape, dynamic_cast<Integrator<TReal>*>(back_integrator),
                      dynamic_cast<Integrator<TReal>*>(self_integrator),
-                     activation_function) {
+                     activation_function), reward_average_(0.0),
+          activation_averages_(super_type::input_buffer_.size())  {
+      super_type::parameter_count_ += 2; // reward and activation smoothing factors
+      Reset();
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      super_type::Configure(parameters);
+      reward_smoothing_factor_ = utilities::Wrap0to1(parameters[parameters.size()-2]);
+      activation_smoothing_factor_ = utilities::Wrap0to1(parameters[parameters.size()-1]);
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+
+      std::vector<PARAMETER_TYPE> layout = super_type::GetParameterLayout();
+      layout.push_back(SMOOTHING);
+      layout.push_back(SMOOTHING);
+      return layout;
+    }
+
+    virtual void Reset() {
+      super_type::Reset();
+      for (auto& avg : activation_averages_) {
+        avg = 0;
+      }
+      reward_average_ = 0.0;
     }
 
     /*
@@ -233,8 +258,8 @@ class RewardModulatedLayer : public Layer<TReal> {
   protected:
     multi_array::Tensor<TReal> activation_averages_;
     TReal reward_average_;
-    const TReal reward_smoothing_factor_;
-    const TReal activation_smoothing_factor_;
+    TReal reward_smoothing_factor_; // between [0,1]
+    TReal activation_smoothing_factor_; // between [0,1]
 };
 
 template<typename TReal>
