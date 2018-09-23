@@ -409,9 +409,38 @@ class ALEMultiRomExperiment(ALEExperimentBase):
         self.rom_objective_map = {self.roms[i]: self._objective_handlers[i]
                                   for i in range(len(self.roms))}
         self.cost_normalizer = cost_normalizer
-        self._objective = multitask.MultiRomObjective(self.rom_objective_map,
-                                                      self.cost_normalizer)
+        self._objective = self._initialize_objective()
+
+    @abstractmethod
+    def _initialize_objective(self):
+        """
+        Called on construction
+        :return: an objective object
+        """
+        pass
 
     @property
     def objective_function(self):
         return self._objective
+
+
+class ALEMultiRomMeanExperiment(ALEMultiRomExperiment):
+    """
+    An ALE experiment that runs several ROMs for each objective call.
+    The mean of the performance on all tasks is returned.
+    """
+
+    def _initialize_objective(self):
+        return multitask.MultiRomMeanObjective(self.rom_objective_map,
+                                               self.cost_normalizer)
+
+
+class ALEMultiRomProductExperiment(ALEMultiRomExperiment):
+    """
+    An ALE experiment that runs several ROMs for each objective call.
+    The product of the performance on all tasks is returned.
+    """
+
+    def _initialize_objective(self):
+        return multitask.MultiRomMultiplicativeObjective(
+            self.rom_objective_map, self.cost_normalizer)

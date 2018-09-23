@@ -1,6 +1,8 @@
 from random import Random
 from abc import ABC, abstractmethod
 from statistics import mean
+from functools import reduce
+from operator import mul
 
 
 class NormalizationLogInterface(ABC):
@@ -248,7 +250,7 @@ class RandomRomObjective:
                                     chosen_rom)
 
 
-class MultiRomObjective:
+class MultiRomMeanObjective:
     """
     Runs multiple game for each objective and returns the sum of their
     normalized performance.
@@ -270,3 +272,27 @@ class MultiRomObjective:
         """
         return mean([self.cost_normalizer(objective.handle(parameters), rom)
                     for rom, objective in self.rom_objective_map.items()])
+
+
+class MultiRomMultiplicativeObjective:
+    """
+    Runs multiple game for each objective and returns the product of their
+    normalized performance.
+    """
+
+    def __init__(self, rom_objective_map, cost_normalizer):
+        """
+        :param rom_objective_map: a dictionary keyed by rom and valued by an
+            objective handler
+        :param cost_normalizer: an instance of a cost normalizer
+        """
+        self.rom_objective_map = rom_objective_map
+        self.cost_normalizer = cost_normalizer
+
+    def __call__(self, parameters):
+        """
+        :param parameters: objective parameters
+        :return: product of normalized scores
+        """
+        return reduce(mul, [self.cost_normalizer(objective.handle(parameters), rom)
+                      for rom, objective in self.rom_objective_map.items()], 1)
