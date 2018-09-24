@@ -292,7 +292,7 @@ class MultiRomMultiplicativeObjective:
     def __call__(self, parameters):
         """
         :param parameters: objective parameters
-        :return: product of normalized scores
+        :return: negative of the absolute product of normalized scores
         """
-        return reduce(mul, [self.cost_normalizer(objective.handle(parameters), rom)
-                      for rom, objective in self.rom_objective_map.items()], 1)
+        return -abs(reduce(mul, [self.cost_normalizer(objective.handle(parameters), rom)
+                    for rom, objective in self.rom_objective_map.items()], 1))
