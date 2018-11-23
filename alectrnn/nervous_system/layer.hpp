@@ -206,8 +206,8 @@ class RewardModulatedLayer : public Layer<TReal> {
                          RewardModulatedIntegrator<TReal>* back_integrator,
                          RewardModulatedIntegrator<TReal>* self_integrator,
                          Activator<TReal>* activation_function)
-        : super_type(shape, dynamic_cast<Integrator<TReal>*>(back_integrator),
-                     dynamic_cast<Integrator<TReal>*>(self_integrator),
+        : super_type(shape, static_cast<Integrator<TReal>*>(back_integrator),
+                     static_cast<Integrator<TReal>*>(self_integrator),
                      activation_function), reward_average_(0.0),
           activation_averages_(super_type::input_buffer_.size())  {
       super_type::parameter_count_ += 2; // reward and activation smoothing factors

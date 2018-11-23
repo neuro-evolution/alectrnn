@@ -775,6 +775,93 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       break;
     }
 
+    case nervous_system::REWARD_MODULATED_ALL2ALL_INTEGRATOR: {
+      int num_states;
+      int num_prev_states;
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "iif", &num_states, &num_prev_states,
+                            &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("Reward modulated ALL2ALL Integrator failed to parse"
+                                    " tuples");
+      }
+      new_integrator = new nervous_system::RewardModulatedAll2AllIntegrator<float>(num_states,
+                                                                                   num_prev_states, learning_rate);
+      break;
+    }
+
+    case nervous_system::REWARD_MODULATED_RECURRENT_INTEGRATOR: {
+      PyArrayObject* edge_list; // Nx2 dimensional array
+      int num_head_states; // states
+      int num_tail_states; // states or tail states
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "Oiif", &edge_list, &num_head_states,
+                            &num_tail_states, &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("Reward Modulated RECCURENT INTEGRATOR ERROR");
+      }
+
+      // Make sure numpy array has correct shape
+      int edge_list_ndims = PyArray_NDIM(edge_list);
+      if (edge_list_ndims != 2) {
+        std::cerr << "edge list dimensions: " << edge_list_ndims << std::endl;
+        throw std::invalid_argument("edge list has invalid # of dimensions (needs 2)");
+      }
+      npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
+      if (edge_list_shape[1] != 2) {
+        std::cerr << "edge list shape[1]: " << edge_list_shape[1] << std::endl;
+        std::cerr << "edge list shape[1]: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list is the wrong size");
+      }
+
+      new_integrator = new nervous_system::RewardModulatedRecurrentIntegrator<float>(
+          graphs::ConvertEdgeListToSparseMatrix<float>(
+          alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
+          num_tail_states, num_head_states), learning_rate);
+      break;
+    }
+
+    case nervous_system::CONV_EIGEN_INTEGRATOR: {
+      PyArrayObject* filter_shape;
+      PyArrayObject* layer_shape;
+      PyArrayObject* prev_layer_shape;
+      int stride;
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "OOOi", &filter_shape,
+                            &layer_shape, &prev_layer_shape, &stride,
+                            &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("REWARD_MODULATED_EIGEN_INTEGRATOR failed to parse tuples");
+      }
+
+      // Make sure the numpy arrays are the correct size
+      npy_intp num_filter_elements = PyArray_SIZE(filter_shape);
+      if (num_filter_elements != 3) {
+        std::cerr << "num of filter elements: " << num_filter_elements << std::endl;
+        throw std::invalid_argument("filter has wrong number of elements (needs 3)");
+      }
+      npy_intp num_layer_elements = PyArray_SIZE(layer_shape);
+      if (num_layer_elements != 3) {
+        std::cerr << "num of layer elements: " << num_layer_elements << std::endl;
+        throw std::invalid_argument("layer has wrong number of elements (needs 3)");
+      }
+      npy_intp num_prev_layer_elements = PyArray_SIZE(prev_layer_shape);
+      if (num_prev_layer_elements != 3) {
+        std::cerr << "num of prev layer elements: " << num_prev_layer_elements << std::endl;
+        throw std::invalid_argument("prev layer has wrong number of elements (needs 3)");
+      }
+
+      new_integrator = new nervous_system::ConvEigenIntegrator<float>(
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(filter_shape)),
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(layer_shape)),
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(prev_layer_shape)),
+          stride, learning_rate);
+      break;
+    }
+
     default: {
       std::cerr << "Integrator case not supported... exiting." << std::endl;
       throw std::invalid_argument("Unsupported integrator value");
