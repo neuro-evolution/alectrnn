@@ -79,4 +79,8 @@ void PlayerAgent::EndGame() {
   has_terminated_ = true;
 }
 
+void PlayerAgent::RewardFeedback(const int reward)
+{
+}
+
 }

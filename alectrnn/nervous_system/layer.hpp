@@ -214,21 +214,21 @@ class RewardModulatedLayer : public Layer<TReal> {
       Reset();
     }
 
-    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       super_type::Configure(parameters);
       reward_smoothing_factor_ = utilities::Wrap0to1(parameters[parameters.size()-2]);
       activation_smoothing_factor_ = utilities::Wrap0to1(parameters[parameters.size()-1]);
     }
 
-    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
 
       std::vector<PARAMETER_TYPE> layout = super_type::GetParameterLayout();
-      layout.push_back(SMOOTHING);
-      layout.push_back(SMOOTHING);
+      layout.push_back(SMOOTHING);////////////////////???
+      layout.push_back(SMOOTHING);////////////////////????
       return layout;
     }
 
-    virtual void Reset() {
+    virtual void Reset() override {
       super_type::Reset();
       for (auto& avg : activation_averages_) {
         avg = 0;

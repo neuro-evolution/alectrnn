@@ -108,6 +108,7 @@ void Controller::ApplyActions(Action& action) {
       frame_number_ += frame_skip_;
       episode_score_ += reward;
       cumulative_score_ += reward;
+      agent_->RewardFeedback(reward);
       break;
   }
 }
