@@ -241,9 +241,9 @@ class RewardModulatedLayer : public Layer<TReal> {
      */
     UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
-      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+      static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
-      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
+      static_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
 
       // update rolling avgerages
