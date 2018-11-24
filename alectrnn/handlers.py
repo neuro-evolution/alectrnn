@@ -148,7 +148,7 @@ class AgentHandler(Handler):
     def __init__(self, ale, agent_type, agent_parameters=None):
         """
         Agent parameters:
-          agent_type - "ctrnn"/"nervous_system"/"softmax"/"shared_motor"
+          agent_type - "ctrnn"/"nervous_system"/"softmax"/"shared_motor"/"rewardmod"
           agent_parameters - dictionary of keyword arguments for the agent
 
             For "ctrnn": (num_neurons, num_sensor_neurons,
@@ -160,6 +160,8 @@ class AgentHandler(Handler):
             For "softmax": (nervous_system, update_rate, logging, seed)
 
             For "shared_motor": (nervous_system, update_rate, logging)
+
+            For "rewardmod" : (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
             agent_parameters = {}
@@ -170,7 +172,8 @@ class AgentHandler(Handler):
     def create(self):
         """
         Creates the handle:
-        Currently supports "ctrnn"/"nervous_system"/"softmax"/"shared_motor"
+        Currently supports "ctrnn"/"nervous_system"/"softmax"/"shared_motor"/
+        "rewardmod"
         """
         # Create Agent handle
         if self._handle_type == "ctrnn":
@@ -185,6 +188,9 @@ class AgentHandler(Handler):
         elif self._handle_type == "shared_motor":
             self._handle = agent_generator.CreateSharedMotorAgent(self._ale,
                                                                   **self._handle_parameters)
+        elif self._handle_type == "rewardmod":
+            self._handle = agent_generator.CreateRewardModulatedAgent(self._ale,
+                                                                      **self._handle_parameters)
         else:
             sys.exit("No agent by that name is implemented")
         self._handle_exists = True

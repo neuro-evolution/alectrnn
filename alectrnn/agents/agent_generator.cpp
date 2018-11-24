@@ -226,7 +226,7 @@ static PyObject *CreateSharedMotorAgent(PyObject *self, PyObject *args,
 }
 
 static PyObject *CreateRewardModulatedMotorAgent(PyObject *self, PyObject *args,
-                                           PyObject *kwargs) {
+                                                 PyObject *kwargs) {
   static char *keyword_list[] = {"ale", "nervous_system", "update_rate",
                                  "logging", NULL};
 
