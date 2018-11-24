@@ -271,6 +271,18 @@ class SharedMotorAgentHandler(AgentHandler, LoggingAndHistoryMixin):
                                                'logging': int(logging)})
 
 
+class RewardModulatedAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of Rewardmod
+    agents, which are a subclass of shared motor agents but which also
+    use reward information to update parameters online.
+    """
+    def __init__(self, ale, nervous_system, update_rate, logging=False):
+        super().__init__(ale, "rewardmod", {'nervous_system': nervous_system,
+                                            'update_rate': update_rate,
+                                            'logging': int(logging)})
+
+
 class SoftMaxAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     """
     Subclass of AgentHandler for easy creation and handling of SoftMaxAgentHandlers
