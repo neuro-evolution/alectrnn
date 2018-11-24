@@ -285,7 +285,7 @@ static PyMethodDef AgentMethods[] = {
   { "CreateSharedMotorAgent", (PyCFunction) CreateSharedMotorAgent,
   METH_VARARGS | METH_KEYWORDS,
   "Returns a handle to a SharedMotorAgent"},
-  { "CreateSharedMotorAgent", (PyCFunction) CreateRewardModMotorAgent,
+  { "CreateRewardModMotorAgent", (PyCFunction) CreateRewardModMotorAgent,
   METH_VARARGS | METH_KEYWORDS,
   "Returns a handle to a RewardModulatedAgent"},
       //Additional agents here, make sure to add includes top
