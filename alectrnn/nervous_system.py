@@ -512,6 +512,17 @@ class NervousSystem:
                     layer_act_args[i],
                     layer_shapes[i+1]))
 
+            elif layer_pars['layer_type'] == 'rm_a2a_ff':
+                layers.append(self._create_rm_a2a_ff_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['reward_smoothing_factor'],
+                    layer_pars['activation_smoothing_factor'],
+                    layer_pars['learning_rate'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1]))
+
             elif layer_pars['layer_type'] == 'eigen_a2a_ff':
                 layers.append(self._create_eigen_a2a_ff_layer(
                     layer_shapes[i],
@@ -697,6 +708,41 @@ class NervousSystem:
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
+
+    def _create_rm_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
+                                   reward_smoothing_factor,
+                                   activation_smoothing_factor,
+                                   learning_rate,
+                                   act_type, act_args, layer_shape):
+        """
+        Creates a layer with all-to-all back connections, but not internal
+        connections. It uses reward modulation to update weights online.
+        Uses Eigen integrators.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param reward_smoothing_factor: memory time constant for exponential averaging.
+        :param activation_smoothing_factor: memory time constant for exponential averaging.
+        :param learning_rate: factor that controls rate of weight change.
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.REWARD_MODULATED_ALL2ALL.value
+        back_args = (int(num_internal_nodes),
+                     int(np.prod(prev_layer_shape)),
+                     float(learning_rate))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateRewardModulatedLayer(back_type, back_args,
+                                                          self_type, self_args,
+                                                          act_type, act_args,
+                                                          layer_shape,
+                                                          reward_smoothing_factor,
+                                                          activation_smoothing_factor)
 
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
                                      filter_shape, stride,
@@ -1047,7 +1093,7 @@ class NervousSystem:
                      interpreted_shape,  # layer_shape funct outputs dtype=np.uint64
                      np.array(prev_layer_shape, dtype=np.uint64),
                      int(stride),
-                     learning_rate)
+                     float(learning_rate))
         self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
         return layer_generator.CreateRewardModulatedLayer(back_type,
