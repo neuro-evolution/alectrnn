@@ -148,7 +148,7 @@ class AgentHandler(Handler):
     def __init__(self, ale, agent_type, agent_parameters=None):
         """
         Agent parameters:
-          agent_type - "ctrnn"/"nervous_system"/"softmax"/"shared_motor"/"rewardmod"
+          agent_type - "ctrnn"/"nervous_system"/"softmax"/"shared_motor"/"rm"
           agent_parameters - dictionary of keyword arguments for the agent
 
             For "ctrnn": (num_neurons, num_sensor_neurons,
@@ -161,7 +161,7 @@ class AgentHandler(Handler):
 
             For "shared_motor": (nervous_system, update_rate, logging)
 
-            For "rewardmod" : (nervous_system, update_rate, logging)
+            For "rm" : (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
             agent_parameters = {}
@@ -173,7 +173,7 @@ class AgentHandler(Handler):
         """
         Creates the handle:
         Currently supports "ctrnn"/"nervous_system"/"softmax"/"shared_motor"/
-        "rewardmod"
+        "rm"
         """
         # Create Agent handle
         if self._handle_type == "ctrnn":
@@ -188,7 +188,7 @@ class AgentHandler(Handler):
         elif self._handle_type == "shared_motor":
             self._handle = agent_generator.CreateSharedMotorAgent(self._ale,
                                                                   **self._handle_parameters)
-        elif self._handle_type == "rewardmod":
+        elif self._handle_type == "rm":
             self._handle = agent_generator.CreateRewardModulatedAgent(self._ale,
                                                                       **self._handle_parameters)
         else:
@@ -278,9 +278,9 @@ class RewardModulatedAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     use reward information to update parameters online.
     """
     def __init__(self, ale, nervous_system, update_rate, logging=False):
-        super().__init__(ale, "rewardmod", {'nervous_system': nervous_system,
-                                            'update_rate': update_rate,
-                                            'logging': int(logging)})
+        super().__init__(ale, "rm", {'nervous_system': nervous_system,
+                                     'update_rate': update_rate,
+                                     'logging': int(logging)})
 
 
 class SoftMaxAgentHandler(AgentHandler, LoggingAndHistoryMixin):
@@ -289,9 +289,9 @@ class SoftMaxAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     """
     def __init__(self, ale, nervous_system, update_rate, seed, logging=False):
         super().__init__(ale, "softmax", {'nervous_system': nervous_system,
-                                           'update_rate': update_rate,
-                                           'logging': int(logging),
-                                           'seed': int(seed)})
+                                          'update_rate': update_rate,
+                                          'logging': int(logging),
+                                          'seed': int(seed)})
 
 
 class ALEHandler(Handler):
