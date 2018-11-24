@@ -163,6 +163,45 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
   return layer_capsule;
 }
 
+static PyObject *CreateRewardModulatedMotorLayer(PyObject *self, PyObject *args,
+                                                 PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "learning_rate",
+                                 "activator_type", "activator_args",
+                                 NULL};
+
+  int num_outputs;
+  int num_inputs;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float learning_rate;
+  int activator_type;
+  PyObject* activator_args;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iifffiO", keyword_list,
+                                   &num_outputs, &num_inputs, &activator_type,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &learning_rate,
+                                   &activator_args)) {
+    std::cerr << "Error parsing CreateRewardModulatedMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+      (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedMotorLayer<float>(
+      num_outputs, num_inputs, activator, reward_smoothing_factor,
+      activation_smoothing_factor, learning_rate);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer");
+  return layer_capsule;
+}
+
 static PyObject *CreateEigenMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"num_outputs", "num_inputs",
                                  "activator_type", "activator_args", NULL};
