@@ -412,6 +412,18 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i]))
 
+            elif layer_pars['layer_type'] == "rm_conv":
+                layers.append(self._create_rm_conv_layer(
+                    interpreted_shapes[i],
+                    interpreted_shapes[i+1],
+                    layer_pars['filter_shape'],
+                    layer_pars['stride'],
+                    layer_pars['reward_smoothing_factor'],
+                    layer_pars['activation_smoothing_factor'],
+                    layer_pars['learning_rate'],
+                    layer_act_types[i],
+                    layer_act_args[i]))
+
             elif layer_pars['layer_type'] == "recurrent":
                 layers.append(self._create_recurrent_layer(
                     layer_pars['input_graph'],
@@ -1003,6 +1015,48 @@ class NervousSystem:
         return layer_generator.CreateSoftMaxMotorLayer(int(num_outputs),
                                                        size_of_prev_layer,
                                                        float(temperature))
+
+    def _create_rm_conv_layer(self, prev_layer_shape, interpreted_shape,
+                              filter_shape, stride, reward_smoothing_factor,
+                              activation_smoothing_factor,
+                              learning_rate, act_type, act_args):
+        """
+        Creates a layer with convolutional back connections and no self
+        connections with reward modulation on its weights. Uses Eigen integrators
+        act_args needs to be in the correct tuple format with properly
+        typed numpy arrays for any arguments
+        filter_shape = 2 element array/list with filter dimenstions
+        Final shape, which includes depth, depends on shape of prev layer
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param reward_smoothing_factor: memory time constant for exponential averaging.
+        :param activation_smoothing_factor: memory time constant for exponential averaging.
+        :param learning_rate: factor that controls rate of weight change.
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :return: python capsule with pointer to the layer
+        """
+
+        back_type = INTEGRATOR_TYPE.REWARD_MODULATED_CONV.value
+        # Appropriate depth is added to filter shape to build the # 3-element 1D array
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64),
+                     interpreted_shape,  # layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride),
+                     learning_rate)
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        return layer_generator.CreateRewardModulatedLayer(back_type,
+                                                          back_args, self_type,
+                                                          self_args,
+                                                          act_type, act_args,
+                                                          interpreted_shape,
+                                                          reward_smoothing_factor,
+                                                          activation_smoothing_factor)
 
     def get_parameter_count(self):
         """

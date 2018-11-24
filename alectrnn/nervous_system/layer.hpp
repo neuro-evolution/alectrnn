@@ -41,9 +41,19 @@ class Layer {
             self_integrator_(self_integrator), 
             activation_function_(activation_function),
             layer_state_(shape), input_buffer_(shape), shape_(shape) {
-      parameter_count_ = back_integrator_->GetParameterCount() 
-                       + self_integrator_->GetParameterCount()
-                       + activation_function_->GetParameterCount();
+      parameter_count_ = 0;
+      if (back_integrator_ != nullptr)
+      {
+        parameter_count_ += back_integrator_->GetParameterCount();
+      }
+      if (self_integrator_ != nullptr)
+      {
+        parameter_count_ += self_integrator_->GetParameterCount();
+      }
+      if (activation_function_ != nullptr)
+      {
+        parameter_count_ += activation_function_->GetParameterCount();
+      }
     }
 
     virtual ~Layer() {
@@ -442,14 +452,13 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
                               TReal reward_smoothing_factor,
                               TReal activation_smoothing_factor,
                               TReal learning_rate)
+      : super_type({num_outputs},
+                   new nervous_system::RewardModulatedAll2AllIntegrator<TReal>(num_outputs,
+                                                                               num_inputs,
+                                                                               learning_rate),
+                   nullptr, activation_function, reward_smoothing_factor,
+                   activation_smoothing_factor)
     {
-      super_type::activation_function_ = activation_function;
-      super_type::back_integrator_ = new nervous_system::RewardModulatedAll2AllIntegrator<TReal>(num_outputs, num_inputs, learning_rate);
-      super_type::self_integrator_ = nullptr;
-      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount()
-                                     + super_type::back_integrator_->GetParameterCount();
-      super_type::layer_state_ = multi_array::Tensor<TReal>({num_outputs});
-      super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
     }
 
     virtual void operator()(const Layer<TReal>* prev_layer) {

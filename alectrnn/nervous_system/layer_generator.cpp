@@ -96,7 +96,9 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
                                             PyObject *kwargs) {
   static char *keyword_list[] = {"back_integrator", "back_integrator_args",
                                  "self_integrator", "self_integrator_args",
-                                 "activator_type", "activator_args", "shape", NULL};
+                                 "activator_type", "activator_args", "shape",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor", NULL};
 
   int back_integrator_type;
   PyObject* back_integrator_args;
@@ -105,13 +107,17 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
   int activator_type;
   PyObject* activator_args;
   PyArrayObject* shape;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
 
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOO", keyword_list,
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOOff", keyword_list,
                                    &back_integrator_type, &back_integrator_args,
                                    &self_integrator_type,
                                    &self_integrator_args, &activator_type,
                                    &activator_args,
-                                   &shape)) {
+                                   &shape,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor)) {
     std::cerr << "Error parsing CreateLayer arguments" << std::endl;
     return NULL;
   }
@@ -128,9 +134,10 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
   nervous_system::Activator<float>* activator = ActivatorParser(
       (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
 
-  // Ownership is transfered to new layer
+  // Ownership is transferred to new layer
   nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedLayer<float>(
-      layer_shape, back_integrator, self_integrator, activator);
+      layer_shape, back_integrator, self_integrator, activator, reward_smoothing_factor,
+      activation_smoothing_factor);
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
                                           "rm_layer_generator.layer", DeleteLayer);
@@ -825,7 +832,8 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
                                     " tuples");
       }
       new_integrator = new nervous_system::RewardModulatedAll2AllIntegrator<float>(num_states,
-                                                                                   num_prev_states, learning_rate);
+                                                                                   num_prev_states,
+                                                                                   learning_rate);
       break;
     }
 
@@ -860,13 +868,13 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       break;
     }
 
-    case nervous_system::CONV_EIGEN_INTEGRATOR: {
+    case nervous_system::REWARD_MODULATED_CONV_INTEGRATOR: {
       PyArrayObject* filter_shape;
       PyArrayObject* layer_shape;
       PyArrayObject* prev_layer_shape;
       int stride;
       float learning_rate;
-      if (!PyArg_ParseTuple(args, "OOOi", &filter_shape,
+      if (!PyArg_ParseTuple(args, "OOOif", &filter_shape,
                             &layer_shape, &prev_layer_shape, &stride,
                             &learning_rate)) {
         std::cerr << "Error parsing Integrator arguments" << std::endl;
@@ -890,7 +898,7 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
         throw std::invalid_argument("prev layer has wrong number of elements (needs 3)");
       }
 
-      new_integrator = new nervous_system::ConvEigenIntegrator<float>(
+      new_integrator = new nervous_system::RewardModulatedConvIntegrator<float>(
           multi_array::Array<std::size_t,3>(
           alectrnn::uInt64PyArrayToCArray(filter_shape)),
           multi_array::Array<std::size_t,3>(
