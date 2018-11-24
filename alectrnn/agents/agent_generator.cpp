@@ -225,7 +225,7 @@ static PyObject *CreateSharedMotorAgent(PyObject *self, PyObject *args,
   return agent_capsule;
 }
 
-static PyObject *CreateRewardModMotorAgent(PyObject *self, PyObject *args,
+static PyObject *CreateRewardModulatedMotorAgent(PyObject *self, PyObject *args,
                                            PyObject *kwargs) {
   static char *keyword_list[] = {"ale", "nervous_system", "update_rate",
                                  "logging", NULL};
@@ -285,7 +285,7 @@ static PyMethodDef AgentMethods[] = {
   { "CreateSharedMotorAgent", (PyCFunction) CreateSharedMotorAgent,
   METH_VARARGS | METH_KEYWORDS,
   "Returns a handle to a SharedMotorAgent"},
-  { "CreateRewardModMotorAgent", (PyCFunction) CreateRewardModMotorAgent,
+  { "CreateRewardModulatedMotorAgent", (PyCFunction) CreateRewardModulatedMotorAgent,
   METH_VARARGS | METH_KEYWORDS,
   "Returns a handle to a RewardModulatedAgent"},
       //Additional agents here, make sure to add includes top
