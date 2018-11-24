@@ -560,7 +560,18 @@ class NervousSystem:
                     layers.append(self._create_softmax_motor_layer(
                         layer_shapes[i+1],
                         layer_shapes[i],
-                        layer_pars['temperature']))
+                        layer_pars['temperature']
+                    ))
+                elif layer_pars['motor_type'].lower() == 'rm':
+                    layers.append(self._create_rm_motor_layer(
+                        layer_shapes[i+1],
+                        layer_shapes[i],
+                        layer_pars['reward_smoothing_factor'],
+                        layer_pars['activation_smoothing_factor'],
+                        layer_pars['learning_rate'],
+                        layer_act_types[i],
+                        layer_act_args[i],
+                    ))
             else:
                 raise NotImplementedError("Doesn't support "
                                           + layer_pars['layer_type'])
@@ -1047,6 +1058,26 @@ class NervousSystem:
         assert(act_args[0] == num_outputs)
         return layer_generator.CreateEigenMotorLayer(
             int(num_outputs), size_of_prev_layer, act_type, act_args)
+
+    def _create_rm_motor_layer(self, num_outputs, prev_layer_shape,
+                               reward_smoothing_factor,
+                               activation_smoothing_factor,
+                               learning_rate,
+                               act_type,
+                               act_args):
+        """
+        Generates an reward mod motor layer for the neural network, which will
+        represent the output of the network. It is fully connected to whatever layer
+        precedes it.
+        act_args needs to be in the correct tuple format for the activator
+        """
+
+        size_of_prev_layer = int(np.prod(prev_layer_shape))
+        assert(act_args[0] == num_outputs)
+        return layer_generator.CreateRewardModulatedMotorLayer(
+            int(num_outputs), size_of_prev_layer, float(reward_smoothing_factor),
+            float(activation_smoothing_factor), float(learning_rate),
+            act_type, act_args)
 
     def _create_softmax_motor_layer(self, num_outputs, prev_layer_shape, temperature=1.0):
         """
