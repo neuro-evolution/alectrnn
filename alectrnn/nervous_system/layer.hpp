@@ -256,7 +256,7 @@ class RewardModulatedLayer : public Layer<TReal> {
     /*
      * Called after all integrators and activators have been called.
      */
-    virtual UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
+    virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
       static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
@@ -507,7 +507,7 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
       return layout;
     }
 
-    virtual UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
+    virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
       static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
