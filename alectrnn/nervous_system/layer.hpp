@@ -478,11 +478,11 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
       }
       // configure back integrator parameters
       super_type::back_integrator_->Configure(
-      parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
+          parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
       // configure activation parameters
       super_type::activation_function_->Configure(
-      parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
-                       super_type::activation_function_->GetParameterCount()));
+          parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
+                           super_type::activation_function_->GetParameterCount()));
     }
 
     virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
@@ -510,16 +510,16 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
       static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
-          reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
-          activation_averages_);
+          reward, super_type::reward_average_, prev_layer->state(), super_type::input_buffer_,
+          super_type::activation_averages_);
 
       // update rolling avgerages
-      reward_average_ = utilities::ExponentialRollingAverage(reward, reward_average_,
-                                                             reward_smoothing_factor_);
-      for (Index i = 0; i < activation_averages_.size(); ++i) {
+      reward_average_ = utilities::ExponentialRollingAverage(reward, super_type::reward_average_,
+                                                             super_type::reward_smoothing_factor_);
+      for (Index i = 0; i < super_type::activation_averages_.size(); ++i) {
         activation_averages_[i] = utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
                                                                        activation_averages_[i],
-                                                                       activation_smoothing_factor_);
+                                                                       super_type::activation_smoothing_factor_);
       }
     }
 };
