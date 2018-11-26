@@ -90,20 +90,14 @@ class Integrator {
 };
 
 template <typename TReal>
-class RewardModulatedIntegrator// : public Integrator<TReal>
+class RewardModulatedIntegrator : public virtual Integrator<TReal>
 {
   public:
-    //typedef std::size_t Index;
-    //typedef Integrator<TReal> super_type;
+    typedef std::size_t Index;
+    typedef Integrator<TReal> super_type;
 
-//    RewardModulatedIntegrator(const TReal learning_rate)
-//        : super_type(), learning_rate_(learning_rate) {
-//      super_type::integrator_type_ = REWARD_MODULATED_INTEGRATOR;
-//    }
-//    RewardModulatedIntegrator() : RewardModulatedIntegrator(0.0) {
-//    }
     RewardModulatedIntegrator(const TReal learning_rate)
-    : learning_rate_(learning_rate) {
+        : super_type(), learning_rate_(learning_rate) {
     }
     virtual ~RewardModulatedIntegrator()= default;
     virtual void UpdateWeights(const TReal reward,
@@ -118,7 +112,7 @@ class RewardModulatedIntegrator// : public Integrator<TReal>
 
 // None integrator - does nothing
 template<typename TReal>
-class NoneIntegrator : public Integrator<TReal> {
+class NoneIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -140,7 +134,7 @@ class NoneIntegrator : public Integrator<TReal> {
 
 // Integrator that has All2All connectivity with previous layer
 template<typename TReal>
-class All2AllIntegrator : public Integrator<TReal> {
+class All2AllIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -218,7 +212,7 @@ class All2AllIntegrator : public Integrator<TReal> {
  * (each 1x1 needs D parameters, with a total of F 1x1 filters)
  */
 template<typename TReal>
-class Conv2DIntegrator : public Integrator<TReal> {
+class Conv2DIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -563,7 +557,7 @@ class Conv2DIntegrator : public Integrator<TReal> {
 
 // Network integrator -- uses explicit unweighted structure
 template<typename TReal>
-class RecurrentIntegrator : public Integrator<TReal> {
+class RecurrentIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -637,7 +631,7 @@ class RecurrentIntegrator : public Integrator<TReal> {
 // Truncated Recurrent integrator sets weights to 0 during calculations if
 // they are below the magnitude of the threshold.
 template<typename TReal>
-class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
+class TruncatedRecurrentIntegrator : public virtual RecurrentIntegrator<TReal> {
   public:
     typedef RecurrentIntegrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -685,7 +679,7 @@ class TruncatedRecurrentIntegrator : public RecurrentIntegrator<TReal> {
 
 // Reservoir -- uses explicit weighted structure
 template<typename TReal>
-class ReservoirIntegrator : public Integrator<TReal> {
+class ReservoirIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -978,7 +972,7 @@ class All2AllEigenIntegrator : public virtual Integrator<TReal> {
  * Implements a recurrent integrator with Eigen
  */
 template<typename TReal>
-class RecurrentEigenIntegrator : public Integrator<TReal> {
+class RecurrentEigenIntegrator : public virtual Integrator<TReal> {
   public:
     typedef Integrator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -1124,7 +1118,7 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
       all2all_type::integrator_type_ = REWARD_MODULATED_ALL2ALL_INTEGRATOR;
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       if (parameters.size() != all2all_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << all2all_type::parameter_count_ << std::endl;
@@ -1141,7 +1135,7 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
                        const TReal reward_average,
                        const multi_array::Tensor<TReal>& src_state,
                        const multi_array::Tensor<TReal>& tar_state,
-                       const multi_array::Tensor<TReal>& tar_state_averages) {
+                       const multi_array::Tensor<TReal>& tar_state_averages) override {
 
       ConstColVectorView src_view(src_state.data(), src_state.size());
       ConstColVectorView tar_view(tar_state.data(), tar_state.size());
@@ -1184,7 +1178,7 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
       recurrent_type::integrator_type_ = REWARD_MODULATED_RECURRENT_INTEGRATOR;
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       if (parameters.size() != recurrent_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
         std::cerr << "parameter count: " << recurrent_type::parameter_count_ << std::endl;
