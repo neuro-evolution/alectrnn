@@ -29,7 +29,7 @@ TReal ExponentialRollingAverage(const TReal new_value, const TReal prev_average,
 /*
  * Returns the index of the element with the largest value.
  */
-template <typename TReal>
+template <typename Container>
 Index IndexOfMaxElement(const Container& array) {
   Index index = 0;
   for (Index iii = 1; iii < array.size(); ++iii) {

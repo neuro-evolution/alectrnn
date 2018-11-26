@@ -108,6 +108,8 @@ class IdentityActivator : public Activator<TReal> {
       super_type::activator_type_ = IDENTITY_ACTIVATOR;
     }
 
+    virtual ~IdentityActivator()=default;
+
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
       for (Index iii = 0; iii < state.size(); iii++) {
@@ -135,6 +137,8 @@ class SoftMaxActivator: public IdentityActivator<TReal> {
                                           temperature_(temperature) {
       super_type::activator_type_ = SOFT_MAX_ACTIVATOR;
     }
+
+    virtual ~SoftMaxActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
@@ -681,6 +685,8 @@ class TanhActivator: public Activator<TReal> {
       super_type::activator_type_ = TANH_ACTIVATOR;
     }
 
+    virtual ~TanhActivator()=default;
+
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
@@ -774,6 +780,8 @@ class SigmoidActivator : public Activator<TReal> {
       super_type::activator_type_ = SIGMOID_ACTIVATOR;
     }
 
+    virtual ~SigmoidActivator()=default;
+
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
@@ -845,7 +853,7 @@ class SigmoidActivator : public Activator<TReal> {
 };
 
 template <typename TReal>
-class NoisySigmoidActivator : public Activator<TReal> {
+class NoisySigmoidActivator : public SigmoidActivator<TReal> {
   public:
     typedef Activator<TReal> super_type;
     typedef typename super_type::Index Index;
@@ -864,10 +872,10 @@ class NoisySigmoidActivator : public Activator<TReal> {
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
-      for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] += -decay_[iii] * state[iii]
-                      + (saturation_point_ - state[iii])
-                        * utilities::approx_sigmoid(input_bias_[iii]
+      for (Index iii = 0; iii < super_type::num_states_; iii++) {
+        state[iii] += -super_type::decay_[iii] * state[iii]
+                      + (super_type::saturation_point_ - state[iii])
+                        * utilities::approx_sigmoid(super_type::input_bias_[iii]
                                                     + input_buffer[iii]
                                                     + standard_deviation_
                                                       * normal_distribution_(rng_));
@@ -911,6 +919,8 @@ class ReLuActivator : public Activator<TReal> {
 
       super_type::activator_type_ = RELU_ACTIVATOR;
     }
+
+    virtual ~ReLuActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
@@ -977,18 +987,20 @@ class NoisyReLuActivator : public ReLuActivator<TReal> {
 
     NoisyReLuActivator(const std::vector<Index>& shape, bool is_shared,
                        const TReal standard_deviation,
-                       const std::uint64_t seed) : super_type(shape, is_shared),
-                                                   standard_deviation_(standard_deviation),
-                                                   rng_(seed),
-                                                   normal_distribution_() {
+                       const std::uint64_t seed)
+        : super_type(shape, is_shared),
+          standard_deviation_(standard_deviation),
+          rng_(seed),
+          normal_distribution_()
+    {
       super_type::activator_type_ = NOISY_RELU_ACTIVATOR;
     }
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
-      for (Index iii = 0; iii < num_states_; iii++) {
-        state[iii] = std::max<TReal>(0, input_buffer[iii] + input_bias_[iii]
+      for (Index iii = 0; iii < super_type::num_states_; iii++) {
+        state[iii] = std::max<TReal>(0, input_buffer[iii] + super_type::input_bias_[iii]
                                         + standard_deviation_
                                           * normal_distribution_(rng_));
       }

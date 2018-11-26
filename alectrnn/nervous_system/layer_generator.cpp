@@ -118,18 +118,20 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
                                    &shape,
                                    &reward_smoothing_factor,
                                    &activation_smoothing_factor)) {
-    std::cerr << "Error parsing CreateLayer arguments" << std::endl;
+    std::cerr << "Error parsing CreateRewardModulatedLayer arguments" << std::endl;
     return NULL;
   }
 
   // Call parsers -> they create NEW integrators and activators
   std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
 
-  nervous_system::RewardModulatedIntegrator<float>* back_integrator = IntegratorParser(
-      (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
+  nervous_system::RewardModulatedIntegrator<float>* back_integrator =
+      static_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
+      (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args));
 
-  nervous_system::RewardModulatedIntegrator<float>* self_integrator = IntegratorParser(
-      (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args);
+  nervous_system::RewardModulatedIntegrator<float>* self_integrator =
+      static_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
+      (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args));
 
   nervous_system::Activator<float>* activator = ActivatorParser(
       (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
@@ -205,7 +207,7 @@ static PyObject *CreateRewardModulatedMotorLayer(PyObject *self, PyObject *args,
       activation_smoothing_factor, learning_rate);
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
-                                          "layer_generator.layer");
+                                          "layer_generator.layer", DeleteLayer);
   return layer_capsule;
 }
 
@@ -450,7 +452,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
                                     " NOISY_SIGMOID_ACTIVATOR (needs 3 when shared)");
       }
 
-      new_activator = new nervous_system::SigmoidActivator<float>(
+      new_activator = new nervous_system::NoisySigmoidActivator<float>(
           alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
           static_cast<bool>(is_shared), saturation_point,
           standard_deviation, static_cast<std::uint64_t>(seed));

@@ -444,7 +444,7 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
 {
   public:
     using super_type = RewardModulatedLayer<TReal>;
-    using Index = super_type::Index;
+    using Index = typename super_type::Index;
 
     RewardModulatedMotorLayer(Index num_outputs,
                               Index num_inputs,
@@ -481,7 +481,8 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
           parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
       // configure activation parameters
       super_type::activation_function_->Configure(
-          parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
+          parameters.slice(parameters.stride()
+                           * super_type::back_integrator_->GetParameterCount(),
                            super_type::activation_function_->GetParameterCount()));
     }
 
@@ -514,12 +515,15 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
           super_type::activation_averages_);
 
       // update rolling avgerages
-      reward_average_ = utilities::ExponentialRollingAverage(reward, super_type::reward_average_,
-                                                             super_type::reward_smoothing_factor_);
+      super_type::reward_average_ =
+          utilities::ExponentialRollingAverage(reward,
+                                               super_type::reward_average_,
+                                               super_type::reward_smoothing_factor_);
       for (Index i = 0; i < super_type::activation_averages_.size(); ++i) {
-        activation_averages_[i] = utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
-                                                                       activation_averages_[i],
-                                                                       super_type::activation_smoothing_factor_);
+        super_type::activation_averages_[i] =
+            utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
+                                                 super_type::activation_averages_[i],
+                                                 super_type::activation_smoothing_factor_);
       }
     }
 };
