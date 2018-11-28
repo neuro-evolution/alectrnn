@@ -869,7 +869,7 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
                        const multi_array::Tensor<TReal>& tar_state,
                        const multi_array::Tensor<TReal>& tar_state_averages) {
 
-      MatrixView weights(weights_.data() + weights_.start(),
+      MatrixView weights(weights_.data(),// + weights_.start(),
                          conv_type::kernel_w_ * conv_type::kernel_h_
                          * conv_type::channels_,
                          conv_type::num_filters_);

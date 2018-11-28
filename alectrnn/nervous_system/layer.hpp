@@ -221,7 +221,7 @@ class RewardModulatedLayer : public Layer<TReal> {
         : super_type(shape, back_integrator, self_integrator,
                      activation_function),
           reward_average_(0.0),
-          activation_averages_(super_type::input_buffer_.size()),
+          activation_averages_({super_type::input_buffer_.size()}),
           reward_smoothing_factor_(reward_smoothing_factor),
           activation_smoothing_factor_(activation_smoothing_factor)
     {
@@ -258,9 +258,9 @@ class RewardModulatedLayer : public Layer<TReal> {
      */
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
-      static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
-      static_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
           reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
 
       // update rolling averages
@@ -510,7 +510,7 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
 
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
-      static_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
           reward, super_type::reward_average_, prev_layer->state(), super_type::input_buffer_,
           super_type::activation_averages_);
 

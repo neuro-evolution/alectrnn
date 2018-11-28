@@ -855,7 +855,7 @@ class SigmoidActivator : public Activator<TReal> {
 template <typename TReal>
 class NoisySigmoidActivator : public SigmoidActivator<TReal> {
   public:
-    typedef Activator<TReal> super_type;
+    typedef SigmoidActivator<TReal> super_type;
     typedef typename super_type::Index Index;
 
     NoisySigmoidActivator(const std::vector<Index>& shape,

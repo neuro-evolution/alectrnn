@@ -126,11 +126,11 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
   std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
 
   nervous_system::RewardModulatedIntegrator<float>* back_integrator =
-      static_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
+      dynamic_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
       (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args));
 
   nervous_system::RewardModulatedIntegrator<float>* self_integrator =
-      static_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
+      dynamic_cast<nervous_system::RewardModulatedIntegrator<float>*>(IntegratorParser(
       (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args));
 
   nervous_system::Activator<float>* activator = ActivatorParser(
