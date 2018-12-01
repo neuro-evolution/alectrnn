@@ -781,7 +781,7 @@ class ConvEigenIntegrator : public virtual Integrator<TReal> {
      * got added in latter and I am not sure why they choose Fortran's way for a
      * C++ API.
      */
-    void operator()(const multi_array::Tensor<TReal>& src_state,
+    virtual void operator()(const multi_array::Tensor<TReal>& src_state,
                     multi_array::Tensor<TReal>& tar_state) override {
 
       utilities::Im2Col(src_state.data(), channels_, height_, width_,
@@ -794,11 +794,11 @@ class ConvEigenIntegrator : public virtual Integrator<TReal> {
       output.noalias() = buffer_state_ * params;
     }
 
-    void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       weight_view_ = parameters;
     }
 
-    std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
       std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
       for (Index iii = 0; iii < super_type::parameter_count_; ++iii) {
         layout[iii] = WEIGHT;
@@ -806,7 +806,7 @@ class ConvEigenIntegrator : public virtual Integrator<TReal> {
       return layout;
     }
 
-    std::pair<Index, Index> GetWeightIndexRange() const override {
+    virtual std::pair<Index, Index> GetWeightIndexRange() const override {
       return std::make_pair(0, super_type::parameter_count_);
     };
 
@@ -848,6 +848,25 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
           reward_modulator_type(learning_rate),
           weights_({conv_type::parameter_count_}) {
       conv_type::integrator_type_ = REWARD_MODULATED_CONV_INTEGRATOR;
+    }
+
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) override {
+
+      utilities::Im2Col(src_state.data(), conv_type::channels_,
+                        conv_type::height_, conv_type::width_,
+                        conv_type::kernel_h_, conv_type::kernel_w_,
+                        conv_type::pad_h_, conv_type::pad_w_,
+                        conv_type::stride_, conv_type::stride_,
+                        1, 1, conv_type::buffer_state_.data());
+      MatrixView output(tar_state.data(), conv_type::channel_size_,
+                        conv_type::num_filters_);
+      ConstMatrixView params(weights_.data(),
+                             conv_type::kernel_w_
+                             * conv_type::kernel_h_
+                             * conv_type::channels_,
+                             conv_type::num_filters_);
+      output.noalias() = conv_type::buffer_state_ * params;
     }
 
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
@@ -1124,6 +1143,27 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
       all2all_type::integrator_type_ = REWARD_MODULATED_ALL2ALL_INTEGRATOR;
     }
 
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) override
+    {
+      if (!((src_state.size() == all2all_type::num_prev_states_)
+            && (tar_state.size() == all2all_type::num_states_))) {
+        std::cerr << "src state size: " << src_state.size() << std::endl;
+        std::cerr << "prev state size: " << all2all_type::num_prev_states_ << std::endl;
+        std::cerr << "tar state size: " << tar_state.size() << std::endl;
+        std::cerr << "state size: " << all2all_type::num_states_ << std::endl;
+        throw std::invalid_argument("src state size and prev state size "
+                                    "must be equal. tar state size and state"
+                                    " size must be equal");
+      }
+
+      ColVectorView output(tar_state.data(), tar_state.size());
+      output.noalias() = ConstMatrixView(weights_.data(),
+                                         tar_state.size(),
+                                         src_state.size())
+                         * ConstColVectorView(src_state.data(), src_state.size());
+    }
+
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       if (parameters.size() != all2all_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
@@ -1189,6 +1229,28 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
       recurrent_type::integrator_type_ = REWARD_MODULATED_RECURRENT_INTEGRATOR;
     }
 
+    void operator()(const multi_array::Tensor<TReal>& src_state,
+                    multi_array::Tensor<TReal>& tar_state) override {
+
+      if ((recurrent_type::network_.cols() != src_state.size())
+          && (recurrent_type::network_.rows() != tar_state.size())) {
+        throw std::invalid_argument("src state size and tar state size "
+                                    "incompatible with network");
+      }
+
+      ConstSparseMatrixView weight_matrix(recurrent_type::network_.rows(),
+                                          recurrent_type::network_.cols(),
+                                          weights_.size(),
+                                          recurrent_type::network_.outerIndexPtr(),
+                                          recurrent_type::network_.innerIndexPtr(),
+                                          weights_.data(),
+                                          recurrent_type::network_.innerNonZeroPtr());
+      ColVectorView output_vector(tar_state.data(), tar_state.size());
+      ConstColVectorView src_vector(src_state.data(), src_state.size());
+
+      output_vector.noalias() = weight_matrix * src_vector;
+    }
+
     void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
       if (parameters.size() != recurrent_type::parameter_count_) {
         std::cerr << "parameter size: " << parameters.size() << std::endl;
@@ -1207,7 +1269,7 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
                        const TReal reward_average,
                        const multi_array::Tensor<TReal>& src_state,
                        const multi_array::Tensor<TReal>& tar_state,
-                       const multi_array::Tensor<TReal>& tar_state_averages) {
+                       const multi_array::Tensor<TReal>& tar_state_averages) override {
 
       SparseMatrixView weight_matrix(recurrent_type::network_.rows(),
                                      recurrent_type::network_.cols(),
@@ -1230,7 +1292,7 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
       }
     }
 
-    const multi_array::Tensor<TReal>& GetWeights() const
+    const multi_array::Tensor<TReal>& GetWeights() const override
     {
       return weights_;
     }
