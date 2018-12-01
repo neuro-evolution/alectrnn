@@ -105,6 +105,7 @@ class RewardModulatedIntegrator : public virtual Integrator<TReal>
                                const multi_array::Tensor<TReal>& src_state,
                                const multi_array::Tensor<TReal>& tar_state,
                                const multi_array::Tensor<TReal>& tar_state_averages)=0;
+    virtual const multi_array::Tensor<TReal>& GetWeights() const=0;
 
   protected:
     const TReal learning_rate_;
@@ -897,6 +898,11 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
       }
     }
 
+    const multi_array::Tensor<TReal>& GetWeights() const
+    {
+      return weights_;
+    }
+
   protected:
     multi_array::Tensor<TReal> weights_;
 };
@@ -1152,6 +1158,11 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
       }
     }
 
+    const multi_array::Tensor<TReal>& GetWeights() const
+    {
+      return weights_;
+    }
+
   protected:
     multi_array::Tensor<TReal> weights_;
 };
@@ -1217,6 +1228,11 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
                            * reward_modulated_learning_factor;
         }
       }
+    }
+
+    const multi_array::Tensor<TReal>& GetWeights() const
+    {
+      return weights_;
     }
 
   protected:
