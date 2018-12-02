@@ -1548,7 +1548,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
     """
     def __init__(self, reward_smoothing_factor,
                  activation_smoothing_factor,
-                 learning_rate, noise_strength, stds, seeds):
+                 learning_rate, noise_strength, seeds):
         """
         Initialize RewardModulatedAtariCNN
         :param reward_smoothing_factor: float, time constant of exp avg.
@@ -1566,7 +1566,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
             'stride': 4,
             'reward_smoothing_factor': reward_smoothing_factor,
             'activation_smoothing_factor': activation_smoothing_factor,
-            'standard_deviation': stds[0],
+            'standard_deviation': noise_strength,
             'seed': seeds[0],
             'learning_rate': learning_rate},
             {'layer_type': "nrm_conv",
@@ -1575,7 +1575,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
              'stride': 2,
              'reward_smoothing_factor': reward_smoothing_factor,
              'activation_smoothing_factor': activation_smoothing_factor,
-             'standard_deviation': stds[1],
+             'standard_deviation': noise_strength,
              'seed': seeds[1],
              'learning_rate': learning_rate
              },
@@ -1585,7 +1585,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
              'stride': 1,
              'reward_smoothing_factor': reward_smoothing_factor,
              'activation_smoothing_factor': activation_smoothing_factor,
-             'standard_deviation': stds[2],
+             'standard_deviation': noise_strength,
              'seed': seeds[2],
              'learning_rate': learning_rate
              },
@@ -1593,7 +1593,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
              'num_internal_nodes': 512,
              'reward_smoothing_factor': reward_smoothing_factor,
              'activation_smoothing_factor': activation_smoothing_factor,
-             'standard_deviation': stds[3],
+             'standard_deviation': noise_strength,
              'seed': seeds[3],
              'learning_rate': learning_rate
              },
@@ -1601,7 +1601,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
              'motor_type': 'nrm',
              'reward_smoothing_factor': reward_smoothing_factor,
              'activation_smoothing_factor': activation_smoothing_factor,
-             'standard_deviation': stds[4],
+             'standard_deviation': noise_strength,
              'seed': seeds[4],
              'learning_rate': learning_rate}]
         act_type = ACTIVATOR_TYPE.RELU
