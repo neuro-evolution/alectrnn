@@ -344,6 +344,23 @@ class NoisyRewardModulatedLayer : public Layer<TReal> {
       reward_average_ = 0.0;
     }
 
+    virtual void operator()(const Layer<TReal>* prev_layer) {
+      // First clear input buffer
+      super_type::input_buffer_.Fill(0.0);
+
+      // Call back integrator first to resolve input from prev layer
+      (*super_type::back_integrator_)(prev_layer->state(), super_type::input_buffer_);
+
+      // Resolve self-connections if there are any
+      (*super_type::self_integrator_)(super_type::input_buffer_,
+                                      super_type::input_buffer_);
+
+      // Apply noise and then activation and update state
+      ApplyNoise(super_type::input_buffer_);
+      (*super_type::activation_function_)(super_type::layer_state_,
+                                          super_type::input_buffer_);
+    }
+
     /*
      * Called after all integrators and activators have been called.
      */
@@ -351,7 +368,6 @@ class NoisyRewardModulatedLayer : public Layer<TReal> {
       // call weight update function using the input_buffer of this layer
       // the input buffer contains the states prior to application of the
       // activation function.
-      ApplyNoise(super_type::input_buffer_);
       if (super_type::back_integrator_->GetIntegratorType() == REWARD_MODULATED)
       {
         dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
@@ -674,7 +690,9 @@ class NoisyRewardModulatedMotorLayer : public NoisyRewardModulatedLayer<TReal>
       // Call back integrator first to resolve input from prev layer
       (*super_type::back_integrator_)(prev_layer->state(), super_type::input_buffer_);
       // Apply activation and update state
-      (*super_type::activation_function_)(super_type::layer_state_, super_type::input_buffer_);
+      super_type::ApplyNoise(super_type::input_buffer_);
+      (*super_type::activation_function_)(super_type::layer_state_,
+                                          super_type::input_buffer_);
     }
 
     virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
@@ -717,14 +735,13 @@ class NoisyRewardModulatedMotorLayer : public NoisyRewardModulatedLayer<TReal>
 
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
-      super_type::ApplyNoise(super_type::input_buffer_);
       dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
         reward, super_type::reward_average_, prev_layer->state(), super_type::input_buffer_,
         super_type::activation_averages_);
 
       // update rolling avgerages
       super_type::reward_average_ =
-      utilities::ExponentialRollingAverage(reward,
+        utilities::ExponentialRollingAverage(reward,
                                            super_type::reward_average_,
                                            super_type::reward_smoothing_factor_);
       for (Index i = 0; i < super_type::activation_averages_.size(); ++i) {
