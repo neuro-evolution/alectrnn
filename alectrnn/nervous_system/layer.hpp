@@ -213,8 +213,8 @@ class RewardModulatedLayer : public Layer<TReal> {
     typedef typename super_type::Index Index;
 
     RewardModulatedLayer(const std::vector<Index>& shape,
-                         RewardModulatedIntegrator<TReal>* back_integrator,
-                         RewardModulatedIntegrator<TReal>* self_integrator,
+                         Integrator<TReal>* back_integrator,
+                         Integrator<TReal>* self_integrator,
                          Activator<TReal>* activation_function,
                          TReal reward_smoothing_factor,
                          TReal activation_smoothing_factor)
@@ -258,13 +258,23 @@ class RewardModulatedLayer : public Layer<TReal> {
      */
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
       // call weight update function
-      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
-          reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
-      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
-          reward, reward_average_, prev_layer->state(), super_type::input_buffer_, activation_averages_);
+      if (super_type::back_integrator_->GetIntegratorType() == REWARD_MODULATED)
+      {
+        dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+        reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+        activation_averages_);
+      }
+
+      if (super_type::self_integrator_->GetIntegratorType() == REWARD_MODULATED)
+      {
+        dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
+        reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+        activation_averages_);
+      }
 
       // update rolling averages
-      reward_average_ = utilities::ExponentialRollingAverage(reward, reward_average_, reward_smoothing_factor_);
+      reward_average_ = utilities::ExponentialRollingAverage(reward, reward_average_,
+                                                             reward_smoothing_factor_);
       for (Index i = 0; i < activation_averages_.size(); ++i) {
         activation_averages_[i] = utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
                                                                        activation_averages_[i],

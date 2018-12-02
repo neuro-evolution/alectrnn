@@ -50,7 +50,8 @@ enum INTEGRATOR_TYPE {
   REWARD_MODULATED_INTEGRATOR,
   REWARD_MODULATED_ALL2ALL_INTEGRATOR,
   REWARD_MODULATED_RECURRENT_INTEGRATOR,
-  REWARD_MODULATED_CONV_INTEGRATOR
+  REWARD_MODULATED_CONV_INTEGRATOR,
+  REWARD_MODULATED
 };
 
 // Abstract base class
@@ -847,7 +848,7 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
         : conv_type(filter_shape, layer_shape, prev_layer_shape, stride),
           reward_modulator_type(learning_rate),
           weights_({conv_type::parameter_count_}) {
-      conv_type::integrator_type_ = REWARD_MODULATED_CONV_INTEGRATOR;
+      conv_type::integrator_type_ = REWARD_MODULATED;
     }
 
     void operator()(const multi_array::Tensor<TReal>& src_state,
@@ -1151,7 +1152,7 @@ class RewardModulatedAll2AllIntegrator : public All2AllEigenIntegrator<TReal>,
       : all2all_type(num_states, num_prev_states),
         reward_modulator_type(learning_rate),
         weights_({all2all_type::parameter_count_}) {
-      all2all_type::integrator_type_ = REWARD_MODULATED_ALL2ALL_INTEGRATOR;
+      all2all_type::integrator_type_ = REWARD_MODULATED;
     }
 
     void operator()(const multi_array::Tensor<TReal>& src_state,
@@ -1237,7 +1238,7 @@ class RewardModulatedRecurrentIntegrator : public RecurrentEigenIntegrator<TReal
     RewardModulatedRecurrentIntegrator(SparseMatrix network, const TReal learning_rate)
         : recurrent_type(network), reward_modulator_type(learning_rate),
           weights_({recurrent_type::parameter_count_}) {
-      recurrent_type::integrator_type_ = REWARD_MODULATED_RECURRENT_INTEGRATOR;
+      recurrent_type::integrator_type_ = REWARD_MODULATED;
     }
 
     void operator()(const multi_array::Tensor<TReal>& src_state,

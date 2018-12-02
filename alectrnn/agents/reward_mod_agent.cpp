@@ -21,8 +21,8 @@ void RewardModulatedAgent::RewardFeedback(const int reward)
 {
   for (std::size_t iii = 1; iii < neural_net_.size(); ++iii)
   {
-    nervous_system::RewardModulatedLayer reward_layer =
-        static_cast<nervous_system::RewardModulatedLayer>(neural_net_[iii]);
+    nervous_system::RewardModulatedLayer<float>& reward_layer =
+      dynamic_cast<nervous_system::RewardModulatedLayer<float>&>(neural_net_[iii]);
     reward_layer.UpdateWeights(reward, &neural_net_[iii-1]);
   }
 }
