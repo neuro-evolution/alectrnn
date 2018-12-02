@@ -220,8 +220,8 @@ class RewardModulatedLayer : public Layer<TReal> {
                          TReal activation_smoothing_factor)
         : super_type(shape, back_integrator, self_integrator,
                      activation_function),
-          reward_average_(0.0),
           activation_averages_({super_type::input_buffer_.size()}),
+          reward_average_(0.0),
           reward_smoothing_factor_(reward_smoothing_factor),
           activation_smoothing_factor_(activation_smoothing_factor)
     {
