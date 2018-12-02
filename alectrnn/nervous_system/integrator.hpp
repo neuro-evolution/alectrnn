@@ -776,7 +776,7 @@ class ConvEigenIntegrator : public virtual Integrator<TReal> {
      * Matrix: (# rows, # cols) -> column major
      * src shape: {height * width, channels}
      * tar shape: {(new height * new width), num_filters}
-     * Note: If you check tensor shape is will be the reverse, since I use C's
+     * Note: If you check tensor shape it will be the reverse, since I use C's
      * order, while Eigen uses Fortran's. Sorry for the confusion, but Eigen
      * got added in latter and I am not sure why they choose Fortran's way for a
      * C++ API.
@@ -889,8 +889,9 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
                        const multi_array::Tensor<TReal>& tar_state,
                        const multi_array::Tensor<TReal>& tar_state_averages) {
 
-      MatrixView weights(weights_.data(),// + weights_.start(),
-                         conv_type::kernel_w_ * conv_type::kernel_h_
+      MatrixView weights(weights_.data(),
+                         conv_type::kernel_w_
+                         * conv_type::kernel_h_
                          * conv_type::channels_,
                          conv_type::num_filters_);
       ConstMatrixView tar_view(tar_state.data(), conv_type::channel_size_,
@@ -899,20 +900,30 @@ class RewardModulatedConvIntegrator : public ConvEigenIntegrator<TReal>,
                                    conv_type::channel_size_,
                                    conv_type::num_filters_);
 
+      std::cout << "weights dim: cols " << weights.cols() << " rows " << weights.rows() << std::endl;/////////////
+      std::cout << "tar view dim: cols " << tar_view.cols() << " rows " << tar_view.rows() << std::endl;/////////////
+      std::cout << "tar avg view dim: cols " << tar_avg_view.cols() << " rows " << tar_avg_view.rows() << std::endl;/////////////
+      std::cout << "buff dim: cols " << conv_type::buffer_state_.cols() << " rows " << conv_type::buffer_state_.rows() << std::endl;/////////////
+
       // find max index tar state, updates single filter
       const Index max_neuron_index = utilities::IndexOfMaxElement(tar_state);
       // Get the filter index for the max neuron
       const Index max_filter = max_neuron_index / conv_type::channel_size_;
+      // The buffer_state im2col matrix has a window of states from the previous
+      // layer that will correspond to the states that need to be integrated
+      // for a given position in the current layer (same for each channel)
+      // This position is modulo the size of the channel:
+      const Index max_neuron_window = max_neuron_index % conv_type::channel_size_;
       // Alternatively find max index tar state for each filter, updates each filter
 
       // Loops through src neuron states
       const TReal reward_modulated_learning_factor = (reward - reward_average)
                                                      * reward_modulator_type::learning_rate_;
       for (auto src_neuron = 0; src_neuron < conv_type::buffer_state_.cols(); ++src_neuron) {
-        weights(src_neuron, max_filter) = conv_type::buffer_state_(max_neuron_index,
-                                                                   src_neuron)
-                                 * (tar_view(max_neuron_index)
-                                    - tar_avg_view(max_neuron_index))
+        weights(src_neuron, max_filter) += conv_type::buffer_state_(max_neuron_window,
+                                                                    src_neuron)
+                                 * (tar_state[max_neuron_index]
+                                    - tar_state_averages[max_neuron_index])
                                  * reward_modulated_learning_factor;
       }
     }
