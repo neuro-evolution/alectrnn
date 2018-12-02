@@ -142,7 +142,67 @@ static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
       activation_smoothing_factor);
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
-                                          "rm_layer_generator.layer", DeleteLayer);
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateNoisyRewardModulatedLayer(PyObject *self, PyObject *args,
+                                            PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+                                 "self_integrator", "self_integrator_args",
+                                 "activator_type", "activator_args", "shape",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "standard_deviation",
+                                 "seed", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float standard_deviation;
+  int seed;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOOfffi", keyword_list,
+                                   &back_integrator_type, &back_integrator_args,
+                                   &self_integrator_type,
+                                   &self_integrator_args, &activator_type,
+                                   &activator_args,
+                                   &shape,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &standard_deviation,
+                                   &seed)) {
+    std::cerr << "Error parsing CreateNoisyRewardModulatedLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+
+  nervous_system::Integrator<float>* back_integrator =
+    IntegratorParser((nervous_system::INTEGRATOR_TYPE) back_integrator_type,
+                   back_integrator_args);
+
+  nervous_system::Integrator<float>* self_integrator =
+    IntegratorParser((nervous_system::INTEGRATOR_TYPE) self_integrator_type,
+                   self_integrator_args);
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transferred to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::NoisyRewardModulatedLayer<float>(
+    layer_shape, back_integrator, self_integrator, activator, reward_smoothing_factor,
+    activation_smoothing_factor, standard_deviation, seed);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
   return layer_capsule;
 }
 
@@ -205,6 +265,51 @@ static PyObject *CreateRewardModulatedMotorLayer(PyObject *self, PyObject *args,
   nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedMotorLayer<float>(
       num_outputs, num_inputs, activator, reward_smoothing_factor,
       activation_smoothing_factor, learning_rate);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateNoisyRewardModulatedMotorLayer(PyObject *self, PyObject *args,
+                                                 PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "standard_deviation",
+                                 "seed",
+                                 "learning_rate",
+                                 "activator_type", "activator_args",
+                                 NULL};
+
+  int num_outputs;
+  int num_inputs;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float standard_deviation;
+  int seed;
+  float learning_rate;
+  int activator_type;
+  PyObject* activator_args;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iifffifiO", keyword_list,
+                                   &num_outputs, &num_inputs, &activator_type,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &standard_deviation,
+                                   &seed,
+                                   &learning_rate,
+                                   &activator_args)) {
+    std::cerr << "Error parsing CreateNoisyRewardModulatedMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+  (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  nervous_system::Layer<float>* layer = new nervous_system::NoisyRewardModulatedMotorLayer<float>(
+    num_outputs, num_inputs, activator, reward_smoothing_factor, standard_deviation, seed,
+    activation_smoothing_factor, learning_rate);
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
                                           "layer_generator.layer", DeleteLayer);
@@ -930,6 +1035,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateRewardModulatedLayer", (PyCFunction) CreateRewardModulatedLayer,
         METH_VARARGS | METH_KEYWORDS,
         "Returns a handle to a RewardModulatedLayer"},
+  { "CreateNoisyRewardModulatedLayer", (PyCFunction) CreateNoisyRewardModulatedLayer,
+        METH_VARARGS | METH_KEYWORDS,
+        "Returns a handle to a NoisyRewardModulatedLayer"},
   { "CreateMotorLayer", (PyCFunction) CreateMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a MotorLayer"},
@@ -942,6 +1050,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateRewardModulatedMotorLayer", (PyCFunction) CreateRewardModulatedMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a RewardModulatedMotorLayer"},
+  { "CreateNoisyRewardModulatedMotorLayer", (PyCFunction) CreateNoisyRewardModulatedMotorLayer,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a NoisyRewardModulatedMotorLayer"},
       //Additional layers here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

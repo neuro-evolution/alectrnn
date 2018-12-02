@@ -424,6 +424,20 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i]))
 
+            elif layer_pars['layer_type'] == "rm_conv":
+                layers.append(self._create_nrm_conv_layer(
+                    interpreted_shapes[i],
+                    interpreted_shapes[i+1],
+                    layer_pars['filter_shape'],
+                    layer_pars['stride'],
+                    layer_pars['reward_smoothing_factor'],
+                    layer_pars['activation_smoothing_factor'],
+                    layer_pars['standard_deviation'],
+                    layer_pars['seed'],
+                    layer_pars['learning_rate'],
+                    layer_act_types[i],
+                    layer_act_args[i]))
+
             elif layer_pars['layer_type'] == "recurrent":
                 layers.append(self._create_recurrent_layer(
                     layer_pars['input_graph'],
@@ -523,6 +537,19 @@ class NervousSystem:
                     layer_act_args[i],
                     layer_shapes[i+1]))
 
+            elif layer_pars['layer_type'] == 'nrm_a2a_ff':
+                layers.append(self._create_nrm_a2a_ff_layer(
+                    layer_shapes[i],
+                    layer_pars['num_internal_nodes'],
+                    layer_pars['reward_smoothing_factor'],
+                    layer_pars['activation_smoothing_factor'],
+                    layer_pars['standard_deviation'],
+                    layer_pars['seed'],
+                    layer_pars['learning_rate'],
+                    layer_act_types[i],
+                    layer_act_args[i],
+                    layer_shapes[i+1]))
+
             elif layer_pars['layer_type'] == 'eigen_a2a_ff':
                 layers.append(self._create_eigen_a2a_ff_layer(
                     layer_shapes[i],
@@ -568,6 +595,18 @@ class NervousSystem:
                         layer_shapes[i],
                         layer_pars['reward_smoothing_factor'],
                         layer_pars['activation_smoothing_factor'],
+                        layer_pars['learning_rate'],
+                        layer_act_types[i],
+                        layer_act_args[i],
+                    ))
+                elif layer_pars['motor_type'].lower() == 'nrm':
+                    layers.append(self._create_nrm_motor_layer(
+                        layer_shapes[i+1],
+                        layer_shapes[i],
+                        layer_pars['reward_smoothing_factor'],
+                        layer_pars['activation_smoothing_factor'],
+                        layer_pars['standard_deviation'],
+                        layer_pars['seed'],
                         layer_pars['learning_rate'],
                         layer_act_types[i],
                         layer_act_args[i],
@@ -754,6 +793,47 @@ class NervousSystem:
                                                           layer_shape,
                                                           reward_smoothing_factor,
                                                           activation_smoothing_factor)
+
+    def _create_nrm_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
+                                reward_smoothing_factor,
+                                activation_smoothing_factor,
+                                standard_deviation,
+                                seed,
+                                learning_rate,
+                                act_type, act_args, layer_shape):
+        """
+        Creates a layer with all-to-all back connections, but not internal
+        connections. It uses reward modulation to update weights online.
+        Uses Eigen integrators.
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the function.
+        :param prev_layer_shape: shape of the previous layer
+        :param num_internal_nodes: number of neurons in layer
+        :param reward_smoothing_factor: memory time constant for exponential averaging.
+        :param activation_smoothing_factor: memory time constant for exponential averaging.
+        :param standard_deviation: strength of noise
+        :param seed: for rng
+        :param learning_rate: factor that controls rate of weight change.
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :param layer_shape: shape of the layer
+        :return: python capsule with pointer to the layer
+        """
+        back_type = INTEGRATOR_TYPE.REWARD_MODULATED_ALL2ALL.value
+        back_args = (int(num_internal_nodes),
+                     int(np.prod(prev_layer_shape)),
+                     float(learning_rate))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        assert(act_args[0] == num_internal_nodes)
+        return layer_generator.CreateNoisyRewardModulatedLayer(back_type, back_args,
+                                                          self_type, self_args,
+                                                          act_type, act_args,
+                                                          layer_shape,
+                                                          reward_smoothing_factor,
+                                                          activation_smoothing_factor,
+                                                               standard_deviation,
+                                                               seed)
 
     def _create_conv_recurrent_layer(self, prev_layer_shape, interpreted_shape,
                                      filter_shape, stride,
@@ -1079,6 +1159,29 @@ class NervousSystem:
             float(activation_smoothing_factor), float(learning_rate),
             act_type, act_args)
 
+    def _create_nrm_motor_layer(self, num_outputs, prev_layer_shape,
+                               reward_smoothing_factor,
+                               activation_smoothing_factor,
+                                standard_deviation,
+                                seed,
+                               learning_rate,
+                               act_type,
+                               act_args):
+        """
+        Generates an reward mod motor layer for the neural network, which will
+        represent the output of the network. It is fully connected to whatever layer
+        precedes it.
+        act_args needs to be in the correct tuple format for the activator
+        """
+
+        size_of_prev_layer = int(np.prod(prev_layer_shape))
+        assert(act_args[0] == num_outputs)
+        return layer_generator.CreateNoisyRewardModulatedMotorLayer(
+            int(num_outputs), size_of_prev_layer, float(reward_smoothing_factor),
+            float(activation_smoothing_factor), float(standard_deviation),
+            int(seed), float(learning_rate),
+            act_type, act_args)
+
     def _create_softmax_motor_layer(self, num_outputs, prev_layer_shape, temperature=1.0):
         """
         :param num_outputs: number of outputs expected by the application
@@ -1134,6 +1237,53 @@ class NervousSystem:
                                                           interpreted_shape,
                                                           reward_smoothing_factor,
                                                           activation_smoothing_factor)
+
+    def _create_rm_conv_layer(self, prev_layer_shape, interpreted_shape,
+                              filter_shape, stride, reward_smoothing_factor,
+                              activation_smoothing_factor,
+                              standard_deviation, seed,
+                              learning_rate, act_type, act_args):
+        """
+        Creates a layer with convolutional back connections and no self
+        connections with reward modulation on its weights. Uses Eigen integrators
+        act_args needs to be in the correct tuple format with properly
+        typed numpy arrays for any arguments
+        filter_shape = 2 element array/list with filter dimenstions
+        Final shape, which includes depth, depends on shape of prev layer
+        Restructures input parameters into the correct format for the
+        C++ function call, then calls the CreateLayer function.
+        :param prev_layer_shape: shape of the previous layer
+        :param interpreted_shape: shape the convolution will take
+        :param filter_shape: shape of the filter
+        :param stride: stride for the convolution
+        :param reward_smoothing_factor: memory time constant for exponential averaging.
+        :param activation_smoothing_factor: memory time constant for exponential averaging.
+        :param standard_deviation: strength of noise.
+        :param seed: for rng.
+        :param learning_rate: factor that controls rate of weight change.
+        :param act_type: ACTIVATOR_TYPE
+        :param act_args: arguments for that ACTIVATOR_TYPE
+        :return: python capsule with pointer to the layer
+        """
+
+        back_type = INTEGRATOR_TYPE.REWARD_MODULATED_CONV.value
+        # Appropriate depth is added to filter shape to build the # 3-element 1D array
+        back_args = (np.array([prev_layer_shape[0]] + list(filter_shape), dtype=np.uint64),
+                     interpreted_shape,  # layer_shape funct outputs dtype=np.uint64
+                     np.array(prev_layer_shape, dtype=np.uint64),
+                     int(stride),
+                     float(learning_rate))
+        self_type = INTEGRATOR_TYPE.NONE.value
+        self_args = tuple()
+        return layer_generator.CreateRewardModulatedLayer(back_type,
+                                                          back_args, self_type,
+                                                          self_args,
+                                                          act_type, act_args,
+                                                          interpreted_shape,
+                                                          reward_smoothing_factor,
+                                                          activation_smoothing_factor,
+                                                          standard_deviation,
+                                                          seed)
 
     def get_parameter_count(self):
         """
@@ -1386,4 +1536,74 @@ class RewardModulatedAtariCNN(NervousSystem):
         act_type = ACTIVATOR_TYPE.NOISY_RELU
 
         act_args = [(noise_strength, seeds[i]) for i in range(5)]  # 5 is num layers
+        super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
+
+
+class NoisyRewardModulatedAtariCNN(NervousSystem):
+    """
+    A 5-layer relu CNN based closely off of previous Atari playing CNN's.
+    It uses the legal action set size for the motor layer so that it works
+    with the shared motor agent (use this only with shared motor agents).
+    It employs reward modulation which adjusted weights online.
+    """
+    def __init__(self, reward_smoothing_factor,
+                 activation_smoothing_factor,
+                 learning_rate, noise_strength, stds, seeds):
+        """
+        Initialize RewardModulatedAtariCNN
+        :param reward_smoothing_factor: float, time constant of exp avg.
+        :param activation_smoothing_factor: float, time constant of exp avg.
+        :param learning_rate: float, determines size of weight change in hebb update.
+        :param noise_strength: float, standard deviation of noise.
+        :param seeds: list of ints, seeds for activator noise RNGs.
+        """
+        input_shape = [4, 88, 88]
+        num_outputs = 18
+        nn_parameters = [{
+            'layer_type': "nrm_conv",
+            'filter_shape': [7, 7],
+            'num_filters': 32,
+            'stride': 4,
+            'reward_smoothing_factor': reward_smoothing_factor,
+            'activation_smoothing_factor': activation_smoothing_factor,
+            'standard_deviation': stds[0],
+            'seed': seeds[0],
+            'learning_rate': learning_rate},
+            {'layer_type': "nrm_conv",
+             'filter_shape': [3, 3],
+             'num_filters': 64,
+             'stride': 2,
+             'reward_smoothing_factor': reward_smoothing_factor,
+             'activation_smoothing_factor': activation_smoothing_factor,
+             'standard_deviation': stds[1],
+             'seed': seeds[1],
+             'learning_rate': learning_rate
+             },
+            {'layer_type': "nrm_conv",
+             'filter_shape': [3, 3],
+             'num_filters': 64,
+             'stride': 1,
+             'reward_smoothing_factor': reward_smoothing_factor,
+             'activation_smoothing_factor': activation_smoothing_factor,
+             'standard_deviation': stds[2],
+             'seed': seeds[2],
+             'learning_rate': learning_rate
+             },
+            {'layer_type': "nrm_a2a_ff",
+             'num_internal_nodes': 512,
+             'reward_smoothing_factor': reward_smoothing_factor,
+             'activation_smoothing_factor': activation_smoothing_factor,
+             'standard_deviation': stds[3],
+             'seed': seeds[3],
+             'learning_rate': learning_rate
+             },
+            {'layer_type': 'motor',
+             'motor_type': 'nrm',
+             'reward_smoothing_factor': reward_smoothing_factor,
+             'activation_smoothing_factor': activation_smoothing_factor,
+             'standard_deviation': stds[4],
+             'seed': seeds[4],
+             'learning_rate': learning_rate}]
+        act_type = ACTIVATOR_TYPE.RELU
+        act_args = ()
         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)

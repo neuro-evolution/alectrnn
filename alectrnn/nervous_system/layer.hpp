@@ -7,11 +7,13 @@
 #include <initializer_list>
 #include <iostream>
 #include <utility>
+#include <random>
 #include "../common/graphs.hpp"
 #include "activator.hpp"
 #include "integrator.hpp"
 #include "../common/multi_array.hpp"
 #include "parameter_types.hpp"
+#include "../random/pcg_random.hpp"
 
 namespace nervous_system {
 
@@ -257,7 +259,99 @@ class RewardModulatedLayer : public Layer<TReal> {
      * Called after all integrators and activators have been called.
      */
     virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
-      // call weight update function
+      // call weight update function using the input_buffer of this layer
+      // the input buffer contains the states prior to application of the
+      // activation function.
+      if (super_type::back_integrator_->GetIntegratorType() == REWARD_MODULATED)
+      {
+        dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+          activation_averages_);
+      }
+
+      if (super_type::self_integrator_->GetIntegratorType() == REWARD_MODULATED)
+      {
+        dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+          activation_averages_);
+      }
+
+      // update rolling averages
+      reward_average_ = utilities::ExponentialRollingAverage(reward, reward_average_,
+                                                             reward_smoothing_factor_);
+      for (Index i = 0; i < activation_averages_.size(); ++i) {
+        activation_averages_[i] = utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
+                                                                       activation_averages_[i],
+                                                                       activation_smoothing_factor_);
+      }
+    }
+
+  protected:
+    multi_array::Tensor<TReal> activation_averages_;
+    TReal reward_average_;
+    TReal reward_smoothing_factor_; // between [0,1]
+    TReal activation_smoothing_factor_; // between [0,1]
+};
+
+/*
+ * This uses the correct equation. We need the noise applied to the input_buffer
+ * in order to calculate the correct average.
+ */
+template <typename TReal>
+class NoisyRewardModulatedLayer : public Layer<TReal> {
+  public:
+    typedef Layer<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    NoisyRewardModulatedLayer(const std::vector<Index>& shape,
+                         Integrator<TReal>* back_integrator,
+                         Integrator<TReal>* self_integrator,
+                         Activator<TReal>* activation_function,
+                         TReal reward_smoothing_factor,
+                         TReal activation_smoothing_factor,
+                         const TReal standard_deviation,
+                         const std::uint64_t seed)
+    : super_type(shape, back_integrator, self_integrator,
+                 activation_function),
+      activation_averages_({super_type::input_buffer_.size()}),
+      reward_average_(0.0),
+      reward_smoothing_factor_(reward_smoothing_factor),
+      activation_smoothing_factor_(activation_smoothing_factor),
+      standard_deviation_(standard_deviation),
+      rng_(seed),
+      normal_distribution_{}
+    {
+      Reset();
+    }
+
+    virtual ~NoisyRewardModulatedLayer()=default;
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) override {
+      super_type::Configure(parameters);
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const override {
+
+      std::vector<PARAMETER_TYPE> layout = super_type::GetParameterLayout();
+      return layout;
+    }
+
+    virtual void Reset() override {
+      super_type::Reset();
+      for (auto& avg : activation_averages_) {
+        avg = 0;
+      }
+      reward_average_ = 0.0;
+    }
+
+    /*
+     * Called after all integrators and activators have been called.
+     */
+    virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
+      // call weight update function using the input_buffer of this layer
+      // the input buffer contains the states prior to application of the
+      // activation function.
+      ApplyNoise(super_type::input_buffer_);
       if (super_type::back_integrator_->GetIntegratorType() == REWARD_MODULATED)
       {
         dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
@@ -282,11 +376,22 @@ class RewardModulatedLayer : public Layer<TReal> {
       }
     }
 
+    virtual void ApplyNoise(multi_array::Tensor<TReal> inputs)
+    {
+      for (Index i = 0; inputs.size(); ++i)
+      {
+        inputs[i] += standard_deviation_ * normal_distribution_(rng_);
+      }
+    }
+
   protected:
     multi_array::Tensor<TReal> activation_averages_;
     TReal reward_average_;
     TReal reward_smoothing_factor_; // between [0,1]
     TReal activation_smoothing_factor_; // between [0,1]
+    TReal standard_deviation_;
+    pcg32_fast rng_;
+    std::normal_distribution<TReal> normal_distribution_;
 };
 
 template<typename TReal>
@@ -534,6 +639,99 @@ class RewardModulatedMotorLayer : public RewardModulatedLayer<TReal>
             utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
                                                  super_type::activation_averages_[i],
                                                  super_type::activation_smoothing_factor_);
+      }
+    }
+};
+
+template<typename TReal>
+class NoisyRewardModulatedMotorLayer : public NoisyRewardModulatedLayer<TReal>
+{
+  public:
+    using super_type = NoisyRewardModulatedLayer<TReal>;
+    using Index = typename super_type::Index;
+
+    NoisyRewardModulatedMotorLayer(Index num_outputs,
+                              Index num_inputs,
+                              Activator<TReal>* activation_function,
+                              TReal reward_smoothing_factor,
+                              TReal activation_smoothing_factor,
+                              const TReal standard_deviation,
+                              const std::uint64_t seed,
+                              TReal learning_rate)
+    : super_type({num_outputs},
+                 new nervous_system::RewardModulatedAll2AllIntegrator<TReal>(num_outputs,
+                                                                             num_inputs,
+                                                                             learning_rate),
+                 nullptr, activation_function, reward_smoothing_factor,
+                 activation_smoothing_factor,
+                 standard_deviation, seed)
+    {
+    }
+
+    virtual void operator()(const Layer<TReal>* prev_layer) {
+      // First clear input buffer
+      super_type::input_buffer_.Fill(0.0);
+      // Call back integrator first to resolve input from prev layer
+      (*super_type::back_integrator_)(prev_layer->state(), super_type::input_buffer_);
+      // Apply activation and update state
+      (*super_type::activation_function_)(super_type::layer_state_, super_type::input_buffer_);
+    }
+
+    virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+      if (super_type::parameter_count_ != parameters.size()) {
+        std::cerr << "parameter size: " << parameters.size() << std::endl;
+        std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
+        throw std::invalid_argument("Wrong number of parameters given");
+      }
+      // configure back integrator parameters
+      super_type::back_integrator_->Configure(
+      parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
+      // configure activation parameters
+      super_type::activation_function_->Configure(
+      parameters.slice(parameters.stride()
+                       * super_type::back_integrator_->GetParameterCount(),
+                       super_type::activation_function_->GetParameterCount()));
+    }
+
+    virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+      std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+      // layout produced in configure order: back->act
+      Index order = 0;
+      std::vector<PARAMETER_TYPE> back_layout = super_type::back_integrator_->GetParameterLayout();
+      for (auto par_type_ptr = back_layout.begin();
+           par_type_ptr != back_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+
+      std::vector<PARAMETER_TYPE> act_layout = super_type::activation_function_->GetParameterLayout();
+      for (auto par_type_ptr = act_layout.begin();
+           par_type_ptr != act_layout.end(); ++par_type_ptr) {
+        layout[order] = *par_type_ptr;
+        ++order;
+      }
+
+      return layout;
+    }
+
+    virtual void UpdateWeights(const TReal reward, const Layer<TReal>* prev_layer) {
+      // call weight update function
+      super_type::ApplyNoise(super_type::input_buffer_);
+      dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
+        reward, super_type::reward_average_, prev_layer->state(), super_type::input_buffer_,
+        super_type::activation_averages_);
+
+      // update rolling avgerages
+      super_type::reward_average_ =
+      utilities::ExponentialRollingAverage(reward,
+                                           super_type::reward_average_,
+                                           super_type::reward_smoothing_factor_);
+      for (Index i = 0; i < super_type::activation_averages_.size(); ++i) {
+        super_type::activation_averages_[i] =
+        utilities::ExponentialRollingAverage(super_type::input_buffer_[i],
+                                             super_type::activation_averages_[i],
+                                             super_type::activation_smoothing_factor_);
       }
     }
 };
