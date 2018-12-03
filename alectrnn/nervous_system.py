@@ -1238,7 +1238,7 @@ class NervousSystem:
                                                           reward_smoothing_factor,
                                                           activation_smoothing_factor)
 
-    def _create_rm_conv_layer(self, prev_layer_shape, interpreted_shape,
+    def _create_nrm_conv_layer(self, prev_layer_shape, interpreted_shape,
                               filter_shape, stride, reward_smoothing_factor,
                               activation_smoothing_factor,
                               standard_deviation, seed,
@@ -1275,7 +1275,7 @@ class NervousSystem:
                      float(learning_rate))
         self_type = INTEGRATOR_TYPE.NONE.value
         self_args = tuple()
-        return layer_generator.CreateRewardModulatedLayer(back_type,
+        return layer_generator.CreateNoisyRewardModulatedLayer(back_type,
                                                           back_args, self_type,
                                                           self_args,
                                                           act_type, act_args,
