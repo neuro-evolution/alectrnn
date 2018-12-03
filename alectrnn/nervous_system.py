@@ -1478,65 +1478,65 @@ class StandardAtariCNN(NervousSystem):
         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
 
 
-class RewardModulatedAtariCNN(NervousSystem):
-    """
-    A 5-layer relu CNN based closely off of previous Atari playing CNN's.
-    It uses the legal action set size for the motor layer so that it works
-    with the shared motor agent (use this only with shared motor agents).
-    It employs reward modulation which adjusted weights online.
-    """
-    def __init__(self, reward_smoothing_factor,
-                 activation_smoothing_factor,
-                 learning_rate, noise_strength, seeds):
-        """
-        Initialize RewardModulatedAtariCNN
-        :param reward_smoothing_factor: float, time constant of exp avg.
-        :param activation_smoothing_factor: float, time constant of exp avg.
-        :param learning_rate: float, determines size of weight change in hebb update.
-        :param noise_strength: float, standard deviation of noise.
-        :param seeds: list of ints, seeds for activator noise RNGs.
-        """
-        input_shape = [4, 88, 88]
-        num_outputs = 18
-        nn_parameters = [{
-            'layer_type': "rm_conv",
-            'filter_shape': [7, 7],
-            'num_filters': 32,
-            'stride': 4,
-            'reward_smoothing_factor': reward_smoothing_factor,
-            'activation_smoothing_factor': activation_smoothing_factor,
-            'learning_rate': learning_rate},
-            {'layer_type': "rm_conv",
-             'filter_shape': [3, 3],
-             'num_filters': 64,
-             'stride': 2,
-             'reward_smoothing_factor': reward_smoothing_factor,
-             'activation_smoothing_factor': activation_smoothing_factor,
-             'learning_rate': learning_rate
-             },
-            {'layer_type': "rm_conv",
-             'filter_shape': [3, 3],
-             'num_filters': 64,
-             'stride': 1,
-             'reward_smoothing_factor': reward_smoothing_factor,
-             'activation_smoothing_factor': activation_smoothing_factor,
-             'learning_rate': learning_rate
-             },
-            {'layer_type': "rm_a2a_ff",
-             'num_internal_nodes': 512,
-             'reward_smoothing_factor': reward_smoothing_factor,
-             'activation_smoothing_factor': activation_smoothing_factor,
-             'learning_rate': learning_rate
-             },
-            {'layer_type': 'motor',
-             'motor_type': 'rm',
-             'reward_smoothing_factor': reward_smoothing_factor,
-             'activation_smoothing_factor': activation_smoothing_factor,
-             'learning_rate': learning_rate}]
-        act_type = ACTIVATOR_TYPE.NOISY_RELU
-
-        act_args = [(noise_strength, seeds[i]) for i in range(5)]  # 5 is num layers
-        super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
+# class RewardModulatedAtariCNN(NervousSystem):
+#     """
+#     A 5-layer relu CNN based closely off of previous Atari playing CNN's.
+#     It uses the legal action set size for the motor layer so that it works
+#     with the shared motor agent (use this only with shared motor agents).
+#     It employs reward modulation which adjusted weights online.
+#     """
+#     def __init__(self, reward_smoothing_factor,
+#                  activation_smoothing_factor,
+#                  learning_rate, noise_strength, seeds):
+#         """
+#         Initialize RewardModulatedAtariCNN
+#         :param reward_smoothing_factor: float, time constant of exp avg.
+#         :param activation_smoothing_factor: float, time constant of exp avg.
+#         :param learning_rate: float, determines size of weight change in hebb update.
+#         :param noise_strength: float, standard deviation of noise.
+#         :param seeds: list of ints, seeds for activator noise RNGs.
+#         """
+#         input_shape = [4, 88, 88]
+#         num_outputs = 18
+#         nn_parameters = [{
+#             'layer_type': "rm_conv",
+#             'filter_shape': [7, 7],
+#             'num_filters': 32,
+#             'stride': 4,
+#             'reward_smoothing_factor': reward_smoothing_factor,
+#             'activation_smoothing_factor': activation_smoothing_factor,
+#             'learning_rate': learning_rate},
+#             {'layer_type': "rm_conv",
+#              'filter_shape': [3, 3],
+#              'num_filters': 64,
+#              'stride': 2,
+#              'reward_smoothing_factor': reward_smoothing_factor,
+#              'activation_smoothing_factor': activation_smoothing_factor,
+#              'learning_rate': learning_rate
+#              },
+#             {'layer_type': "rm_conv",
+#              'filter_shape': [3, 3],
+#              'num_filters': 64,
+#              'stride': 1,
+#              'reward_smoothing_factor': reward_smoothing_factor,
+#              'activation_smoothing_factor': activation_smoothing_factor,
+#              'learning_rate': learning_rate
+#              },
+#             {'layer_type': "rm_a2a_ff",
+#              'num_internal_nodes': 512,
+#              'reward_smoothing_factor': reward_smoothing_factor,
+#              'activation_smoothing_factor': activation_smoothing_factor,
+#              'learning_rate': learning_rate
+#              },
+#             {'layer_type': 'motor',
+#              'motor_type': 'rm',
+#              'reward_smoothing_factor': reward_smoothing_factor,
+#              'activation_smoothing_factor': activation_smoothing_factor,
+#              'learning_rate': learning_rate}]
+#         act_type = ACTIVATOR_TYPE.NOISY_RELU
+#
+#         act_args = [(noise_strength, seeds[i]) for i in range(5)]  # 5 is num layers
+#         super().__init__(input_shape, num_outputs, nn_parameters, act_type, act_args)
 
 
 class NoisyRewardModulatedAtariCNN(NervousSystem):
