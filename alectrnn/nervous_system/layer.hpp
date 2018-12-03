@@ -371,15 +371,15 @@ class NoisyRewardModulatedLayer : public Layer<TReal> {
       if (super_type::back_integrator_->GetIntegratorType() == REWARD_MODULATED)
       {
         dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::back_integrator_)->UpdateWeights(
-        reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
-        activation_averages_);
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+          activation_averages_);
       }
 
       if (super_type::self_integrator_->GetIntegratorType() == REWARD_MODULATED)
       {
         dynamic_cast<RewardModulatedIntegrator<TReal>*>(super_type::self_integrator_)->UpdateWeights(
-        reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
-        activation_averages_);
+          reward, reward_average_, prev_layer->state(), super_type::input_buffer_,
+          activation_averages_);
       }
 
       // update rolling averages
@@ -392,9 +392,9 @@ class NoisyRewardModulatedLayer : public Layer<TReal> {
       }
     }
 
-    virtual void ApplyNoise(multi_array::Tensor<TReal> inputs)
+    virtual void ApplyNoise(multi_array::Tensor<TReal>& inputs)
     {
-      for (Index i = 0; inputs.size(); ++i)
+      for (Index i = 0; i < inputs.size(); ++i)
       {
         inputs[i] += standard_deviation_ * normal_distribution_(rng_);
       }
