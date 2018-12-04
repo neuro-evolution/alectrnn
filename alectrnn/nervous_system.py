@@ -1450,7 +1450,7 @@ class StandardAtariCNN(NervousSystem):
     It uses the legal action set size for the motor layer so that it works
     with the shared motor agent (use this only with shared motor agents).
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         input_shape = [4, 88, 88]
         num_outputs = 18
         nn_parameters = [{
@@ -1548,7 +1548,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
     """
     def __init__(self, reward_smoothing_factor,
                  activation_smoothing_factor,
-                 learning_rate, noise_strength, seeds):
+                 learning_rate, noise_strength, seeds, *args, **kwargs):
         """
         Initialize RewardModulatedAtariCNN
         :param reward_smoothing_factor: float, time constant of exp avg.
