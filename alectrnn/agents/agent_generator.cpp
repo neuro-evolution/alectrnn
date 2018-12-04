@@ -283,11 +283,11 @@ static PyMethodDef AgentMethods[] = {
     METH_VARARGS | METH_KEYWORDS,
     "Returns a handle to a SoftMaxAgent"},
   { "CreateSharedMotorAgent", (PyCFunction) CreateSharedMotorAgent,
-  METH_VARARGS | METH_KEYWORDS,
-  "Returns a handle to a SharedMotorAgent"},
-  { "CreateRewardModulatedMotorAgent", (PyCFunction) CreateRewardModulatedMotorAgent,
-  METH_VARARGS | METH_KEYWORDS,
-  "Returns a handle to a RewardModulatedAgent"},
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a SharedMotorAgent"},
+  { "CreateRewardModulatedAgent", (PyCFunction) CreateRewardModulatedAgent,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a RewardModulatedAgent"},
       //Additional agents here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };
