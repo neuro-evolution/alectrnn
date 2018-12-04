@@ -293,12 +293,13 @@ static PyObject *CreateNoisyRewardModulatedMotorLayer(PyObject *self, PyObject *
   PyObject* activator_args;
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iifffifiO", keyword_list,
-                                   &num_outputs, &num_inputs, &activator_type,
+                                   &num_outputs, &num_inputs,
                                    &reward_smoothing_factor,
                                    &activation_smoothing_factor,
                                    &standard_deviation,
                                    &seed,
                                    &learning_rate,
+                                   &activator_type,
                                    &activator_args)) {
     std::cerr << "Error parsing CreateNoisyRewardModulatedMotorLayer arguments" << std::endl;
     return NULL;

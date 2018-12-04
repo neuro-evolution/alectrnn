@@ -424,7 +424,7 @@ class NervousSystem:
                     layer_act_types[i],
                     layer_act_args[i]))
 
-            elif layer_pars['layer_type'] == "rm_conv":
+            elif layer_pars['layer_type'] == "nrm_conv":
                 layers.append(self._create_nrm_conv_layer(
                     interpreted_shapes[i],
                     interpreted_shapes[i+1],
