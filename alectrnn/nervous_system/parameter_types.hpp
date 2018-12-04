@@ -19,7 +19,9 @@ enum PARAMETER_TYPE {
   REFRACTORY, // refractory period for IF models
   RESISTANCE, // resistance for IF models
   GAIN,
-  DECAY
+  DECAY,
+  SMOOTHING, // for reward modulation
+  NOISE // for noise strength
 };
 
 } // End nervous_system namespace

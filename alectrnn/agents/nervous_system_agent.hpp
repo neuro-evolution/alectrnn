@@ -23,20 +23,20 @@ class NervousSystemAgent : public PlayerAgent {
     NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem<float>& neural_net);
     NervousSystemAgent(ALEInterface* ale, nervous_system::NervousSystem<float>& neural_net, 
         Index update_rate, bool is_logging);
-    ~NervousSystemAgent();
+    virtual ~NervousSystemAgent()=default;
 
-    void Configure(const float *parameters);
-    void Reset();
-    const nervous_system::StateLogger<float>& GetLog() const;
-    const ScreenLogger<float>& GetScreenLog() const;
-    const nervous_system::NervousSystem<float>& GetNeuralNet() const;
+    virtual void Configure(const float *parameters);
+    virtual void Reset();
+    virtual const nervous_system::StateLogger<float>& GetLog() const;
+    virtual const ScreenLogger<float>& GetScreenLog() const;
+    virtual const nervous_system::NervousSystem<float>& GetNeuralNet() const;
 
   protected:
-    Action Act();
-    Action GetActionFromNervousSystem();
-    void UpdateNervousSystemInput();
-    void StepNervousSystem();
-    void UpdateScreen();
+    virtual Action Act();
+    virtual Action GetActionFromNervousSystem();
+    virtual void UpdateNervousSystemInput();
+    virtual void StepNervousSystem();
+    virtual void UpdateScreen();
 
   protected:
     nervous_system::NervousSystem<float>& neural_net_;

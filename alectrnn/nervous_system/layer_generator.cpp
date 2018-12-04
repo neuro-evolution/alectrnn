@@ -92,6 +92,120 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   return layer_capsule;
 }
 
+static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
+                                            PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+                                 "self_integrator", "self_integrator_args",
+                                 "activator_type", "activator_args", "shape",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOOff", keyword_list,
+                                   &back_integrator_type, &back_integrator_args,
+                                   &self_integrator_type,
+                                   &self_integrator_args, &activator_type,
+                                   &activator_args,
+                                   &shape,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor)) {
+    std::cerr << "Error parsing CreateRewardModulatedLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+
+  nervous_system::Integrator<float>* back_integrator =
+      IntegratorParser((nervous_system::INTEGRATOR_TYPE) back_integrator_type,
+                       back_integrator_args);
+
+  nervous_system::Integrator<float>* self_integrator =
+      IntegratorParser((nervous_system::INTEGRATOR_TYPE) self_integrator_type,
+                       self_integrator_args);
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+      (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transferred to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedLayer<float>(
+      layer_shape, back_integrator, self_integrator, activator, reward_smoothing_factor,
+      activation_smoothing_factor);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateNoisyRewardModulatedLayer(PyObject *self, PyObject *args,
+                                            PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+                                 "self_integrator", "self_integrator_args",
+                                 "activator_type", "activator_args", "shape",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "standard_deviation",
+                                 "seed", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float standard_deviation;
+  int seed;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOOfffi", keyword_list,
+                                   &back_integrator_type, &back_integrator_args,
+                                   &self_integrator_type,
+                                   &self_integrator_args, &activator_type,
+                                   &activator_args,
+                                   &shape,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &standard_deviation,
+                                   &seed)) {
+    std::cerr << "Error parsing CreateNoisyRewardModulatedLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+
+  nervous_system::Integrator<float>* back_integrator =
+    IntegratorParser((nervous_system::INTEGRATOR_TYPE) back_integrator_type,
+                   back_integrator_args);
+
+  nervous_system::Integrator<float>* self_integrator =
+    IntegratorParser((nervous_system::INTEGRATOR_TYPE) self_integrator_type,
+                   self_integrator_args);
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transferred to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::NoisyRewardModulatedLayer<float>(
+    layer_shape, back_integrator, self_integrator, activator, reward_smoothing_factor,
+    activation_smoothing_factor, standard_deviation, seed);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
 static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"num_outputs", "num_inputs", 
                                 "activator_type", "activator_args", NULL};
@@ -115,6 +229,91 @@ static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwar
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
                                 "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateRewardModulatedMotorLayer(PyObject *self, PyObject *args,
+                                                 PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "learning_rate",
+                                 "activator_type", "activator_args",
+                                 NULL};
+
+  int num_outputs;
+  int num_inputs;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float learning_rate;
+  int activator_type;
+  PyObject* activator_args;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iifffiO", keyword_list,
+                                   &num_outputs, &num_inputs, &activator_type,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &learning_rate,
+                                   &activator_args)) {
+    std::cerr << "Error parsing CreateRewardModulatedMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+      (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  nervous_system::Layer<float>* layer = new nervous_system::RewardModulatedMotorLayer<float>(
+      num_outputs, num_inputs, activator, reward_smoothing_factor,
+      activation_smoothing_factor, learning_rate);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateNoisyRewardModulatedMotorLayer(PyObject *self, PyObject *args,
+                                                 PyObject *kwargs) {
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
+                                 "reward_smoothing_factor",
+                                 "activation_smoothing_factor",
+                                 "standard_deviation",
+                                 "seed",
+                                 "learning_rate",
+                                 "activator_type", "activator_args",
+                                 NULL};
+
+  int num_outputs;
+  int num_inputs;
+  float reward_smoothing_factor;
+  float activation_smoothing_factor;
+  float standard_deviation;
+  int seed;
+  float learning_rate;
+  int activator_type;
+  PyObject* activator_args;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iifffifiO", keyword_list,
+                                   &num_outputs, &num_inputs,
+                                   &reward_smoothing_factor,
+                                   &activation_smoothing_factor,
+                                   &standard_deviation,
+                                   &seed,
+                                   &learning_rate,
+                                   &activator_type,
+                                   &activator_args)) {
+    std::cerr << "Error parsing CreateNoisyRewardModulatedMotorLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  nervous_system::Activator<float>* activator = ActivatorParser(
+  (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  nervous_system::Layer<float>* layer = new nervous_system::NoisyRewardModulatedMotorLayer<float>(
+    num_outputs, num_inputs, activator, reward_smoothing_factor, standard_deviation, seed,
+    activation_smoothing_factor, learning_rate);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                          "layer_generator.layer", DeleteLayer);
   return layer_capsule;
 }
 
@@ -340,6 +539,32 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       break;
     }
 
+    case nervous_system::NOISY_SIGMOID_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      float saturation_point;
+      float standard_deviation;
+      int seed;
+      if (!PyArg_ParseTuple(args, "Oiffi", &shape, &is_shared, &saturation_point,
+                            &standard_deviation, &seed)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("NOISY_SIGMOID_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " NOISY_SIGMOID_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::NoisySigmoidActivator<float>(
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared), saturation_point,
+          standard_deviation, static_cast<std::uint64_t>(seed));
+      break;
+    }
+
     case nervous_system::RELU_ACTIVATOR: {
       PyArrayObject* shape;
       int is_shared;
@@ -358,6 +583,31 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
       new_activator = new nervous_system::ReLuActivator<float>(
           alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
           static_cast<bool>(is_shared));
+      break;
+    }
+
+    case nervous_system::NOISY_RELU_ACTIVATOR: {
+      PyArrayObject* shape;
+      int is_shared;
+      float standard_deviation;
+      int seed;
+      if (!PyArg_ParseTuple(args, "Oifi", &shape, &is_shared,
+                            &standard_deviation, &seed)) {
+        std::cerr << "Error parsing Activator arguments" << std::endl;
+        throw std::invalid_argument("NOISY_RELU_ACTIVATOR couldn't parse tuple");
+      }
+
+      // Make sure the numpy array is the correct size
+      npy_intp num_shape_elements = PyArray_SIZE(shape);
+      if ((num_shape_elements != 3) && (is_shared == 1)) {
+        throw std::invalid_argument("Invalid number of shape elements for"
+                                    " NOISY_RELU_ACTIVATOR (needs 3 when shared)");
+      }
+
+      new_activator = new nervous_system::NoisyReLuActivator<float>(
+          alectrnn::uInt64PyArrayToVector<std::size_t>(shape),
+          static_cast<bool>(is_shared), standard_deviation,
+          static_cast<std::uint64_t>(seed));
       break;
     }
 
@@ -679,6 +929,94 @@ nervous_system::Integrator<float>* IntegratorParser(nervous_system::INTEGRATOR_T
       break;
     }
 
+    case nervous_system::REWARD_MODULATED_ALL2ALL_INTEGRATOR: {
+      int num_states;
+      int num_prev_states;
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "iif", &num_states, &num_prev_states,
+                            &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("Reward modulated ALL2ALL Integrator failed to parse"
+                                    " tuples");
+      }
+      new_integrator = new nervous_system::RewardModulatedAll2AllIntegrator<float>(num_states,
+                                                                                   num_prev_states,
+                                                                                   learning_rate);
+      break;
+    }
+
+    case nervous_system::REWARD_MODULATED_RECURRENT_INTEGRATOR: {
+      PyArrayObject* edge_list; // Nx2 dimensional array
+      int num_head_states; // states
+      int num_tail_states; // states or tail states
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "Oiif", &edge_list, &num_head_states,
+                            &num_tail_states, &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("Reward Modulated RECCURENT INTEGRATOR ERROR");
+      }
+
+      // Make sure numpy array has correct shape
+      int edge_list_ndims = PyArray_NDIM(edge_list);
+      if (edge_list_ndims != 2) {
+        std::cerr << "edge list dimensions: " << edge_list_ndims << std::endl;
+        throw std::invalid_argument("edge list has invalid # of dimensions (needs 2)");
+      }
+      npy_intp* edge_list_shape = PyArray_SHAPE(edge_list);
+      if (edge_list_shape[1] != 2) {
+        std::cerr << "edge list shape[1]: " << edge_list_shape[1] << std::endl;
+        std::cerr << "edge list shape[1]: REQUIRES " << 2 << std::endl;
+        throw std::invalid_argument("edge list is the wrong size");
+      }
+
+      new_integrator = new nervous_system::RewardModulatedRecurrentIntegrator<float>(
+          graphs::ConvertEdgeListToSparseMatrix<float>(
+          alectrnn::PyArrayToSharedMultiArray<std::uint64_t,2>(edge_list),
+          num_tail_states, num_head_states), learning_rate);
+      break;
+    }
+
+    case nervous_system::REWARD_MODULATED_CONV_INTEGRATOR: {
+      PyArrayObject* filter_shape;
+      PyArrayObject* layer_shape;
+      PyArrayObject* prev_layer_shape;
+      int stride;
+      float learning_rate;
+      if (!PyArg_ParseTuple(args, "OOOif", &filter_shape,
+                            &layer_shape, &prev_layer_shape, &stride,
+                            &learning_rate)) {
+        std::cerr << "Error parsing Integrator arguments" << std::endl;
+        throw std::invalid_argument("REWARD_MODULATED_EIGEN_INTEGRATOR failed to parse tuples");
+      }
+
+      // Make sure the numpy arrays are the correct size
+      npy_intp num_filter_elements = PyArray_SIZE(filter_shape);
+      if (num_filter_elements != 3) {
+        std::cerr << "num of filter elements: " << num_filter_elements << std::endl;
+        throw std::invalid_argument("filter has wrong number of elements (needs 3)");
+      }
+      npy_intp num_layer_elements = PyArray_SIZE(layer_shape);
+      if (num_layer_elements != 3) {
+        std::cerr << "num of layer elements: " << num_layer_elements << std::endl;
+        throw std::invalid_argument("layer has wrong number of elements (needs 3)");
+      }
+      npy_intp num_prev_layer_elements = PyArray_SIZE(prev_layer_shape);
+      if (num_prev_layer_elements != 3) {
+        std::cerr << "num of prev layer elements: " << num_prev_layer_elements << std::endl;
+        throw std::invalid_argument("prev layer has wrong number of elements (needs 3)");
+      }
+
+      new_integrator = new nervous_system::RewardModulatedConvIntegrator<float>(
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(filter_shape)),
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(layer_shape)),
+          multi_array::Array<std::size_t,3>(
+          alectrnn::uInt64PyArrayToCArray(prev_layer_shape)),
+          stride, learning_rate);
+      break;
+    }
+
     default: {
       std::cerr << "Integrator case not supported... exiting." << std::endl;
       throw std::invalid_argument("Unsupported integrator value");
@@ -695,15 +1033,27 @@ static PyMethodDef LayerMethods[] = {
   { "CreateLayer", (PyCFunction) CreateLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a Layer"},
+  { "CreateRewardModulatedLayer", (PyCFunction) CreateRewardModulatedLayer,
+        METH_VARARGS | METH_KEYWORDS,
+        "Returns a handle to a RewardModulatedLayer"},
+  { "CreateNoisyRewardModulatedLayer", (PyCFunction) CreateNoisyRewardModulatedLayer,
+        METH_VARARGS | METH_KEYWORDS,
+        "Returns a handle to a NoisyRewardModulatedLayer"},
   { "CreateMotorLayer", (PyCFunction) CreateMotorLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a MotorLayer"},
   { "CreateEigenMotorLayer", (PyCFunction) CreateEigenMotorLayer,
-  METH_VARARGS | METH_KEYWORDS,
-  "Returns a handle to an EigenMotorLayer"},
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to an EigenMotorLayer"},
   { "CreateSoftMaxMotorLayer", (PyCFunction) CreateSoftMaxMotorLayer,
-  METH_VARARGS | METH_KEYWORDS,
-  "Returns a handle to a SoftMaxMotorLayer"},
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a SoftMaxMotorLayer"},
+  { "CreateRewardModulatedMotorLayer", (PyCFunction) CreateRewardModulatedMotorLayer,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a RewardModulatedMotorLayer"},
+  { "CreateNoisyRewardModulatedMotorLayer", (PyCFunction) CreateNoisyRewardModulatedMotorLayer,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns a handle to a NoisyRewardModulatedMotorLayer"},
       //Additional layers here, make sure to add includes top
   { NULL, NULL, 0, NULL}
 };

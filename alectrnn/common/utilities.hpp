@@ -13,7 +13,37 @@
 namespace utilities {
 
 typedef int Integer; // Can be signed or unsigned
+typedef std::uint64_t Index;
 
+
+/*
+ * Calculates the rolling average
+ */
+template <typename TReal>
+TReal ExponentialRollingAverage(const TReal new_value, const TReal prev_average,
+                                const TReal alpha) {
+  return alpha * new_value + (1 - alpha) * prev_average;
+}
+
+
+/*
+ * Returns the index of the element with the largest value.
+ */
+template <typename Container>
+Index IndexOfMaxElement(const Container& array) {
+  Index index = 0;
+  for (Index iii = 1; iii < array.size(); ++iii) {
+    if (array[iii] > array[index]) {
+      index = iii;
+    }
+  }
+
+  return index;
+}
+
+/*
+ * Return x or bound if x is above the bound.
+ */
 template <typename TReal>
 TReal UpperThreshold(const TReal x, const TReal upper_bound) {
   return (x > upper_bound) ? upper_bound : x;
@@ -29,6 +59,9 @@ bool UnderBound(TReal x) {
   return (x < std::numeric_limits<TReal>::lowest()) ? true : false;
 }
 
+/*
+ * Keep the value bounded within numeric limits
+ */
 template <typename TReal>
 TReal BoundState(TReal x) {
   /*
@@ -54,7 +87,7 @@ TReal approx_sigmoid(const TReal x, const TReal scale=0.5, const TReal bias=0.5,
 }
 
 /*
- * Wraps in put value between 0 and 1
+ * Wraps input value between 0 and 1
  */
 template <typename TReal>
 TReal Wrap0to1(TReal x) {

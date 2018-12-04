@@ -56,6 +56,12 @@ class PlayerAgent {
      */
     virtual void Reset();
 
+    /*
+     * Provides the option for agents to adjust their internal state given
+     * the reward resulting from their actions. Default to no-op.
+     */
+    virtual void RewardFeedback(const int reward);
+
   protected:
     virtual Action Act()=0;
     void EndGame();

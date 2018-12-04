@@ -16,11 +16,11 @@ SharedMotorAgent::SharedMotorAgent(ALEInterface *ale,
     : super_type(ale, neural_net, update_rate, is_logging) {
 }
 
-Action SharedMotorAgent::Act() {
-  super_type::UpdateScreen();
-  super_type::StepNervousSystem();
-  return GetActionFromNervousSystem();
-}
+//Action SharedMotorAgent::Act() {
+//  UpdateScreen();
+//  StepNervousSystem();
+//  return GetActionFromNervousSystem();
+//}
 
 Action SharedMotorAgent::GetActionFromNervousSystem() {
 
