@@ -54,8 +54,6 @@ NervousSystemAgent::NervousSystemAgent(ALEInterface* ale,
                                      ale_->environment->getScreenWidth(), 3});
 }
 
-NervousSystemAgent::~NervousSystemAgent() {}
-
 void NervousSystemAgent::Configure(const float *parameters) {
   // Assumed that parameters is a contiguous array with # elements == par count
   // User must make sure this holds, as the slices only guarantee that it won't

@@ -28,10 +28,11 @@ class SharedMotorAgent : public NervousSystemAgent {
     SharedMotorAgent(ALEInterface* ale,
                      nervous_system::NervousSystem<float>& neural_net,
                      Index update_rate, bool is_logging);
+    virtual ~SharedMotorAgent()=default;
 
   protected:
-    Action Act() override;
-    Action GetActionFromNervousSystem();
+//    virtual Action Act() override;
+    virtual Action GetActionFromNervousSystem() override;
 };
 
 }

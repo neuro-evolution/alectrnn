@@ -136,6 +136,10 @@ class NervousSystem {
       return *network_layers_[index];
     }
 
+    Layer<TReal>& operator[](Index index) {
+      return *network_layers_[index];
+    }
+
     Index size() const {
       return network_layers_.size();
     }

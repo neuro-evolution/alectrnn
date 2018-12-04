@@ -21,9 +21,11 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <random>
 #include "../common/multi_array.hpp"
 #include "../common/utilities.hpp"
 #include "parameter_types.hpp"
+#include "../random/pcg_random.hpp"
 
 namespace nervous_system {
 
@@ -40,7 +42,9 @@ enum ACTIVATOR_TYPE {
   SIGMOID_ACTIVATOR,
   TANH_ACTIVATOR,
   RELU_ACTIVATOR,
-  BOUNDED_RELU_ACTIVATOR
+  BOUNDED_RELU_ACTIVATOR,
+  NOISY_RELU_ACTIVATOR,
+  NOISY_SIGMOID_ACTIVATOR
 };
 
 template<typename TReal>
@@ -104,6 +108,8 @@ class IdentityActivator : public Activator<TReal> {
       super_type::activator_type_ = IDENTITY_ACTIVATOR;
     }
 
+    virtual ~IdentityActivator()=default;
+
     void operator()(multi_array::Tensor<TReal>& state, 
                     const multi_array::Tensor<TReal>& input_buffer) {
       for (Index iii = 0; iii < state.size(); iii++) {
@@ -131,6 +137,8 @@ class SoftMaxActivator: public IdentityActivator<TReal> {
                                           temperature_(temperature) {
       super_type::activator_type_ = SOFT_MAX_ACTIVATOR;
     }
+
+    virtual ~SoftMaxActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                     const multi_array::Tensor<TReal>& input_buffer) {
@@ -677,6 +685,8 @@ class TanhActivator: public Activator<TReal> {
       super_type::activator_type_ = TANH_ACTIVATOR;
     }
 
+    virtual ~TanhActivator()=default;
+
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
@@ -770,6 +780,8 @@ class SigmoidActivator : public Activator<TReal> {
       super_type::activator_type_ = SIGMOID_ACTIVATOR;
     }
 
+    virtual ~SigmoidActivator()=default;
+
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
 
@@ -840,6 +852,42 @@ class SigmoidActivator : public Activator<TReal> {
     multi_array::Tensor<TReal> decay_;
 };
 
+template <typename TReal>
+class NoisySigmoidActivator : public SigmoidActivator<TReal> {
+  public:
+    typedef SigmoidActivator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    NoisySigmoidActivator(const std::vector<Index>& shape,
+                          bool is_shared, const TReal saturation_point,
+                          const TReal standard_deviation,
+                          const std::uint64_t seed)
+        : super_type(shape, is_shared, saturation_point),
+          standard_deviation_(standard_deviation), rng_(seed),
+          normal_distribution_() {
+
+      super_type::activator_type_ = NOISY_SIGMOID_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < super_type::num_states_; iii++) {
+        state[iii] += -super_type::decay_[iii] * state[iii]
+                      + (super_type::saturation_point_ - state[iii])
+                        * utilities::approx_sigmoid(super_type::input_bias_[iii]
+                                                    + input_buffer[iii]
+                                                    + standard_deviation_
+                                                      * normal_distribution_(rng_));
+      }
+    }
+
+  protected:
+    const TReal standard_deviation_;
+    pcg32_fast rng_;
+    std::normal_distribution<TReal> normal_distribution_;
+};
+
 /*
  * ReLu activation function
  * Toggle parameter sharing.
@@ -852,8 +900,8 @@ class ReLuActivator : public Activator<TReal> {
     typedef typename super_type::Index Index;
 
     ReLuActivator(const std::vector<Index>& shape,
-                     bool is_shared)
-    : shape_(shape), num_states_(1), is_shared_(is_shared) {
+                  bool is_shared) : shape_(shape), num_states_(1),
+                                    is_shared_(is_shared) {
 
       for (Index iii = 0; iii < shape.size(); ++iii) {
         num_states_ *= shape[iii];
@@ -871,6 +919,8 @@ class ReLuActivator : public Activator<TReal> {
 
       super_type::activator_type_ = RELU_ACTIVATOR;
     }
+
+    virtual ~ReLuActivator()=default;
 
     virtual void operator()(multi_array::Tensor<TReal>& state,
                             const multi_array::Tensor<TReal>& input_buffer) {
@@ -927,6 +977,39 @@ class ReLuActivator : public Activator<TReal> {
     Index num_states_;
     const bool is_shared_;
     multi_array::Tensor<TReal> input_bias_;
+};
+
+template <typename TReal>
+class NoisyReLuActivator : public ReLuActivator<TReal> {
+  public:
+    typedef ReLuActivator<TReal> super_type;
+    typedef typename super_type::Index Index;
+
+    NoisyReLuActivator(const std::vector<Index>& shape, bool is_shared,
+                       const TReal standard_deviation,
+                       const std::uint64_t seed)
+        : super_type(shape, is_shared),
+          standard_deviation_(standard_deviation),
+          rng_(seed),
+          normal_distribution_()
+    {
+      super_type::activator_type_ = NOISY_RELU_ACTIVATOR;
+    }
+
+    virtual void operator()(multi_array::Tensor<TReal>& state,
+                            const multi_array::Tensor<TReal>& input_buffer) {
+
+      for (Index iii = 0; iii < super_type::num_states_; iii++) {
+        state[iii] = std::max<TReal>(0, input_buffer[iii] + super_type::input_bias_[iii]
+                                        + standard_deviation_
+                                          * normal_distribution_(rng_));
+      }
+    }
+
+  protected:
+    const TReal standard_deviation_;
+    pcg32_fast rng_;
+    std::normal_distribution<TReal> normal_distribution_;
 };
 
 /*
