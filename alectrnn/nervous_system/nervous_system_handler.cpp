@@ -24,8 +24,10 @@
 static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"neural_network", "inputs", "parameters"};
   PyObject* nn_capsule;
+  PyArrayObject* inputs;
+  PyArrayObject* py_parameter_array;
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO", keyword_list,
-      &nn_capsule)) {
+      &nn_capsule, &inputs, &py_parameter_array)) {
     std::cerr << "Error parsing RunNeuralNetwork arguments" << std::endl;
     return NULL;
   }
@@ -42,6 +44,7 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
       PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
   // handle inputs
+  
   // need to take numpy array and convert to ...
   // fuck idk it needs a vector<float> as input, but... that do
   // one option is to make a vector and copy values in and just do that each
@@ -63,11 +66,30 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
     log(nn);
   }
 
-  // convert log to numpy array... thought we got the whole thing not just layer
-  // WE WANT FULL OUTPUT FOR REAL RUN AND FORCE INPUT... for simplices
-  PyObject* np_history = ConvertLogToPyArray(log.GetLayerHistory(layer_index));
+  // convert log to tuple of numpy arrays for each layer
+  PyObject *py_layers = PyTuple_New(log.size());
+  for (int layer_index = 0; layer_index < log.size(); ++layer_index)
+  {
+      const std::vector<multi_array::Tensor<float>>& history(log.GetLayerHistory(layer_index));
+      std::vector<npy_intp> shape(1+history[0].ndimensions());
+      shape[0] = history.size();
+      for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii) {
+        shape[iii+1] = history[0].shape()[iii];
+      }
+      PyObject* py_array = PyArray_SimpleNew(shape.size(), shape.data(), NPY_FLOAT32);
+      PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
+      npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
+      std::vector<std::size_t> strides(shape.size());
+      multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
+      for (std::size_t iii = 0; iii < history.size(); ++iii) {
+        for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
+          data[iii * strides[0] + jjj] = history[iii][jjj];
+        }
+      }
+      PyTuple_SetItem(py_layers, layer_index, py_array);
+  }
 
-  return np_history;
+  return py_layers;
 }
 
 static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwargs) {
