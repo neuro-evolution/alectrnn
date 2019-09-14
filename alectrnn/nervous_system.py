@@ -1306,6 +1306,16 @@ class NervousSystem:
 
         return nn_handler.GetParameterLayout(self.neural_network)
 
+    def run_neural_network(self, inputs, parameters):
+        """
+        Evaluates the NN on a TxI matrix where T is the number of time-steps and
+        is the first dimension of the matrix and I is the number of inputs into
+        the NN (the dimensions should be squashed). Returns a tuple of state
+        arrays for each layer. The parameters will be used to configure the
+        neural network.
+        """
+        return nn_handler.RunNeuralNetwork(self.neural_network, inputs, parameters)
+
 
 def configure_layer_activations(layer_shapes, interpreted_shapes,
                                 nn_parameters, act_type, act_args):

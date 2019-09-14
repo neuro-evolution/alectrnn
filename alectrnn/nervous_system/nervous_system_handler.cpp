@@ -59,7 +59,7 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
   {
     for (npy_intp j = 0; j < PyArray_DIM(inputs, 1); ++j)
     {
-        nn_input[j] = *reinterpret_cast<float*>(PyArray_GETPTR2(inputs, i, j));
+        nn_input[j] = static_cast<float>(*reinterpret_cast<npy_float32*>(PyArray_GETPTR2(inputs, i, j)));
     }
     nn->SetInput(nn_input);
     nn->Step();
