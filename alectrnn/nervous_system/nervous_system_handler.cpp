@@ -50,11 +50,11 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
     cparameter_array, 0, nn->GetParameterCount(), 1));
 
   // create StateLogger
-  log = nervous_system::StateLogger<float>(nn);
+  nervous_system::StateLogger<float> log = nervous_system::StateLogger<float>(*nn);
 
   // run NN on inputs
   std::vector<float> nn_input(PyArray_DIM(inputs, 1));
-  npy_intp stride = PyArray_STRIDE(inputs, 0)
+  // npy_intp stride = PyArray_STRIDE(inputs, 0);
   for (npy_intp i = 0; i < PyArray_DIM(inputs, 0); i++)
   {
     for (npy_intp j = 0; j < PyArray_DIM(inputs, 1); ++j)
@@ -63,12 +63,12 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
     }
     nn->SetInput(nn_input);
     nn->Step();
-    log(nn);
+    log(*nn);
   }
 
   // convert log to tuple of numpy arrays for each layer
-  PyObject *py_layers = PyTuple_New(log.size());
-  for (int layer_index = 0; layer_index < log.size(); ++layer_index)
+  PyObject *py_layers = PyTuple_New(static_cast<npy_intp>(log.size()));
+  for (std::size_t layer_index = 0; layer_index < log.size(); ++layer_index)
   {
       const std::vector<multi_array::Tensor<float>>& history(log.GetLayerHistory(layer_index));
       std::vector<npy_intp> shape(1+history[0].ndimensions());
