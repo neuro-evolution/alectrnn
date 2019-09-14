@@ -233,6 +233,9 @@ PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAM
  * Add new commands in additional lines below:
  */
 static PyMethodDef NervousSystemHandlerMethods[] = {
+  { "RunNeuralNetwork", (PyCFunction) RunNeuralNetwork,
+          METH_VARARGS | METH_KEYWORDS,
+          "Evaluates NN on given inputs"},
   { "GetParameterCount", (PyCFunction) GetParameterCount,
           METH_VARARGS | METH_KEYWORDS,
           "Returns # parameters"},
