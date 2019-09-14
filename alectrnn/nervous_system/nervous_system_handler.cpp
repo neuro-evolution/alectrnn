@@ -42,13 +42,7 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
   nervous_system::NervousSystem<float>* nn =
       static_cast<nervous_system::NervousSystem<float>*>(
       PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
-
-  // handle inputs
-  
-  // need to take numpy array and convert to ...
-  // fuck idk it needs a vector<float> as input, but... that do
-  // one option is to make a vector and copy values in and just do that each
-  // iteration... probably the easiest way.
+  nn->Reset();
 
   // handle parameters
   float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
@@ -59,9 +53,15 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
   log = nervous_system::StateLogger<float>(nn);
 
   // run NN on inputs
-  for (blah)
+  std::vector<float> nn_input(PyArray_DIM(inputs, 1));
+  npy_intp stride = PyArray_STRIDE(inputs, 0)
+  for (npy_intp i = 0; i < PyArray_DIM(inputs, 0); i++)
   {
-    nn->SetInput(); // vector<floats>
+    for (npy_intp j = 0; j < PyArray_DIM(inputs, 1); ++j)
+    {
+        nn_input[j] = *reinterpret_cast<float*>(PyArray_GETPTR2(inputs, i, j));
+    }
+    nn->SetInput(nn_input);
     nn->Step();
     log(nn);
   }
