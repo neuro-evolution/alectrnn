@@ -14,9 +14,83 @@
 #include <utility>
 #include "nervous_system_handler.hpp"
 #include "numpy/arrayobject.h"
+#include "../common/multi_array.hpp"
+#include "../nervous_system/state_logger.hpp"
 #include "layer.hpp"
 #include "nervous_system.hpp"
 #include "parameter_types.hpp"
+#include "../common/capi_tools.hpp"
+
+static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"neural_network", "inputs", "parameters", NULL};
+  PyObject* nn_capsule;
+  PyArrayObject* inputs;
+  PyArrayObject* py_parameter_array;
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO", keyword_list,
+      &nn_capsule, &inputs, &py_parameter_array)) {
+    std::cerr << "Error parsing RunNeuralNetwork arguments" << std::endl;
+    return NULL;
+  }
+
+  // handle neural_network
+  if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
+  {
+    std::cerr << "Invalid pointer to NN returned from capsule,"
+        " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nn =
+      static_cast<nervous_system::NervousSystem<float>*>(
+      PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
+  nn->Reset();
+
+  // handle parameters
+  float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
+  nn->Configure(multi_array::ConstArraySlice<float>(
+    cparameter_array, 0, nn->GetParameterCount(), 1));
+
+  // create StateLogger
+  nervous_system::StateLogger<float> log = nervous_system::StateLogger<float>(*nn);
+
+  // run NN on inputs
+  std::vector<float> nn_input(PyArray_DIM(inputs, 1));
+  // npy_intp stride = PyArray_STRIDE(inputs, 0);
+  for (npy_intp i = 0; i < PyArray_DIM(inputs, 0); i++)
+  {
+    for (npy_intp j = 0; j < PyArray_DIM(inputs, 1); ++j)
+    {
+        nn_input[j] = static_cast<float>(*reinterpret_cast<npy_float32*>(PyArray_GETPTR2(inputs, i, j)));
+    }
+    nn->SetInput(nn_input);
+    nn->Step();
+    log(*nn);
+  }
+
+  // convert log to tuple of numpy arrays for each layer
+  PyObject *py_layers = PyTuple_New(static_cast<npy_intp>(log.size()));
+  for (std::size_t layer_index = 0; layer_index < log.size(); ++layer_index)
+  {
+      const std::vector<multi_array::Tensor<float>>& history(log.GetLayerHistory(layer_index));
+      std::vector<npy_intp> shape(1+history[0].ndimensions());
+      shape[0] = history.size();
+      for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii) {
+        shape[iii+1] = history[0].shape()[iii];
+      }
+      PyObject* py_array = PyArray_SimpleNew(shape.size(), shape.data(), NPY_FLOAT32);
+      PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
+      npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
+      std::vector<std::size_t> strides(shape.size());
+      multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
+      for (std::size_t iii = 0; iii < history.size(); ++iii) {
+        for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
+          data[iii * strides[0] + jjj] = history[iii][jjj];
+        }
+      }
+      PyTuple_SetItem(py_layers, layer_index, py_array);
+  }
+
+  return py_layers;
+}
 
 static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"neural_network", NULL};
@@ -35,7 +109,7 @@ static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwa
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  nervous_system::NervousSystem<float>* nn = 
+  nervous_system::NervousSystem<float>* nn =
       static_cast<nervous_system::NervousSystem<float>*>(
       PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
@@ -61,7 +135,7 @@ static PyObject *GetParameterLayout(PyObject *self, PyObject *args, PyObject *kw
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  nervous_system::NervousSystem<float>* nn = 
+  nervous_system::NervousSystem<float>* nn =
       static_cast<nervous_system::NervousSystem<float>*>(
       PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
   std::vector<nervous_system::PARAMETER_TYPE> par_types = nn->GetParameterLayout();
@@ -86,7 +160,7 @@ static PyObject *GetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
         " or is not a capsule." << std::endl;
     return NULL;
   }
-  nervous_system::NervousSystem<float>* nn = 
+  nervous_system::NervousSystem<float>* nn =
       static_cast<nervous_system::NervousSystem<float>*>(
       PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
@@ -159,6 +233,9 @@ PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAM
  * Add new commands in additional lines below:
  */
 static PyMethodDef NervousSystemHandlerMethods[] = {
+  { "RunNeuralNetwork", (PyCFunction) RunNeuralNetwork,
+          METH_VARARGS | METH_KEYWORDS,
+          "Evaluates NN on given inputs"},
   { "GetParameterCount", (PyCFunction) GetParameterCount,
           METH_VARARGS | METH_KEYWORDS,
           "Returns # parameters"},

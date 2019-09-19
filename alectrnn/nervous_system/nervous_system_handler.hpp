@@ -4,6 +4,7 @@
 #include <Python.h>
 #include <vector>
 #include "parameter_types.hpp"
+#include "../common/multi_array.hpp"
 
 PyObject* ConvertFloatVectorToPyFloat32Array(const std::vector<float>& vec);
 PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAMETER_TYPE>& par_types);
