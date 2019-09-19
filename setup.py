@@ -41,7 +41,7 @@ class install(setuptools.command.install.install):
     def finalize_options(self):
         setuptools.command.install.install.finalize_options(self)
 
-    def run(self): 
+    def run(self):
         run_ale_install_script(self.with_sdl, self.lib_path)
         setuptools.command.install.install.run(self)
 
@@ -151,7 +151,8 @@ nn_sources = [
 ]
 
 nn_handler_sources = [
-    "alectrnn/nervous_system/nervous_system_handler.cpp"
+    "alectrnn/nervous_system/nervous_system_handler.cpp",
+    "alectrnn/common/capi_tools.cpp"
 ]
 
 ale_handler_sources = [
@@ -262,13 +263,13 @@ setup(name=PACKAGE_NAME,
       ],
       packages=[PACKAGE_NAME],
       ext_package=PACKAGE_NAME,
-      ext_modules=[ale_module, agent_module, objective_module, 
+      ext_modules=[ale_module, agent_module, objective_module,
                    layer_module, nn_module, nn_handler_module,
                    ale_handler, agent_handler],
       package_data={PACKAGE_NAME: [
-        'roms/*.bin', 
+        'roms/*.bin',
         'alelib/bin/ale',
-        'alelib/lib/*.so', 
+        'alelib/lib/*.so',
         'alelib/include/ale/*.h*',
         'alelib/include/ale/common/*.h*',
         'alelib/include/ale/controllers/*.h*',
