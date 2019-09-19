@@ -22,7 +22,7 @@
 #include "../common/capi_tools.hpp"
 
 static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"neural_network", "inputs", "parameters"};
+  static char *keyword_list[] = {"neural_network", "inputs", "parameters", NULL};
   PyObject* nn_capsule;
   PyArrayObject* inputs;
   PyArrayObject* py_parameter_array;
