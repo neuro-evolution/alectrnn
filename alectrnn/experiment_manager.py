@@ -42,9 +42,10 @@ class ALEExperimentManager:
                                             savefile=True,
                                             **kwargs)
 
-    def run_single_game(self, **kwargs):
+    def run_single_game(self, nn_parameters=None, **kwargs):
         """
         Evaluates a single game.
+        :param nn_parameters: parameters for the nn, if not provided best is chosen.
         :param rom: game name
         :param seed: seed for generating seeds for the games
         :param kwargs: other arguments for atari game
@@ -65,11 +66,10 @@ class ALEExperimentManager:
                                                agent_handle.handle,
                                                'totalcost')
         obj_handle.create()
-        parameters = kwargs.get("parameters", None)
-        if parameters is None:
+        if nn_parameters is None:
             print("cost: ", obj_handle.handle(self.opt_object.best))
         else:
-            print("cost: ", obj_handle.handle(parameters))
+            print("cost: ", obj_handle.handle(nn_parameters))
         return [agent_handle.layer_history(layer)
                 for layer in range(self.ale_experiment.num_layers())]
 
