@@ -65,7 +65,11 @@ class ALEExperimentManager:
                                                agent_handle.handle,
                                                'totalcost')
         obj_handle.create()
-        print("cost: ", obj_handle.handle(self.opt_object.best))
+        parameters = kwargs.get("parameters", None)
+        if parameters is None:
+            print("cost: ", obj_handle.handle(self.opt_object.best))
+        else:
+            print("cost: ", obj_handle.handle(parameters))
         return [agent_handle.layer_history(layer)
                 for layer in range(self.ale_experiment.num_layers())]
 
