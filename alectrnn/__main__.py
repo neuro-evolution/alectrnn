@@ -12,8 +12,13 @@ if __name__ == "__main__":
     parser.add_argument("index", default=-1, type=int)
     args = parser.parse_args()
 
+    batch = load(Path.cwd().joinpath(args.batch_id + ".batch"))
     if args.function == "execute":
-        
+        # assuming cwd for now
+        execute_experiment(batch['batch'][args.index],
+                           args.index, args.batch_id)
 
     elif args.function == "consolidate":
-        pass
+        # assuming cwd for now
+        consolidate_experiment(len(batch['batch']), args.batch_id,
+                               Path.cwd(), Path.cwd())
