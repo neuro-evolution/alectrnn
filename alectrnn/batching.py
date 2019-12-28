@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pickle
 import uuid
+import random
 
 
 def generate_random_string():
@@ -24,6 +25,17 @@ class Batch(ABC):
     @abstractmethod
     def __call__(self):
         pass
+
+
+class SeedBatch(Batch):
+    def __init__(self, seed=None):
+        random.seed(seed)
+        self._current_seed = random.randint(0, 1000000)
+
+    def __call__(self):
+        seed = self._current_seed
+        self._current_seed += 19
+        return seed
 
 
 def resolve_batches(parameters):
