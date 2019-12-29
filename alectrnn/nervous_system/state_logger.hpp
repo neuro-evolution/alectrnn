@@ -25,7 +25,7 @@ class StateLogger {
 
     StateLogger() {}
 
-    StateLogger(const NervousSystem<TReal>& neural_net, Index num_iter) 
+    StateLogger(const NervousSystem<TReal>& neural_net, Index num_iter)
         : time_stamps_(num_iter) {
       fill_count_ = 0;
       // Allocate space for the vectors
@@ -41,7 +41,7 @@ class StateLogger {
       }
     }
 
-    StateLogger(const NervousSystem<TReal>& neural_net) 
+    StateLogger(const NervousSystem<TReal>& neural_net)
         : StateLogger(neural_net, 0) {
     }
 
@@ -77,12 +77,24 @@ class StateLogger {
       return history_[layer];
     }
 
+    const std::vector<std::vector<multi_array::Tensor<TReal>>>& GetHistory() const {
+        return history_;
+    }
+
+    std::vector<std::vector<multi_array::Tensor<TReal>>>& GetHistory() {
+        return history_;
+    }
+
     const std::vector<Time>& GetTimes() const {
       return time_stamps_;
     }
 
     std::vector<Time>& GetTimes() {
       return time_stamps_;
+    }
+
+    Index size() const {
+        return history_.size();
     }
 
   protected:

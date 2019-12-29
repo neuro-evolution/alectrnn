@@ -42,6 +42,37 @@ class ALEExperimentManager:
                                             savefile=True,
                                             **kwargs)
 
+    def run_single_game(self, nn_parameters=None, **kwargs):
+        """
+        Evaluates a single game.
+        :param nn_parameters: parameters for the nn, if not provided best is chosen.
+        :param rom: game name
+        :param seed: seed for generating seeds for the games
+        :param kwargs: other arguments for atari game
+        :return: history
+        """
+        game_parameters = copy.copy(self.ale_experiment.ale_parameters)
+        for key, value in kwargs.items():
+            game_parameters[key] = value
+
+        ale_handle = self.ale_experiment.construct_ale_handle(game_parameters)
+        agent_handle = self.ale_experiment.construct_agent_handle(
+            self.ale_experiment.agent_class,
+            self.ale_experiment.agent_class_parameters,
+            self.ale_experiment._nervous_system,
+            ale_handle)
+        agent_handle.logging = True
+        obj_handle = handlers.ObjectiveHandler(ale_handle.handle,
+                                               agent_handle.handle,
+                                               'totalcost')
+        obj_handle.create()
+        if nn_parameters is None:
+            print("cost: ", obj_handle.handle(self.opt_object.best))
+        else:
+            print("cost: ", obj_handle.handle(nn_parameters))
+        return [agent_handle.layer_history(layer)
+                for layer in range(self.ale_experiment.num_layers())]
+
     def evaluate_single_game_cost(self, rom, seed, **kwargs):
         """
         Prints results. Runs 1 game for each rank.
