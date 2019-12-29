@@ -43,6 +43,8 @@ def resolve_batches(parameters):
     for key, value in parameters.items():
         if isinstance(value, Batch):
             resolved_parameters[key] = value()
+        elif isinstance(value, dict):
+            resolved_parameters[key] = resolve_batches(value)
         else:
             resolved_parameters[key] = value
 
