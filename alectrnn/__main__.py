@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("function")
     parser.add_argument("batch_id")
-    parser.add_argument("index", default=-1, type=int)
+    parser.add_argument("index", nargs='?', default=-1, type=int)
     args = parser.parse_args()
 
     batch = load(Path.cwd().joinpath(args.batch_id + ".batch"))
