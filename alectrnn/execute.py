@@ -6,7 +6,7 @@ from evostrat import *
 
 def execute_experiment(parameter_batch, index, batch_id):
     for ref, cost in \
-            parameter_batch['cost_normalization_parameters']['costs']:
+            parameter_batch['cost_normalization_parameters']['costs'].items():
         parameter_batch['normalizer'].internal_log[ref] = cost
 
     experiment = parameter_batch['experiment'](

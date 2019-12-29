@@ -40,7 +40,7 @@ class SeedBatch(Batch):
 
 def resolve_batches(parameters):
     resolved_parameters = {}
-    for key, value in parameters:
+    for key, value in parameters.items():
         if isinstance(value, Batch):
             resolved_parameters[key] = value()
         else:
@@ -72,13 +72,14 @@ def generate_experiment_batch(num_trails,
                 'nervous_system_parameters': resolve_batches(
                     nervous_system_parameters),
                 'ale_parameters': resolve_batches(ale_parameters),
-                'agent_parameters': agent_parameters,
+                'agent_parameters': resolve_batches(agent_parameters),
                 'objective_parameters': resolve_batches(objective_parameters),
                 'trainer': trainer,
-                'training_parameters': training_parameters,
+                'training_parameters': resolve_batches(training_parameters),
                 'cost_normalization_parameters': resolve_batches(
                     cost_normalization_parameters),
-                'experiment_parameters': experiment_parameters
+                'experiment_parameters': resolve_batches(
+                    experiment_parameters)
             })
 
     return parameter_batch
