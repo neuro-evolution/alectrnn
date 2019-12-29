@@ -29,5 +29,5 @@ def execute_experiment(parameter_batch, index, batch_id):
         initial_guess=initial_guess,
         objective=experiment.objective_function,
         **parameter_batch['training_parameters']['trainer_args'])
-    ga(parameter_batch['training_parameters']['run_args'],
+    ga(**parameter_batch['training_parameters']['run_args'],
        save=True, save_filename=batch_id + "_" + str(index) + ".ga")
