@@ -12,11 +12,11 @@ def execute_experiment(parameter_batch, index, batch_id):
     experiment = parameter_batch['experiment'](
         parameter_batch['experiment_parameters']['roms'],
         CostNormalizer(parameter_batch['normalizer']),
-        parameter_batch['ale_parameters'],
-        parameter_batch['nervous_system_class'],
-        parameter_batch['nervous_system_parameters'],
-        parameter_batch['agent_parameters'],
-        parameter_batch['objective_parameters']
+        ale_parameters=parameter_batch['ale_parameters'],
+        nervous_system_class=parameter_batch['nervous_system_class'],
+        nervous_system_class_parameters=parameter_batch['nervous_system_parameters'],
+        agent_class_parameters=parameter_batch['agent_parameters'],
+        objective_parameters=parameter_batch['objective_parameters']
     )
 
     initial_state_rng = np.random.RandomState(
