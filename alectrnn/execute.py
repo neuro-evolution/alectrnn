@@ -16,8 +16,7 @@ def execute_experiment(parameter_batch, index, batch_id):
         parameter_batch['nervous_system_class'],
         parameter_batch['nervous_system_parameters'],
         parameter_batch['agent_parameters'],
-        parameter_batch['objective_parameters'],
-        parameter_batch['experiment_parameters']['script_prefix']
+        parameter_batch['objective_parameters']
     )
 
     initial_state_rng = np.random.RandomState(
@@ -28,6 +27,7 @@ def execute_experiment(parameter_batch, index, batch_id):
                                                   normalized_weights=False)
     ga = parameter_batch['trainer'](
         initial_guess=initial_guess,
+        objective=experiment.objective_function,
         **parameter_batch['training_parameters']['trainer_args'])
     ga(parameter_batch['training_parameters']['run_args'],
        save=True, save_filename=batch_id + "_" + str(index) + ".ga")
