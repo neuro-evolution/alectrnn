@@ -26,8 +26,6 @@ Additional notes:
 
 - The --install-option="--lib-path=/path/to/ale-master" can allow compilation using a local download of the [ALE source code](https://github.com/Nathaniel-Rodriguez/arcade-learning-environment).
 
-- The ale_install.sh file directly uses gcc and g++ environment variables to define CC and CXX for cmake.
- 
 - To make animations from the `analysis_tools` module, ffmpeg needs to be installed for matplotlib to use.
 
 - The `alectrnn_experiment_template.py` requires `evostrat` to run. It can be installed from here: https://github.com/Nathaniel-Rodriguez/evostrat.git. See the template and python `help` command for examples and documentation.
