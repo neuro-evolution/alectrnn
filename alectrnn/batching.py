@@ -62,8 +62,12 @@ def generate_experiment_batch(num_trails,
                               experiment_parameters,
                               trainer,
                               training_parameters,
-                              cost_normalization_parameters):
-    parameter_batch = {'id': generate_random_string(),
+                              cost_normalization_parameters,
+                              batch_id=None):
+    if batch_id is None:
+        batch_id = generate_random_string()
+
+    parameter_batch = {'id': batch_id,
                        'batch': []}
     for _ in range(num_trails):
         parameter_batch['batch'].append(
