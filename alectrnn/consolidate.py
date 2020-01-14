@@ -13,6 +13,7 @@ def consolidate_experiment(num_trials: int, batch_id: str,
 
         except (OSError, FileNotFoundError):
             print("Couldn't find file:", str(file_path))
+            results.append(None)
 
     out_path = outdir.joinpath(batch_id + ".out")
     save(results, out_path)
