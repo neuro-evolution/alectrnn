@@ -10,6 +10,7 @@
 #ifndef AGENTS_AGENT_HANDLER_H_
 #define AGENTS_AGENT_HANDLER_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "../common/multi_array.hpp"
 

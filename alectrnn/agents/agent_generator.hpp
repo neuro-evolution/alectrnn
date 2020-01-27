@@ -17,6 +17,7 @@
 #ifndef AGENTS_AGENT_GENERATOR_H_
 #define AGENTS_AGENT_GENERATOR_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 PyMODINIT_FUNC PyInit_agent_generator(void);

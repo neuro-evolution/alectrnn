@@ -9,6 +9,7 @@
 #ifndef NERVOUS_SYSTEM_GENERATOR_H_
 #define NERVOUS_SYSTEM_GENERATOR_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <cstddef>
 #include <vector>

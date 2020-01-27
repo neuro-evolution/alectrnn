@@ -14,6 +14,7 @@
 #ifndef ALECTRNN_OBJECTIVES_OBJECTIVE_H_
 #define ALECTRNN_OBJECTIVES_OBJECTIVE_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <ale_interface.hpp>
 #include <cstdint>
