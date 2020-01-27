@@ -1,6 +1,7 @@
 #ifndef LAYER_GENERATOR_H_
 #define LAYER_GENERATOR_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "activator.hpp"
 #include "integrator.hpp"
