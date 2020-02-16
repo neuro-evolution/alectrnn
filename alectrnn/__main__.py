@@ -18,6 +18,11 @@ if __name__ == "__main__":
         execute_experiment(batch['batch'][args.index],
                            args.index, args.batch_id)
 
+    elif args.function == "async_execute":
+        # assuming cwd for now
+        execute_async_experiment(batch['batch'][args.index],
+                                 args.index, args.batch_id)
+
     elif args.function == "consolidate":
         # assuming cwd for now
         consolidate_experiment(len(batch['batch']), args.batch_id,
