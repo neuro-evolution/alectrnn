@@ -1,6 +1,5 @@
 from alectrnn.multitask import *
 import asyncevo
-import numpy as np
 
 
 def ale_fitness_function(member):
