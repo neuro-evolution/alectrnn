@@ -36,7 +36,6 @@ def execute_experiment(parameter_batch, index, batch_id):
 def execute_async_experiment(parameter_batch, index, batch_id):
     # initialize schedule
     from asyncevo.initialize import mpi_scheduler
-    import asyncevo
 
     # initialize experiment
     for ref, cost in \
@@ -64,6 +63,8 @@ def execute_async_experiment(parameter_batch, index, batch_id):
         initial_guess=initial_guess,
         scheduler=mpi_scheduler,
         member_type=AleMember,
+        member_type_kwargs=parameter_batch,
         **parameter_batch['training_parameters']['trainer_args'])
     ga.run(ale_fitness_function,
-           **parameter_batch['training_parameters']['run_args'])
+           **parameter_batch['training_parameters']['run_args'],
+           take_member=True)
