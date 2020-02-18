@@ -60,7 +60,7 @@ def execute_async_experiment(parameter_batch, index, batch_id):
                                                   normalized_weights=False)
 
     ga = parameter_batch['trainer'](
-        initial_guess=initial_guess,
+        initial_state=initial_guess,
         scheduler=mpi_scheduler,
         member_type=AleMember,
         member_type_kwargs=parameter_batch,
