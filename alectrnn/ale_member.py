@@ -1,3 +1,4 @@
+from copy import deepcopy
 from alectrnn.multitask import *
 import asyncevo
 
@@ -13,20 +14,20 @@ class AleMember(asyncevo.Member):
     """
     def __init__(self, parameter_batch, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self._parameters = deepcopy(parameter_batch)
         # initialize experiment
         for ref, cost in \
-                parameter_batch['cost_normalization_parameters']['costs'].items():
-            parameter_batch['normalizer'].internal_log[ref] = cost
+                self._parameters['cost_normalization_parameters']['costs'].items():
+            self._parameters['normalizer'].internal_log[ref] = cost
 
-        self._experiment = parameter_batch['experiment'](
-            parameter_batch['experiment_parameters']['roms'],
-            CostNormalizer(parameter_batch['normalizer']),
-            ale_parameters=parameter_batch['ale_parameters'],
-            nervous_system_class=parameter_batch['nervous_system_class'],
-            nervous_system_class_parameters=parameter_batch['nervous_system_parameters'],
-            agent_class_parameters=parameter_batch['agent_parameters'],
-            objective_parameters=parameter_batch['objective_parameters']
+        self._experiment = self._parameters['experiment'](
+            self._parameters['experiment_parameters']['roms'],
+            CostNormalizer(self._parameters['normalizer']),
+            ale_parameters=self._parameters['ale_parameters'],
+            nervous_system_class=self._parameters['nervous_system_class'],
+            nervous_system_class_parameters=self._parameters['nervous_system_parameters'],
+            agent_class_parameters=self._parameters['agent_parameters'],
+            objective_parameters=self._parameters['objective_parameters']
         )
 
     @property
