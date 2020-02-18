@@ -1,3 +1,4 @@
+from copy import deepcopy
 from alectrnn.multitask import *
 from alectrnn.ale_member import AleMember
 from alectrnn.ale_member import ale_fitness_function
@@ -37,27 +38,30 @@ def execute_async_experiment(parameter_batch, index, batch_id):
     # initialize schedule
     from asyncevo.initialize import mpi_scheduler
 
-    # initialize experiment
+    # initialize experiment in order to generate initial state
+    working_parameters = deepcopy(parameter_batch)
     for ref, cost in \
-            parameter_batch['cost_normalization_parameters']['costs'].items():
-        parameter_batch['normalizer'].internal_log[ref] = cost
+            working_parameters['cost_normalization_parameters']['costs'].items():
+        working_parameters['normalizer'].internal_log[ref] = cost
 
-    experiment = parameter_batch['experiment'](
-        parameter_batch['experiment_parameters']['roms'],
-        CostNormalizer(parameter_batch['normalizer']),
-        ale_parameters=parameter_batch['ale_parameters'],
-        nervous_system_class=parameter_batch['nervous_system_class'],
-        nervous_system_class_parameters=parameter_batch['nervous_system_parameters'],
-        agent_class_parameters=parameter_batch['agent_parameters'],
-        objective_parameters=parameter_batch['objective_parameters']
+    experiment = working_parameters['experiment'](
+        working_parameters['experiment_parameters']['roms'],
+        CostNormalizer(working_parameters['normalizer']),
+        ale_parameters=working_parameters['ale_parameters'],
+        nervous_system_class=working_parameters['nervous_system_class'],
+        nervous_system_class_parameters=working_parameters['nervous_system_parameters'],
+        agent_class_parameters=working_parameters['agent_parameters'],
+        objective_parameters=working_parameters['objective_parameters']
     )
 
     initial_state_rng = np.random.RandomState(
-        parameter_batch['training_parameters']['seed'])
-    guess_bounds = parameter_batch['training_parameters']['bounds']
+        working_parameters['training_parameters']['seed'])
+    guess_bounds = working_parameters['training_parameters']['bounds']
     initial_guess = experiment.draw_initial_guess(guess_bounds,
                                                   initial_state_rng,
                                                   normalized_weights=False)
+    del experiment
+    del working_parameters
 
     ga = parameter_batch['trainer'](
         initial_state=initial_guess,
