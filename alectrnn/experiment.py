@@ -45,6 +45,8 @@ class ALEExperimentBase(ABC):
 
         :note: rom name and # of parameters are added to the end of the script
         name automatically.
+
+        :note: parameters passed in are modified.
         """
 
         # Save parameters
