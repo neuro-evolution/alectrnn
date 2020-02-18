@@ -64,6 +64,7 @@ def execute_async_experiment(parameter_batch, index, batch_id):
         scheduler=mpi_scheduler,
         member_type=AleMember,
         member_type_kwargs=parameter_batch,
+        save_filename=batch_id + "_" + str(index) + ".ga",
         **parameter_batch['training_parameters']['trainer_args'])
     ga.run(ale_fitness_function,
            **parameter_batch['training_parameters']['run_args'],
