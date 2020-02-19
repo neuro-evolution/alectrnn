@@ -179,6 +179,8 @@ class CostNormalizer:
         :param clip: whether to clip the maximum cost to -1. Default: F
         :return: the normalized cost
         """
+        if self.normalization_log.log(rom) is None:
+            return cost
 
         normalize_cost = ((cost - self.normalization_log.log(rom))
                           / -self.normalization_log.log(rom)) - 1

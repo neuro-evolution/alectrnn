@@ -62,8 +62,16 @@ def generate_experiment_batch(num_trails,
                               experiment_parameters,
                               trainer,
                               training_parameters,
-                              cost_normalization_parameters):
-    parameter_batch = {'id': generate_random_string(),
+                              cost_normalization_parameters,
+                              batch_id=None,
+                              storage_parameters=None):
+    if storage_parameters is None:
+        storage_parameters = {}
+
+    if batch_id is None:
+        batch_id = generate_random_string()
+
+    parameter_batch = {'id': batch_id,
                        'batch': []}
     for _ in range(num_trails):
         parameter_batch['batch'].append(
@@ -81,7 +89,8 @@ def generate_experiment_batch(num_trails,
                 'cost_normalization_parameters': resolve_batches(
                     cost_normalization_parameters),
                 'experiment_parameters': resolve_batches(
-                    experiment_parameters)
+                    experiment_parameters),
+                'storage_parameters': storage_parameters
             })
 
     return parameter_batch
