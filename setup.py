@@ -87,7 +87,7 @@ for key, value in cfg_vars.items():
         cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
 
 # Compiler settings
-extra_compile_args = ['-std=c++14', '-Wno-write-strings']
+extra_compile_args = ['-std=c++14', '-Wno-write-strings', '-Wno-undef']
 
 # Includes
 include_dirs = []
@@ -109,7 +109,7 @@ include_dirs += [
 lib_path = os.path.join(cwd, "alectrnn", "alelib", "lib")
 library_dirs = [lib_path]
 ALE_LIB = os.path.join(lib_path, "libale.so")
-main_link_args = [ALE_LIB]
+main_link_args = [ALE_LIB,"-lstdc++"]
 main_libraries = ['ale']
 extra_link_args = ['-Wl,--verbose']
 
