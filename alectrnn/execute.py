@@ -37,7 +37,7 @@ def execute_experiment(parameter_batch, index, batch_id):
 def execute_async_experiment(parameter_batch, index, batch_id):
     from asyncevo import Scheduler
     with Scheduler(parameter_batch['storage_parameters'].get('initialization_args', {}),
-                   parameter_batch['storage_parameters'].get('client_args', {}))
+                   parameter_batch['storage_parameters'].get('client_args', {})) \
                     as mpi_scheduler:
 
         # initialize experiment in order to generate initial state
