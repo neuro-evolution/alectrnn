@@ -57,8 +57,10 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
           "agent_generator.agent"));
 
   float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
+  Py_BEGIN_ALLOW_THREADS
   float total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
       player_agent));
+  Py_END_ALLOW_THREADS
   return Py_BuildValue("f", total_cost);
 }
 
