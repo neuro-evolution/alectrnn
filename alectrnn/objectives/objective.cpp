@@ -57,10 +57,23 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
           "agent_generator.agent"));
 
   float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
-  Py_BEGIN_ALLOW_THREADS
-  float total_cost(alectrnn::CalculateTotalCost(cparameter_array, ale,
-      player_agent));
-  Py_END_ALLOW_THREADS
+  float total_cost(0);
+  // int needs_api = PyDataType_REFCHK(PyArray_DESCR(self));
+  // NPY_BEGIN_THREADS_DEF;
+  // if (!needs_api)
+  // {
+  //   NPY_BEGIN_THREADS; //NPY_BEGIN_ALLOW_THREADS;
+  // }
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyGILState_Release(gstate);
+
+  total_cost = alectrnn::CalculateTotalCost(cparameter_array, ale,
+                                            player_agent);
+
+  // if (!needs_api)
+  // {
+  //   NPY_END_THREADS; //NPY_END_ALLOW_THREADS;
+  // }
   return Py_BuildValue("f", total_cost);
 }
 
@@ -75,7 +88,8 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
  * one with weight truncation. As new ones are added ill expand the code.
  */
 static PyObject *ScoreAndConnectionCostObjective(PyObject *self, PyObject *args,
-                                    PyObject *kwargs) {
+                                    PyObject *kwargs)
+{
   static char *keyword_list[] = {"parameters", "ale", "agent",
                                  "cc_scale", NULL};
 
