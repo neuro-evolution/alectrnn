@@ -58,22 +58,10 @@ static PyObject *TotalCostObjective(PyObject *self, PyObject *args,
 
   float* cparameter_array(alectrnn::PyArrayToCArray(py_parameter_array));
   float total_cost(0);
-  // int needs_api = PyDataType_REFCHK(PyArray_DESCR(self));
-  // NPY_BEGIN_THREADS_DEF;
-  // if (!needs_api)
-  // {
-  //   NPY_BEGIN_THREADS; //NPY_BEGIN_ALLOW_THREADS;
-  // }
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  PyGILState_Release(gstate);
-
+  Py_BEGIN_ALLOW_THREADS
   total_cost = alectrnn::CalculateTotalCost(cparameter_array, ale,
                                             player_agent);
-
-  // if (!needs_api)
-  // {
-  //   NPY_END_THREADS; //NPY_END_ALLOW_THREADS;
-  // }
+  Py_END_ALLOW_THREADS
   return Py_BuildValue("f", total_cost);
 }
 
