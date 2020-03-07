@@ -1306,6 +1306,12 @@ class NervousSystem:
 
         return nn_handler.GetParameterLayout(self.neural_network)
 
+    def parameter_layer_indices(self):
+        """
+        Returns an np_int array with layer indices corresponding to the parameters.
+        """
+        return nn_handler.GetParameterLayerIndices(self.neural_network)
+
     def run_neural_network(self, inputs, parameters):
         """
         Evaluates the NN on a TxI matrix where T is the number of time-steps and
