@@ -140,6 +140,12 @@ class ALEExperimentBase(ABC):
         """
         return self._nervous_system.parameter_layout()
 
+    def parameter_layer_indices(self):
+        """
+        :return: The layer indices corresponding to each parameter.
+        """
+        return self._nervous_system.parameter_layer_indices()
+
     def get_parameter_count(self):
         """
         :return: The number of parameters in the neural network
