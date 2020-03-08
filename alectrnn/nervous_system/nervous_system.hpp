@@ -36,7 +36,7 @@ class NervousSystem {
         (*network_layers_[iii])(network_layers_[iii-1]);
       }
     }
-    
+
     void Reset() {
       for (auto iter = network_layers_.begin(); iter != network_layers_.end(); ++iter) {
         (*iter)->Reset();
@@ -49,7 +49,7 @@ class NervousSystem {
                                     " the wrong number of elements");
       }
       Index slice_start(0);
-      for (auto layer_ptr = network_layers_.begin()+1; 
+      for (auto layer_ptr = network_layers_.begin()+1;
           layer_ptr != network_layers_.end(); ++layer_ptr) {
         (*layer_ptr)->Configure(parameters.slice(
           slice_start, (*layer_ptr)->GetParameterCount()));
@@ -100,13 +100,30 @@ class NervousSystem {
     std::vector<PARAMETER_TYPE> GetParameterLayout() const {
       std::vector<PARAMETER_TYPE> layout(parameter_count_);
       Index parameter_id = 0;
-      for (auto layer_ptr = network_layers_.begin()+1; 
+      for (auto layer_ptr = network_layers_.begin()+1;
           layer_ptr != network_layers_.end(); ++layer_ptr) {
         std::vector<PARAMETER_TYPE> layer_layout = (*layer_ptr)->GetParameterLayout();
         for (auto layout_ptr = layer_layout.begin();
             layout_ptr != layer_layout.end(); ++layout_ptr) {
           layout[parameter_id] = *layout_ptr;
           ++parameter_id;
+        }
+      }
+      return layout;
+    }
+
+    /*
+     * Returns layer index with associated parameters
+     */
+    std::vector<int> GetParameterLayerIndices() const
+    {
+      std::vector<int> layout(parameter_count_);
+      Index parameter_id = 0;
+      for (int layer_index = 0; layer_index < network_layers_.size(); ++layer_index)
+      {
+        for (std::size_t i = 0; i < network_layers_[layer_index]->GetParameterCount(); ++i)
+        {
+          layout[parameter_id++] = layer_index;
         }
       }
       return layout;

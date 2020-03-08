@@ -9,6 +9,7 @@
 
 PyObject* ConvertFloatVectorToPyFloat32Array(const std::vector<float>& vec);
 PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAMETER_TYPE>& par_types);
+PyObject* ConvertToNumpyIntArray(const std::vector<int>& indices);
 PyMODINIT_FUNC PyInit_nn_handler(void);
 
 #endif /* ALECTRNN_COMMON_NERVOUS_SYSTEM_HANDLER_H_ */

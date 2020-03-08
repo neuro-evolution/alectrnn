@@ -143,6 +143,31 @@ static PyObject *GetParameterLayout(PyObject *self, PyObject *args, PyObject *kw
   return parameter_layout;
 }
 
+static PyObject *GetParameterLayerIndices(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"neural_network", NULL};
+
+  PyObject* nn_capsule;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", keyword_list,
+      &nn_capsule)) {
+    std::cerr << "Error parsing GetParameterCount arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
+  {
+    std::cerr << "Invalid pointer to NN returned from capsule,"
+        " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nn =
+      static_cast<nervous_system::NervousSystem<float>*>(
+      PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
+  std::vector<int> par_indices = nn->GetParameterLayerIndices();
+  PyObject* parameter_indices = ConvertToNumpyIntArray(par_indices);
+  return parameter_indices;
+}
+
 static PyObject *GetSize(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"neural_network", NULL};
 
@@ -229,6 +254,22 @@ PyObject* ConvertParameterTypesToPyArray(const std::vector<nervous_system::PARAM
   return py_array;
 }
 
+PyObject* ConvertToNumpyIntArray(const std::vector<int>& indices) {
+  // Need a temp shape pointer for numpy array
+  npy_intp vector_size = indices.size();
+  npy_intp* shape_ptr = &vector_size;
+  // Create numpy array and recast for assignment
+  PyObject* py_array = PyArray_SimpleNew(1, shape_ptr, NPY_INT);
+  PyArrayObject* np_array = reinterpret_cast<PyArrayObject*>(py_array);
+  npy_int* data = reinterpret_cast<npy_int*>(np_array->data);
+
+  // Copy vect data to numpy array
+  for (std::size_t iii = 0; iii < indices.size(); ++iii) {
+    data[iii] = static_cast<npy_int>(indices[iii]);
+  }
+  return py_array;
+}
+
 /*
  * Add new commands in additional lines below:
  */
@@ -242,6 +283,9 @@ static PyMethodDef NervousSystemHandlerMethods[] = {
   {"GetParameterLayout", (PyCFunction) GetParameterLayout,
           METH_VARARGS | METH_KEYWORDS,
           "Returns numpy array of parameter layout (see parameter_types for code)"},
+  {"GetParameterLayerIndices", (PyCFunction) GetParameterLayerIndices,
+          METH_VARARGS | METH_KEYWORDS,
+          "Returns numpy array of integers for each layer the parameter belongs too."},
   { "GetSize", (PyCFunction) GetSize,
           METH_VARARGS | METH_KEYWORDS,
           "Returns # layers in network"},
