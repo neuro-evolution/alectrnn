@@ -185,6 +185,16 @@ class ALEExperimentBase(ABC):
                                      self._nervous_system,
                                      rng, normalized_weights, norm_type)
 
+    def draw_layerwise_initial_guess(self, layer_bounds, rng):
+        """
+        :param layer_bounds: List[Dict[key is PARAMETER_TYPE, value is (low, high)]]
+        :param rng: a seeded numpy RandomState
+        :return: a 1D numpy float 32 array
+        """
+        return ns.draw_initial_guess(layer_bounds,
+                                     self._nervous_system,
+                                     rng)
+
     @property
     @abstractmethod
     def objective_function(self):
