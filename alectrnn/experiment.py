@@ -140,6 +140,12 @@ class ALEExperimentBase(ABC):
         """
         return self._nervous_system.parameter_layout()
 
+    def parameter_layer_indices(self):
+        """
+        :return: The layer indices corresponding to each parameter.
+        """
+        return self._nervous_system.parameter_layer_indices()
+
     def get_parameter_count(self):
         """
         :return: The number of parameters in the neural network
@@ -178,6 +184,16 @@ class ALEExperimentBase(ABC):
         return ns.draw_initial_guess(type_bounds,
                                      self._nervous_system,
                                      rng, normalized_weights, norm_type)
+
+    def draw_layerwise_initial_guess(self, layer_bounds, rng):
+        """
+        :param layer_bounds: List[Dict[key is PARAMETER_TYPE, value is (low, high)]]
+        :param rng: a seeded numpy RandomState
+        :return: a 1D numpy float 32 array
+        """
+        return ns.layerwise_initial_guess(layer_bounds,
+                                          self._nervous_system,
+                                          rng)
 
     @property
     @abstractmethod
