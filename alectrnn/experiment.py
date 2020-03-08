@@ -191,9 +191,9 @@ class ALEExperimentBase(ABC):
         :param rng: a seeded numpy RandomState
         :return: a 1D numpy float 32 array
         """
-        return ns.draw_initial_guess(layer_bounds,
-                                     self._nervous_system,
-                                     rng)
+        return ns.layerwise_initial_guess(layer_bounds,
+                                          self._nervous_system,
+                                          rng)
 
     @property
     @abstractmethod
