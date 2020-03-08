@@ -100,6 +100,22 @@ def draw_initial_guess(type_bounds, nervous_system, rng, normalized_weights=True
     return draw_uniform_initial_guess(boundary_array, rng)
 
 
+def layerwise_initial_guess(layer_bounds, nervous_system, rng):
+    """
+    :param layer_bounds: List[Dict[key is PARAMETER_TYPE, value is (low, high)]]
+    :param nervous_system: an instance of NervousSystem
+    :param rng: an instance of numpy RandomState
+    :return: a 1D numpy float 32 array representing the initial guess
+    """
+    parameter_layout = nervous_system.parameter_layout()
+    index_layout = nervous_system.parameter_layer_indices()
+    boundary_array = np.zeros((len(parameter_layout), 2), dtype=np.float32)
+    for i in range(len(boundary_array)):
+        boundary_array[i, 0] = layer_bounds[index_layout[i]][PARAMETER_TYPE(parameter_layout[i])][0]
+        boundary_array[i, 1] = layer_bounds[index_layout[i]][PARAMETER_TYPE(parameter_layout[i])][1]
+
+    return draw_uniform_initial_guess(boundary_array, rng)
+
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
