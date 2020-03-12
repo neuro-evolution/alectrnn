@@ -245,7 +245,7 @@ public:
                                         super_type::layer_state_);
     std::swap(super_type::layer_state_, super_type::input_buffer_);
   }
-}
+};
 
 template <typename TReal>
 class RewardModulatedLayer : public Layer<TReal> {
