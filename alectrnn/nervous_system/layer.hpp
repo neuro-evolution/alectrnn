@@ -215,6 +215,8 @@ class RecurrentLayer : public Layer<TReal>
 public:
   typedef Layer<TReal> super_type;
   typedef typename super_type::Index Index;
+  typedef Eigen::Matrix<TReal, Eigen::Dynamic, 1> ColVector;
+  typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
   typedef Eigen::Map<ColVector> ColVectorView;
   typedef const Eigen::Map<ConstColVector> ConstColVectorView;
 
