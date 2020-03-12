@@ -1074,7 +1074,7 @@ static PyMethodDef LayerMethods[] = {
           "Returns a handle to a Layer"},
   { "CreateRecurrentLayer", (PyCFunction) CreateRecurrentLayer,
          METH_VARARGS | METH_KEYWORDS,
-         "Returns a handle to a RecurrentLayer")},
+         "Returns a handle to a RecurrentLayer"},
   { "CreateRewardModulatedLayer", (PyCFunction) CreateRewardModulatedLayer,
         METH_VARARGS | METH_KEYWORDS,
         "Returns a handle to a RewardModulatedLayer"},
