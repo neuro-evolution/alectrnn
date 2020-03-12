@@ -703,7 +703,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (internal_edge_array,)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type, back_args, self_type,
+        return layer_generator.CreateRecurrentLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_a2a_a2a_layer(self, prev_layer_shape, num_internal_nodes,
@@ -726,7 +726,7 @@ class NervousSystem:
         self_args = (int(num_internal_nodes),
                      int(num_internal_nodes))
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type, back_args, self_type,
+        return layer_generator.CreateRecurrentLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_a2a_ff_layer(self, prev_layer_shape, num_internal_nodes,
@@ -879,7 +879,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (internal_edge_array,)
 
-        return layer_generator.CreateLayer(back_type, back_args, self_type,
+        return layer_generator.CreateRecurrentLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_conv_reservoir_layer(self, prev_layer_shape, interpreted_shape,
@@ -914,7 +914,7 @@ class NervousSystem:
         self_args = (internal_edge_array,
                      internal_weight_array)
 
-        return layer_generator.CreateLayer(back_type, back_args, self_type,
+        return layer_generator.CreateRecurrentLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args, layer_shape)
 
     def _create_recurrent_layer(self, bipartite_input_edge_array,
@@ -940,7 +940,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT.value
         self_args = (internal_edge_array,)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type,
+        return layer_generator.CreateRecurrentLayer(back_type,
                                            back_args, self_type, self_args,
                                            act_type, act_args, layer_shape)
 
@@ -970,7 +970,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.RECURRENT_EIGEN.value
         self_args = (internal_edge_array, num_internal_nodes, num_internal_nodes)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type,
+        return layer_generator.CreateRecurrentLayer(back_type,
                                            back_args, self_type, self_args,
                                            act_type, act_args, layer_shape)
 
@@ -999,7 +999,7 @@ class NervousSystem:
         self_type = INTEGRATOR_TYPE.TRUNCATED_RECURRENT.value
         self_args = (internal_edge_array, weight_threshold)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type, back_args, self_type,
+        return layer_generator.CreateRecurrentLayer(back_type, back_args, self_type,
                                            self_args, act_type, act_args,
                                            layer_shape)
 
@@ -1029,7 +1029,7 @@ class NervousSystem:
         self_args = (internal_edge_array,
                      internal_weight_array)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type,
+        return layer_generator.CreateRecurrentLayer(back_type,
                                            back_args, self_type, self_args,
                                            act_type, act_args,
                                            layer_shape)
@@ -1059,7 +1059,7 @@ class NervousSystem:
         self_args = (internal_edge_array,
                      internal_weight_array)
         assert(act_args[0] == num_internal_nodes)
-        return layer_generator.CreateLayer(back_type,
+        return layer_generator.CreateRecurrentLayer(back_type,
                                            back_args, self_type, self_args,
                                            act_type, act_args,
                                            layer_shape)
