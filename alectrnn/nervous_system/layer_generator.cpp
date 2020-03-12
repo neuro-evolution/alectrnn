@@ -55,7 +55,7 @@ static void DeleteLayer(PyObject *layer_capsule) {
  */
 static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"back_integrator", "back_integrator_args",
-    "self_integrator", "self_integrator_args", 
+    "self_integrator", "self_integrator_args",
     "activator_type", "activator_args", "shape", NULL};
 
   int back_integrator_type;
@@ -85,6 +85,45 @@ static PyObject *CreateLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
 
   // Ownership is transfered to new layer
   nervous_system::Layer<float>* layer = new nervous_system::Layer<float>(
+    layer_shape, back_integrator, self_integrator, activator);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
+static PyObject *CreateRecurrentLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+    "self_integrator", "self_integrator_args",
+    "activator_type", "activator_args", "shape", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOO", keyword_list,
+      &back_integrator_type, &back_integrator_args, &self_integrator_type,
+      &self_integrator_args, &activator_type, &activator_args,
+      &shape)) {
+    std::cerr << "Error parsing CreateRecurrentLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+  nervous_system::Integrator<float>* back_integrator = IntegratorParser(
+    (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
+  nervous_system::Integrator<float>* self_integrator = IntegratorParser(
+    (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args);
+  nervous_system::Activator<float>* activator = ActivatorParser(
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transfered to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::RecurrentLayer<float>(
     layer_shape, back_integrator, self_integrator, activator);
 
   PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
@@ -207,7 +246,7 @@ static PyObject *CreateNoisyRewardModulatedLayer(PyObject *self, PyObject *args,
 }
 
 static PyObject *CreateMotorLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"num_outputs", "num_inputs", 
+  static char *keyword_list[] = {"num_outputs", "num_inputs",
                                 "activator_type", "activator_args", NULL};
 
   int num_outputs;
@@ -375,7 +414,7 @@ nervous_system::Activator<float>* ActivatorParser(nervous_system::ACTIVATOR_TYPE
    * shared.
    */
 
-  nervous_system::Activator<float>* new_activator;  
+  nervous_system::Activator<float>* new_activator;
   switch(type) {
     case nervous_system::IDENTITY_ACTIVATOR: {
       new_activator = new nervous_system::IdentityActivator<float>();
@@ -1033,6 +1072,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateLayer", (PyCFunction) CreateLayer,
           METH_VARARGS | METH_KEYWORDS,
           "Returns a handle to a Layer"},
+  { "CreateRecurrentLayer", (PyCFunction) CreateRecurrentLayer,
+         METH_VARARGS | METH_KEYWORDS,
+         "Returns a handle to a RecurrentLayer"},
   { "CreateRewardModulatedLayer", (PyCFunction) CreateRewardModulatedLayer,
         METH_VARARGS | METH_KEYWORDS,
         "Returns a handle to a RewardModulatedLayer"},
