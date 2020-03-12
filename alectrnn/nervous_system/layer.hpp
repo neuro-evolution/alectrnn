@@ -8,6 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <random>
+#include <Eigen/Core>
 #include "../common/graphs.hpp"
 #include "activator.hpp"
 #include "integrator.hpp"
@@ -19,7 +20,7 @@ namespace nervous_system {
 
 /*
  * Layers take ownership of the integrators and activations functions they use.
- * This is necessary as the Layer will be the only remaining access point to 
+ * This is necessary as the Layer will be the only remaining access point to
  * those objects once it is pushed off to the nervous system.
  */
 template<typename TReal>
@@ -35,12 +36,12 @@ class Layer {
       parameter_count_ = 0;
     }
 
-    Layer(const std::vector<Index>& shape, 
-          Integrator<TReal>* back_integrator, 
+    Layer(const std::vector<Index>& shape,
+          Integrator<TReal>* back_integrator,
           Integrator<TReal>* self_integrator,
-          Activator<TReal>* activation_function) 
-          : back_integrator_(back_integrator), 
-            self_integrator_(self_integrator), 
+          Activator<TReal>* activation_function)
+          : back_integrator_(back_integrator),
+            self_integrator_(self_integrator),
             activation_function_(activation_function),
             layer_state_(shape), input_buffer_(shape), shape_(shape) {
       parameter_count_ = 0;
@@ -82,7 +83,7 @@ class Layer {
     }
 
     /*
-     * Passes the needed parameters to the Layer - Should be Slice with 
+     * Passes the needed parameters to the Layer - Should be Slice with
      * parameter_count_ in size. Layer will then make and assign Slices to
      * The activation_function and Integrator function
      */
@@ -98,11 +99,11 @@ class Layer {
         parameters.slice(0, back_integrator_->GetParameterCount()));
 
       self_integrator_->Configure(
-        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount(), 
+        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount(),
                          self_integrator_->GetParameterCount()));
 
       activation_function_->Configure(
-        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount() 
+        parameters.slice(parameters.stride() * back_integrator_->GetParameterCount()
                          + parameters.stride() * self_integrator_->GetParameterCount(),
                          activation_function_->GetParameterCount()));
     }
@@ -124,19 +125,19 @@ class Layer {
       // layout produced in configure order: back->self->act
       Index order = 0;
       std::vector<PARAMETER_TYPE> back_layout = back_integrator_->GetParameterLayout();
-      for (auto par_type_ptr = back_layout.begin(); 
+      for (auto par_type_ptr = back_layout.begin();
           par_type_ptr != back_layout.end(); ++par_type_ptr) {
         layout[order] = *par_type_ptr;
         ++order;
       }
       std::vector<PARAMETER_TYPE> self_layout = self_integrator_->GetParameterLayout();
-      for (auto par_type_ptr = self_layout.begin(); 
+      for (auto par_type_ptr = self_layout.begin();
           par_type_ptr != self_layout.end(); ++par_type_ptr) {
         layout[order] = *par_type_ptr;
         ++order;
       }
       std::vector<PARAMETER_TYPE> act_layout = activation_function_->GetParameterLayout();
-      for (auto par_type_ptr = act_layout.begin(); 
+      for (auto par_type_ptr = act_layout.begin();
           par_type_ptr != act_layout.end(); ++par_type_ptr) {
         layout[order] = *par_type_ptr;
         ++order;
@@ -207,6 +208,42 @@ class Layer {
     // Number of parameters required by layer
     std::size_t parameter_count_;
 };
+
+template <typename TReal>
+class RecurrentLayer : public Layer<TReal>
+{
+public:
+  typedef Layer<TReal> super_type;
+  typedef typename super_type::Index Index;
+  typedef Eigen::Map<ColVector> ColVectorView;
+  typedef const Eigen::Map<ConstColVector> ConstColVectorView;
+
+  RecurrentLayer(const std::vector<Index>& shape,
+        Integrator<TReal>* back_integrator,
+        Integrator<TReal>* self_integrator,
+        Activator<TReal>* activation_function)
+   : super_type(shape, back_integrator, self_integrator, activation_function)
+   {}
+
+  virtual ~RecurrentLayer()=default;
+
+  virtual void operator()(const Layer<TReal>* prev_layer) override
+  {
+    super_type::input_buffer_.Fill(0.0);
+    (*super_type::back_integrator_)(prev_layer->state(),
+                                    super_type::input_buffer_);
+    (*super_type::self_integrator_)(super_type::layer_state_,
+                                    super_type::layer_state_);
+    ColVectorView state_vector(super_type::layer_state_.data(),
+                               super_type::layer_state_.size());
+    ConstColVectorView buffer(super_type::input_buffer_.data(),
+                              super_type::input_buffer_.size());
+    state_vector += buffer;
+    (*super_type::activation_function_)(super_type::input_buffer_,
+                                        super_type::layer_state_);
+    std::swap(super_type::layer_state_, super_type::input_buffer_);
+  }
+}
 
 template <typename TReal>
 class RewardModulatedLayer : public Layer<TReal> {
@@ -459,12 +496,12 @@ class MotorLayer : public Layer<TReal> {
     MotorLayer() : super_type() {
     }
 
-    MotorLayer(Index num_outputs, Index num_inputs, 
+    MotorLayer(Index num_outputs, Index num_inputs,
         Activator<TReal>* activation_function) {
       super_type::activation_function_ = activation_function;
       super_type::back_integrator_ = new nervous_system::All2AllIntegrator<TReal>(num_outputs, num_inputs);
       super_type::self_integrator_ = nullptr;
-      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount() 
+      super_type::parameter_count_ = super_type::activation_function_->GetParameterCount()
                                    + super_type::back_integrator_->GetParameterCount();
       super_type::layer_state_ = multi_array::Tensor<TReal>({num_outputs});
       super_type::input_buffer_ = multi_array::Tensor<TReal>({num_outputs});
@@ -502,14 +539,14 @@ class MotorLayer : public Layer<TReal> {
       // layout produced in configure order: back->act
       Index order = 0;
       std::vector<PARAMETER_TYPE> back_layout = super_type::back_integrator_->GetParameterLayout();
-      for (auto par_type_ptr = back_layout.begin(); 
+      for (auto par_type_ptr = back_layout.begin();
           par_type_ptr != back_layout.end(); ++par_type_ptr) {
         layout[order] = *par_type_ptr;
         ++order;
       }
 
       std::vector<PARAMETER_TYPE> act_layout = super_type::activation_function_->GetParameterLayout();
-      for (auto par_type_ptr = act_layout.begin(); 
+      for (auto par_type_ptr = act_layout.begin();
           par_type_ptr != act_layout.end(); ++par_type_ptr) {
         layout[order] = *par_type_ptr;
         ++order;
