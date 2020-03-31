@@ -7,7 +7,7 @@ def ale_fitness_function(member):
     return -member.experiment.objective_function(member.parameters)
 
 
-class AleMember(asyncevo.Member):
+class ALEAddon:
     """
     Constructs an experiment environment inside a member so that it will be
     initialized in each process.
@@ -37,3 +37,15 @@ class AleMember(asyncevo.Member):
     @experiment.setter
     def experiment(self, value):
         raise NotImplementedError
+
+
+class AleMember(ALEAddon, asyncevo.Member):
+    pass
+
+
+class AleCSAMember(ALEAddon, asyncevo.CSAMember):
+    pass
+
+
+class AleDaignosticCSAMember(ALEAddon, asyncevo.DiagnosticCSAMember):
+    pass
