@@ -45,3 +45,7 @@ class AleMember(ALEAddon, asyncevo.Member):
 
 class AleCSAMember(ALEAddon, asyncevo.CSAMember):
     pass
+
+
+class AleDaignosticCSAMember(ALEAddon, asyncevo.DiagnosticCSAMember):
+    pass
