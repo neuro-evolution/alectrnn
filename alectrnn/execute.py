@@ -79,11 +79,11 @@ def execute_async_experiment(parameter_batch, index, batch_id):
 def execute_async_batch(batch):
     from asyncevo import Scheduler
     # assumes scheduler parameters are the same throughout
-    with Scheduler(batch[0]['storage_parameters'].get('initialization_args', {}),
-                   batch[0]['storage_parameters'].get('client_args', {})) \
+    with Scheduler(batch['batch'][0]['storage_parameters'].get('initialization_args', {}),
+                   batch['batch'][0]['storage_parameters'].get('client_args', {})) \
                     as mpi_scheduler:
 
-        for index, parameter_batch in enumerate(batch):
+        for index, parameter_batch in enumerate(batch['batch']):
             # initialize experiment in order to generate initial state
             working_parameters = deepcopy(parameter_batch)
             for ref, cost in \
@@ -113,7 +113,7 @@ def execute_async_batch(batch):
                 scheduler=mpi_scheduler,
                 member_type=AleMember,
                 member_type_kwargs={'parameter_batch': parameter_batch},
-                save_filename=batch_id + "_" + str(index) + ".ga",
+                save_filename=batch['id'] + "_" + str(index) + ".ga",
                 **parameter_batch['training_parameters']['trainer_args'])
             ga.run(ale_fitness_function,
                    **parameter_batch['training_parameters']['run_args'],
