@@ -26,15 +26,14 @@ def load_experiment(batch_id: str, batch_path: Path=None):
     :return: results from experiments, and batch.
     """
     if batch_path is None:
-        batch = load(Path.cwd().joinpath(batch_id + ".batch"))
-    else:
-        batch = load(batch_path.joinpath(batch_id + ".batch"))
+        batch_path = Path.cwd()
+
+    batch = load(batch_path.joinpath(batch_id + ".batch"))
     results = []
     for i in range(len(batch['batch'])):
-        filename = batch['id'] + "_" + str(i) + ".ga"
+        filename = batch_path.joinpath(batch['id'] + "_" + str(i) + ".ga")
         try:
-            file_path = search_dir.joinpath(filename)
-            results.append(load(file_path))
+            results.append(load(Path(filename)))
 
         except (OSError, FileNotFoundError):
             print("Couldn't find file:", str(file_path))
