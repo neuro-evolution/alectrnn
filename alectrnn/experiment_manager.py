@@ -26,7 +26,7 @@ class ALESimpleManager:
         :param rom: game name
         :param seed: seed for generating seeds for the games
         :param kwargs: other arguments for atari game
-        :return: history
+        :return: history, cost
         """
         game_parameters = copy.copy(self.ale_experiment.ale_parameters)
         for key, value in kwargs.items():
@@ -43,9 +43,9 @@ class ALESimpleManager:
                                                agent_handle.handle,
                                                'totalcost')
         obj_handle.create()
-        print("cost: ", obj_handle.handle(nn_parameters))
+        cost = obj_handle.handle(nn_parameters)
         return [agent_handle.layer_history(layer)
-                for layer in range(self.ale_experiment.num_layers())]
+                for layer in range(self.ale_experiment.num_layers())], cost
 
 
 class ALEExperimentManager:
