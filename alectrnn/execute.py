@@ -105,6 +105,7 @@ def execute_async_batch(batch):
             guess_bounds = working_parameters['training_parameters']['bounds']
             initial_guess = experiment.draw_layerwise_initial_guess(guess_bounds,
                                                                     initial_state_rng)
+            print("NUMBER OF PARAMETERS: ", experiment.get_parameter_count(), flush=True)
             del experiment
             del working_parameters
 
