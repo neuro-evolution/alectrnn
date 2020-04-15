@@ -121,4 +121,4 @@ def execute_async_batch(batch):
                    **parameter_batch['training_parameters']['run_args'],
                    take_member=True)
 
-        consolidate_experiment(batch['batch_id'])
+        consolidate_experiment(batch['id'])
