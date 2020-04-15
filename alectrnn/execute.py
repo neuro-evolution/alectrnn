@@ -2,6 +2,7 @@ from copy import deepcopy
 from alectrnn.multitask import *
 from alectrnn.ale_member import AleMember
 from alectrnn.ale_member import ale_fitness_function
+from alectrnn.consolidate import consolidate_experiment
 import numpy as np
 
 
@@ -119,3 +120,5 @@ def execute_async_batch(batch):
             ga.run(ale_fitness_function,
                    **parameter_batch['training_parameters']['run_args'],
                    take_member=True)
+
+        consolidate_experiment(batch['batch_id'])
