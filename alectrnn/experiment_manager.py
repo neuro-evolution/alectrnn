@@ -19,10 +19,11 @@ class ALESimpleManager:
         """
         self.ale_experiment = ale_experiment
 
-    def run_single_game(self, nn_parameters, **kwargs):
+    def run_single_game(self, nn_parameters, logging=True, **kwargs):
         """
         Evaluates a single game.
         :param nn_parameters: parameters for the nn, if not provided best is chosen.
+        :param logging: whether to record the game history (default: True)
         :param rom: game name
         :param seed: seed for generating seeds for the games
         :param kwargs: other arguments for atari game
@@ -38,14 +39,18 @@ class ALESimpleManager:
             self.ale_experiment.agent_class_parameters,
             self.ale_experiment._nervous_system,
             ale_handle)
-        agent_handle.logging = True
+        agent_handle.logging = logging
         obj_handle = handlers.ObjectiveHandler(ale_handle.handle,
                                                agent_handle.handle,
                                                'totalcost')
         obj_handle.create()
         cost = obj_handle.handle(nn_parameters)
-        return [agent_handle.layer_history(layer)
-                for layer in range(self.ale_experiment.num_layers())], cost
+        if logging:
+            history = [agent_handle.layer_history(layer)
+                       for layer in range(self.ale_experiment.num_layers())]
+        else:
+            history = []
+        return history, cost
 
 
 class ALEExperimentManager:
