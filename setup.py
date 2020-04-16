@@ -249,7 +249,7 @@ agent_handler = Extension('agent_handler',
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
 setup(name=PACKAGE_NAME,
-      version='1.5',
+      version='1.6',
       author='Nathaniel Rodriguez',
       cmdclass={'build_ext': build_ext,
                 'install': install,
