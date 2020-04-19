@@ -68,7 +68,7 @@ def execute_async_experiment(parameter_batch, index, batch_id):
         ga = parameter_batch['trainer'](
             initial_state=initial_guess,
             scheduler=mpi_scheduler,
-            member_type=AleMember,
+            member_type=parameter_batch['training_parameters'].get('member_type', AleMember),
             member_type_kwargs={'parameter_batch': parameter_batch},
             save_filename=batch_id + "_" + str(index) + ".ga",
             **parameter_batch['training_parameters']['trainer_args'])
@@ -113,7 +113,7 @@ def execute_async_batch(batch):
             ga = parameter_batch['trainer'](
                 initial_state=initial_guess,
                 scheduler=mpi_scheduler,
-                member_type=AleMember,
+                member_type=parameter_batch['training_parameters'].get('member_type', AleMember),
                 member_type_kwargs={'parameter_batch': parameter_batch},
                 save_filename=batch['id'] + "_" + str(index) + ".ga",
                 **parameter_batch['training_parameters']['trainer_args'])
