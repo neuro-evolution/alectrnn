@@ -1,4 +1,5 @@
 from copy import deepcopy
+import numpy as np
 from alectrnn.multitask import *
 import asyncevo
 
@@ -41,6 +42,20 @@ class ALEAddon:
 
 class AleMember(ALEAddon, asyncevo.Member):
     pass
+
+
+class SpikeMember(AleMember):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._abs_x = np.copy(self._x)
+
+    @property
+    def parameters(self):
+        return np.fabs(self._x, out=self._abs_x)
+
+    @parameters.setter
+    def parameters(self, value):
+        raise NotImplementedError
 
 
 class AleCSAMember(ALEAddon, asyncevo.CSAMember):
