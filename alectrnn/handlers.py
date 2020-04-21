@@ -16,6 +16,7 @@ import sys
 from functools import partial
 from pkg_resources import resource_listdir
 from pkg_resources import resource_filename
+import numpy as np
 
 
 def generate_rom_dictionary():
@@ -214,7 +215,11 @@ class LoggingAndHistoryMixin:
         It will be of dtype=np.float32
         """
         if self._handle_parameters['logging']:
-            return agent_handler.GetLayerHistory(self._handle, layer_index)
+            log = np.zeros((agent_handler.GetTimeSeriesSize(self._handle, layer_index),
+                            agent_handler.GetHistoryLayerSize(self._handle, layer_index)),
+                           dtype=np.float32)
+            agent_handler.AssignLayerHistory(self._handle, layer_index, log)
+            return log
         else:
             raise AssertionError("Error: Logging not active, no history table")
 
