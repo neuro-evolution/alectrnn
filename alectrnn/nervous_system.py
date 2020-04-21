@@ -1336,7 +1336,12 @@ class NervousSystem:
         arrays for each layer. The parameters will be used to configure the
         neural network.
         """
-        return nn_handler.RunNeuralNetwork(self.neural_network, inputs, parameters)
+        logs = [np.zeros((len(inputs),
+                          nn_handler.GetLayerStateSize(self.neural_network, layer)),
+                         dtype=np.float32)
+                for layer in range(nn_handler.GetSize(self.neural_network))]
+        nn_handler.RunNeuralNetwork(self.neural_network, inputs, parameters, logs)
+        return logs
 
 
 def configure_layer_activations(layer_shapes, interpreted_shapes,
