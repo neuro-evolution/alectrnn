@@ -75,6 +75,32 @@ static PyObject *GetLayerHistory(PyObject *self, PyObject *args,
   return np_history;
 }
 
+static PyObject* GetHistoryLayerSize(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+  static char *keyword_list[] = {"agent", "layer", NULL};
+  PyObject *agent_capsule;
+  int layer_index;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi", keyword_list,
+                                   &agent_capsule, &layer_index)) {
+    std::cout << "Invalid argument in put into GetHistoryLayerSize!" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(agent_capsule, "agent_generator.agent"))
+  {
+    std::cerr << "Invalid pointer to Agent returned from capsule,"
+                 " or is not a capsule." << std::endl;
+    return NULL;
+  }
+
+  alectrnn::NervousSystemAgent* agent = static_cast<alectrnn::NervousSystemAgent*>(
+      PyCapsule_GetPointer(agent_capsule, "agent_generator.agent"));
+
+  int duration = agent->GetLog().state_size(layer_index);
+  return Py_BuildValue("i", duration);
+}
+
 static PyObject* GetTimeSeriesSize(PyObject* self, PyObject* args, PyObject* kwargs)
 {
   static char *keyword_list[] = {"agent", "layer", NULL};
@@ -169,6 +195,9 @@ static PyMethodDef AgentHandlerMethods[] = {
   { "GetLayerHistory", (PyCFunction) GetLayerHistory,
           METH_VARARGS | METH_KEYWORDS,
           "Returns PyArray of agent state history"},
+  { "GetHistoryLayerSize", (PyCFunction) GetHistoryLayerSize,
+    METH_VARARGS | METH_KEYWORDS,
+    "Get size of agent state history at given layer"},
   { "GetTimeSeriesSize", (PyCFunction) GetTimeSeriesSize,
   METH_VARARGS | METH_KEYWORDS,
   "Get duration of agent state history"},
