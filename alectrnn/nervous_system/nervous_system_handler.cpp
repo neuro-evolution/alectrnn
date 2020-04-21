@@ -29,7 +29,7 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
   PyObject* py_logs;
   // add new arg for numpy array, only exposed through NN, can hide this change
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOOO", keyword_list,
-      &nn_capsule, &inputs, &py_parameter_array, &py_log)) {
+      &nn_capsule, &inputs, &py_parameter_array, &py_logs)) {
     std::cerr << "Error parsing RunNeuralNetwork arguments" << std::endl;
     return NULL;
   }
@@ -79,7 +79,7 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
     {
       shape[iii+1] = history[0].shape()[iii];
     }
-    npy_float32* data = reinterpret_cast<npy_float32*>(py_log->data);
+    npy_float32* data = reinterpret_cast<npy_float32*>(py_array->data);
     std::vector<std::size_t> strides(shape.size());
     multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
     for (std::size_t iii = 0; iii < history.size(); ++iii) {
@@ -115,7 +115,7 @@ static PyObject *GetLayerStateSize(PyObject *self, PyObject *args, PyObject *kwa
       static_cast<nervous_system::NervousSystem<float>*>(
           PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
 
-  int state_size = nn->GetLayerState().size();
+  int state_size = nn->GetLayerState(layer_index).size();
 
   return Py_BuildValue("i", state_size);
 }
