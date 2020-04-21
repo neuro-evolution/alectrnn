@@ -90,6 +90,11 @@ class StateLogger {
       return history_[layer].size();
     }
 
+    Index state_size(Index layer) const
+    {
+      return history_[layer][0].size();
+    }
+
     const std::vector<Time>& GetTimes() const {
       return time_stamps_;
     }
