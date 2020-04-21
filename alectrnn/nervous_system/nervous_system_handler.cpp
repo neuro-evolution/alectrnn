@@ -22,12 +22,14 @@
 #include "../common/capi_tools.hpp"
 
 static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwargs) {
-  static char *keyword_list[] = {"neural_network", "inputs", "parameters", NULL};
+  static char *keyword_list[] = {"neural_network", "inputs", "parameters", "logs", NULL};
   PyObject* nn_capsule;
   PyArrayObject* inputs;
   PyArrayObject* py_parameter_array;
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOO", keyword_list,
-      &nn_capsule, &inputs, &py_parameter_array)) {
+  PyObject* py_logs;
+  // add new arg for numpy array, only exposed through NN, can hide this change
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOOO", keyword_list,
+      &nn_capsule, &inputs, &py_parameter_array, &py_log)) {
     std::cerr << "Error parsing RunNeuralNetwork arguments" << std::endl;
     return NULL;
   }
@@ -66,30 +68,28 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
     log(*nn);
   }
 
-  // convert log to tuple of numpy arrays for each layer
-  PyObject *py_layers = PyTuple_New(static_cast<npy_intp>(log.size()));
   for (std::size_t layer_index = 0; layer_index < log.size(); ++layer_index)
   {
-      const std::vector<multi_array::Tensor<float>>& history(log.GetLayerHistory(layer_index));
-      std::vector<npy_intp> shape(1+history[0].ndimensions());
-      shape[0] = history.size();
-      for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii) {
-        shape[iii+1] = history[0].shape()[iii];
+    Py_ssize_t index(layer_index);
+    PyArrayObject* py_array = reinterpret_cast<PyArrayObject*>(PyList_GetItem(py_logs, index));
+    const std::vector<multi_array::Tensor<float>>& history(log.GetLayerHistory(layer_index));
+    std::vector<npy_intp> shape(1+history[0].ndimensions());
+    shape[0] = history.size();
+    for (std::size_t iii = 0; iii < history[0].ndimensions(); ++iii)
+    {
+      shape[iii+1] = history[0].shape()[iii];
+    }
+    npy_float32* data = reinterpret_cast<npy_float32*>(py_log->data);
+    std::vector<std::size_t> strides(shape.size());
+    multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
+    for (std::size_t iii = 0; iii < history.size(); ++iii) {
+      for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
+        data[iii * strides[0] + jjj] = history[iii][jjj];
       }
-      PyObject* py_array = PyArray_SimpleNew(shape.size(), shape.data(), NPY_FLOAT32);
-      PyArrayObject *np_array = reinterpret_cast<PyArrayObject*>(py_array);
-      npy_float32* data = reinterpret_cast<npy_float32*>(np_array->data);
-      std::vector<std::size_t> strides(shape.size());
-      multi_array::CalculateStrides(shape.data(), strides.data(), shape.size());
-      for (std::size_t iii = 0; iii < history.size(); ++iii) {
-        for (std::size_t jjj = 0; jjj < history[iii].size(); ++jjj) {
-          data[iii * strides[0] + jjj] = history[iii][jjj];
-        }
-      }
-      PyTuple_SetItem(py_layers, layer_index, py_array);
+    }
   }
 
-  return py_layers;
+  Py_RETURN_NONE;
 }
 
 static PyObject *GetLayerStateSize(PyObject *self, PyObject *args, PyObject *kwargs)
