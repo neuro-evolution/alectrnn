@@ -92,6 +92,34 @@ static PyObject *RunNeuralNetwork(PyObject *self, PyObject *args, PyObject *kwar
   return py_layers;
 }
 
+static PyObject *GetLayerStateSize(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+  static char *keyword_list[] = {"neural_network", "layer", NULL};
+
+  PyObject* nn_capsule;
+  int layer_index;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi", keyword_list,
+                                   &nn_capsule, &layer_index)) {
+    std::cerr << "Error parsing GetLayerStateSize arguments" << std::endl;
+    return NULL;
+  }
+
+  if (!PyCapsule_IsValid(nn_capsule, "nervous_system_generator.nn"))
+  {
+    std::cerr << "Invalid pointer to NN returned from capsule,"
+                 " or is not a capsule." << std::endl;
+    return NULL;
+  }
+  nervous_system::NervousSystem<float>* nn =
+      static_cast<nervous_system::NervousSystem<float>*>(
+          PyCapsule_GetPointer(nn_capsule, "nervous_system_generator.nn"));
+
+  int state_size = nn->GetLayerState().size();
+
+  return Py_BuildValue("i", state_size);
+}
+
 static PyObject *GetParameterCount(PyObject *self, PyObject *args, PyObject *kwargs) {
   static char *keyword_list[] = {"neural_network", NULL};
 
@@ -280,6 +308,9 @@ static PyMethodDef NervousSystemHandlerMethods[] = {
   { "GetParameterCount", (PyCFunction) GetParameterCount,
           METH_VARARGS | METH_KEYWORDS,
           "Returns # parameters"},
+  { "GetLayerStateSize", (PyCFunction) GetLayerStateSize,
+    METH_VARARGS | METH_KEYWORDS,
+    "Returns state size of a given layer"},
   {"GetParameterLayout", (PyCFunction) GetParameterLayout,
           METH_VARARGS | METH_KEYWORDS,
           "Returns numpy array of parameter layout (see parameter_types for code)"},
