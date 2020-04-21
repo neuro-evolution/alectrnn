@@ -129,7 +129,7 @@ static PyObject* GetTimeSeriesSize(PyObject* self, PyObject* args, PyObject* kwa
 
 static PyObject* AssignLayerHistory(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-  static char *keyword_list[] = {"agent", "layer", "array", NULL};
+  static char *keyword_list[] = {"agent", "layer", "log", NULL};
   PyObject *agent_capsule;
   int layer_index;
   PyArrayObject* py_log;
