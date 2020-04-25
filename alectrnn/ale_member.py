@@ -58,6 +58,24 @@ class SpikeMember(AleMember):
         raise NotImplementedError
 
 
+class NormalizedSpikeMember(AleMember):
+    def __init__(self, weight_scale: float = 1.0, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._weight_scale = weight_scale
+        self._norm_x = np.copy(self._x)
+
+    @property
+    def parameters(self):
+        np.fabs(self._x, out=self._norm_x)
+        sum = np.sum(self._norm_x)
+        self._norm_x /= sum * self._weight_scale
+        return self._norm_x
+
+    @parameters.setter
+    def parameters(self, value):
+        raise NotImplementedError
+
+
 class AleCSAMember(ALEAddon, asyncevo.CSAMember):
     pass
 
