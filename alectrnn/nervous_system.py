@@ -116,6 +116,7 @@ def layerwise_initial_guess(layer_bounds, nervous_system, rng):
 
     return draw_uniform_initial_guess(boundary_array, rng)
 
+
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
