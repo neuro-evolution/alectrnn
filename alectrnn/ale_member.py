@@ -71,7 +71,7 @@ class NormalizedSpikeMember(AleMember):
     def parameters(self):
         np.fabs(self._x, out=self._norm_x)
         weight_sum = np.sum(self._norm_x, where=self._weight_mask)
-        np.divide(self._norm_x, weight_sum * self._weight_scale,
+        np.divide(self._norm_x, weight_sum / self._weight_scale,
                   where=self._weight_mask, out=self._norm_x)
         return self._norm_x
 
