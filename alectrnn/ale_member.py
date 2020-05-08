@@ -2,6 +2,7 @@ from copy import deepcopy
 import numpy as np
 from alectrnn.multitask import *
 import asyncevo
+from alectrnn.nervous_system import PARAMETER_TYPE
 
 
 def ale_fitness_function(member):
@@ -61,14 +62,17 @@ class SpikeMember(AleMember):
 class NormalizedSpikeMember(AleMember):
     def __init__(self, weight_scale: float = 1.0, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._weight_mask = self._experiment.parameter_layout() \
+            == PARAMETER_TYPE.WEIGHT.value
         self._weight_scale = weight_scale
         self._norm_x = np.copy(self._x)
 
     @property
     def parameters(self):
         np.fabs(self._x, out=self._norm_x)
-        sum = np.sum(self._norm_x)
-        self._norm_x /= sum * self._weight_scale
+        weight_sum = np.sum(self._norm_x, where=self._weight_mask)
+        np.divide(self._norm_x, weight_sum / self._weight_scale,
+                  where=self._weight_mask, out=self._norm_x)
         return self._norm_x
 
     @parameters.setter
