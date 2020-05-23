@@ -125,6 +125,10 @@ class NormalizedSpikeMember(AbsMixin, NormalizationMixin, AleMember):
     pass
 
 
+class RescaledNormalizeSpikeMember(AbsMixin, RescalingMixin, NormalizationMixin, AleMember):
+    pass
+
+
 class AleCSAMember(ALEAddon, asyncevo.CSAMember):
     pass
 
