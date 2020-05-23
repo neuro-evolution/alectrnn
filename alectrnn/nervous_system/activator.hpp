@@ -387,7 +387,7 @@ class IafActivator : public Activator<TReal> {
 
       // Need to update the precomputed parameters
       for (Index iii = 0; iii < num_states_; ++iii) {
-        alpha_[iii] = -step_size_ * rtaus_[iii];
+        alpha_[iii] = step_size_ * rtaus_[iii];
         vthresh_[iii] = reset_ + range_[iii];
       }
     }
@@ -409,10 +409,10 @@ class IafActivator : public Activator<TReal> {
         last_spike_time_[iii] += step_size_;
 
         // if a spike can occur unclamp state and check for action potential
-        if (last_spike_time_[iii] > refractory_period_[iii]) {
+        if (last_spike_time_[iii] >= refractory_period_[iii]) {
           // evaluates the equation: -rtaus * dT * ((u - u_reset) + R * I))
-          subthreshold_state_[iii] += alpha_[iii] * (subthreshold_state_[iii] - reset_)
-                                      + resistance_[iii] * input_buffer[iii];
+          subthreshold_state_[iii] += alpha_[iii] * ((reset_ - subthreshold_state_[iii])
+                                      + resistance_[iii] * input_buffer[iii]);
           subthreshold_state_[iii] = utilities::BoundState<TReal>(subthreshold_state_[iii]);
 
           /* check for action potential and reset last spike time if a
@@ -449,7 +449,7 @@ class IafActivator : public Activator<TReal> {
         Reset();
         // Need to update the precomputed parameters
         for (Index iii = 0; iii < num_states_; ++iii) {
-          alpha_[iii] = -step_size_ * rtaus_[iii];
+          alpha_[iii] = step_size_ * rtaus_[iii];
           vthresh_[iii] = reset_ + range_[iii];
         }
       }
@@ -491,8 +491,7 @@ class IafActivator : public Activator<TReal> {
     multi_array::ConstArraySlice<TReal> range_;
     /* rtaus_ is the inverse of the time-constant */
     multi_array::ConstArraySlice<TReal> rtaus_;
-    /* The neuron can spike again after refractory_period_ / step_size_ steps
-     * will allow spiking asap based on step-size */
+    /* How long until a neuron can spike again */
     multi_array::ConstArraySlice<TReal> refractory_period_;
     /* The input resistance of the neuron */
     multi_array::ConstArraySlice<TReal> resistance_;
@@ -501,7 +500,7 @@ class IafActivator : public Activator<TReal> {
     /* The resting state voltage is reset_ */
     TReal reset_;
     std::vector<TReal> last_spike_time_;
-    // alpha == the pre-computed product of rtaus and step_size_ and -1
+    // alpha == the pre-computed product of rtaus and step_size_
     std::vector<TReal> alpha_;
     // vthresh == the pre-computed reset threshold (reset_ + range_)
     std::vector<TReal> vthresh_;
@@ -562,11 +561,11 @@ class Conv3DIafActivator : public Activator<TReal> {
             spike_time_accessor[filter][iii][jjj] += step_size_;
 
             // if a spike can occur unclamp state and check for action potential
-            if (spike_time_accessor[filter][iii][jjj] > refractory_period_[filter]) {
+            if (spike_time_accessor[filter][iii][jjj] >= refractory_period_[filter]) {
               // evaluates the equation: -rtaus * dT * (u - u_reset) + R * I)
               subthreshold_accessor[filter][iii][jjj] +=
-                alpha_[filter] * (subthreshold_accessor[filter][iii][jjj] - reset_)
-                + resistance_[filter] * input_accessor[filter][iii][jjj];
+                alpha_[filter] * ((reset_ - subthreshold_accessor[filter][iii][jjj])
+                + resistance_[filter] * input_accessor[filter][iii][jjj]);
               subthreshold_accessor[filter][iii][jjj] =
                 utilities::BoundState<TReal>(subthreshold_accessor[filter][iii][jjj]);
 
@@ -605,7 +604,7 @@ class Conv3DIafActivator : public Activator<TReal> {
       Reset();
       // Need to update the precomputed parameters
       for (Index iii = 0; iii < shape_[0]; ++iii) {
-        alpha_[iii] = -step_size_ * rtaus_[iii];
+        alpha_[iii] = step_size_ * rtaus_[iii];
         vthresh_[iii] = reset_ + range_[iii];
       }
     }
@@ -640,8 +639,7 @@ class Conv3DIafActivator : public Activator<TReal> {
     multi_array::ConstArraySlice<TReal> range_;
     /* rtaus_ is the inverse of the time-constant */
     multi_array::ConstArraySlice<TReal> rtaus_;
-    /* The neuron can spike again after refractory_period_ / step_size_ steps
-     * will allow spiking asap based on step-size */
+    /* How long until a neuron can spike again */
     multi_array::ConstArraySlice<TReal> refractory_period_;
     /* The input resistance of the neuron */
     multi_array::ConstArraySlice<TReal> resistance_;
@@ -650,7 +648,7 @@ class Conv3DIafActivator : public Activator<TReal> {
     /* The resting state voltage is reset_ */
     TReal reset_;
     multi_array::Tensor<TReal> last_spike_time_;
-    // alpha == the pre-computed product of rtaus and step_size_ and -1
+    // alpha == the pre-computed product of rtaus and step_size_
     std::vector<TReal> alpha_;
     // vthresh == the pre-computed reset threshold (reset_ + range_)
     std::vector<TReal> vthresh_;
