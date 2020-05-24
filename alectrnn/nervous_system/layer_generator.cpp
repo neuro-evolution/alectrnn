@@ -131,6 +131,54 @@ static PyObject *CreateRecurrentLayer(PyObject *self, PyObject *args, PyObject *
   return layer_capsule;
 }
 
+static PyObject *CreateFeedbackLayer(PyObject *self, PyObject *args, PyObject *kwargs) {
+  static char *keyword_list[] = {"back_integrator", "back_integrator_args",
+    "self_integrator", "self_integrator_args",
+    "feedback_integrator",
+    "feedback_integrator_args", "motor_size",
+    "activator_type", "activator_args", "shape", NULL};
+
+  int back_integrator_type;
+  PyObject* back_integrator_args;
+  int self_integrator_type;
+  PyObject* self_integrator_args;
+  int feedback_integrator;
+  PyObject* feedback_integrator_args;
+  int motor_size;
+  int activator_type;
+  PyObject* activator_args;
+  PyArrayObject* shape;
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOiiOO", keyword_list,
+      &back_integrator_type, &back_integrator_args, &self_integrator_type,
+      &self_integrator_args, &feedback_integrator, &feedback_integrator_args,
+      &motor_size, &activator_type, &activator_args,
+      &shape)) {
+    std::cerr << "Error parsing CreateFeedbackLayer arguments" << std::endl;
+    return NULL;
+  }
+
+  // Call parsers -> they create NEW integrators and activators
+  std::vector<std::size_t> layer_shape = alectrnn::uInt64PyArrayToVector<std::size_t>(shape);
+  nervous_system::Integrator<float>* back_integrator = IntegratorParser(
+    (nervous_system::INTEGRATOR_TYPE) back_integrator_type, back_integrator_args);
+  nervous_system::Integrator<float>* self_integrator = IntegratorParser(
+    (nervous_system::INTEGRATOR_TYPE) self_integrator_type, self_integrator_args);
+  nervous_system::Integrator<float>* feedback_integrator = IntegratorParser(
+    (nervous_system::INTEGRATOR_TYPE) feedback_integrator_type, feedback_integrator_args);
+  nervous_system::Activator<float>* activator = ActivatorParser(
+    (nervous_system::ACTIVATOR_TYPE) activator_type, activator_args);
+
+  // Ownership is transfered to new layer
+  nervous_system::Layer<float>* layer = new nervous_system::FeedbackLayer<float>(
+    layer_shape, back_integrator, self_integrator, activator,
+    motor_size, feedback_integrator);
+
+  PyObject* layer_capsule = PyCapsule_New(static_cast<void*>(layer),
+                                "layer_generator.layer", DeleteLayer);
+  return layer_capsule;
+}
+
 static PyObject *CreateRewardModulatedLayer(PyObject *self, PyObject *args,
                                             PyObject *kwargs) {
   static char *keyword_list[] = {"back_integrator", "back_integrator_args",
