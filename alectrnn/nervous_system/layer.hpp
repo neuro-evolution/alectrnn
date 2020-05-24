@@ -248,6 +248,140 @@ public:
 };
 
 template <typename TReal>
+class FeedbackLayer : public RecurrentLayer<TReal>
+{
+public:
+  typedef RecurrentLayer<TReal> super_type;
+  typedef typename super_type::Index Index;
+  typedef Eigen::Matrix<TReal, Eigen::Dynamic, 1> ColVector;
+  typedef const Eigen::Matrix<TReal, Eigen::Dynamic, 1> ConstColVector;
+  typedef Eigen::Map<ColVector> ColVectorView;
+  typedef const Eigen::Map<ConstColVector> ConstColVectorView;
+
+  FeedbackLayer(const std::vector<Index>& shape,
+        Integrator<TReal>* back_integrator,
+        Integrator<TReal>* self_integrator,
+        Activator<TReal>* activation_function,
+        Index motor_size,
+        Integrator<TReal>* feedback_integrator)
+   : super_type(shape, back_integrator, self_integrator, activation_function),
+     feedback_state_({motor_size + 1}), // 1 added for reward
+     feedback_integrator_(feedback_integrator)
+   {
+     super_type::parameter_count_ += feedback_integrator_->GetParameterCount();
+   }
+
+  virtual ~FeedbackLayer()=default;
+
+  virtual void Reset() {
+    super::layer_state_.Fill(0.0);
+    super::input_buffer_.Fill(0.0);
+    feedback_state_.Fill(0.0);
+    super::activation_function_->Reset();
+  }
+
+  virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
+
+    if (parameters.size() != parameter_count_) {
+      std::cerr << "parameter size: " << parameters.size() << std::endl;
+      std::cerr << "parameter count: " << parameter_count_ << std::endl;
+      throw std::invalid_argument("Wrong number of parameters given.");
+    }
+
+    super_type::back_integrator_->Configure(
+      parameters.slice(0, super_type::back_integrator_->GetParameterCount()));
+
+    super_type::self_integrator_->Configure(
+      parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
+                       super_type::self_integrator_->GetParameterCount()));
+    feedback_integrator_->Configure(
+      parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount()
+                       + parameters.stride() * super_type::self_integrator_->GetParameterCount(),
+                       feedback_integrator_->GetParameterCount()));
+
+    super_type::activation_function_->Configure(
+      parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount()
+                       + parameters.stride() * super_type::self_integrator_->GetParameterCount()
+                       + parameters.stride() * feedback_integrator_->GetParameterCount(),
+                       super_type::activation_function_->GetParameterCount()));
+  }
+
+  virtual std::vector<PARAMETER_TYPE> GetParameterLayout() const {
+
+    std::vector<PARAMETER_TYPE> layout(super_type::parameter_count_);
+
+    // layout produced in configure order: back->self->act
+    Index order = 0;
+    std::vector<PARAMETER_TYPE> back_layout = super_type::back_integrator_->GetParameterLayout();
+    for (auto par_type_ptr = back_layout.begin();
+        par_type_ptr != back_layout.end(); ++par_type_ptr) {
+      layout[order] = *par_type_ptr;
+      ++order;
+    }
+    std::vector<PARAMETER_TYPE> self_layout = super_type::self_integrator_->GetParameterLayout();
+    for (auto par_type_ptr = self_layout.begin();
+        par_type_ptr != self_layout.end(); ++par_type_ptr) {
+      layout[order] = *par_type_ptr;
+      ++order;
+    }
+    std::vector<PARAMETER_TYPE> feedback_layout = feedback_integrator_->GetParameterLayout();
+    for (auto par_type_ptr = feedback_layout.begin();
+        par_type_ptr != feedback_layout.end(); ++par_type_ptr) {
+      layout[order] = *par_type_ptr;
+      ++order;
+    }
+    std::vector<PARAMETER_TYPE> act_layout = super_type::activation_function_->GetParameterLayout();
+    for (auto par_type_ptr = act_layout.begin();
+        par_type_ptr != act_layout.end(); ++par_type_ptr) {
+      layout[order] = *par_type_ptr;
+      ++order;
+    }
+
+    return layout;
+  }
+
+  virtual void operator()(const Layer<TReal>* prev_layer) override
+  {
+    super_type::input_buffer_.Fill(0.0);
+    (*super_type::back_integrator_)(prev_layer->state(),
+                                    super_type::input_buffer_);
+    (*super_type::self_integrator_)(super_type::layer_state_,
+                                    super_type::layer_state_);
+    (*feedback_integrator_)(feedback_state_,
+                            super_type::layer_state_);
+    ColVectorView state_vector(super_type::layer_state_.data(),
+                               super_type::layer_state_.size());
+    ConstColVectorView buffer(super_type::input_buffer_.data(),
+                              super_type::input_buffer_.size());
+    state_vector += buffer;
+    (*super_type::activation_function_)(super_type::input_buffer_,
+                                        super_type::layer_state_);
+    std::swap(super_type::layer_state_, super_type::input_buffer_);
+  }
+
+  virtual void update_feedback(TReal reward, const Layer<TReal>* motor_layer)
+  {
+    for (Index i = 0; i < (motor_layer->state()->size() - 1); ++i)
+    {
+      feedback_state_[i] = motor_layer->state()[i];
+    }
+    // we are using this for spiking, and all the spikes are 0 or 1.
+    if (reward > 0.00001)
+    {
+      feedback_state_[feedback_state_.size() - 1] = 1.0;
+    }
+    else
+    {
+      feedback_state_[feedback_state_.size() - 1] = 0.0;
+    }
+  }
+
+  protected:
+    multi_array::Tensor<TReal> feedback_state_;
+    Integrator<TReal>* feedback_integrator_;
+};
+
+template <typename TReal>
 class RewardModulatedLayer : public Layer<TReal> {
   public:
     typedef Layer<TReal> super_type;
