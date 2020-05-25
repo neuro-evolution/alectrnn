@@ -83,7 +83,8 @@ class ALEExperimentBase(ABC):
         :return: a NervousSystem object
         """
 
-        if isinstance(agent_class, handlers.SharedMotorAgentHandler):
+        if isinstance(agent_class, handlers.SharedMotorAgentHandler)\
+                or isinstance(agent_class, handlers.FeedbackAgentHandler):
             # SharedMotorAgents require the legal rather than minimal action
             # set size to be used for the motor layer
             nervous_system_parameters['num_outputs'] = \
@@ -323,7 +324,6 @@ class ALERandomRomExperiment(ALEExperimentBase):
 
         *ale parameters don't have to include rom (it will be overwritten)
         """
-        kwargs['agent_class'] = handlers.SharedMotorAgentHandler
         super().__init__(**kwargs)
 
         # Construct handles (ALE)
@@ -384,7 +384,6 @@ class ALEMultiRomExperiment(ALEExperimentBase):
         *agents are built from a specific rom, so we need 1 agent and 1 objective
         for each rom. The nervous system can be shared.
         """
-        kwargs['agent_class'] = handlers.SharedMotorAgentHandler
         super().__init__(**kwargs)
 
         # Construct handles (ALE)

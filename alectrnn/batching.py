@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import pickle
 import uuid
 import random
+from alectrnn.handlers import SharedMotorAgentHandler
 
 
 def generate_random_string():
@@ -64,7 +65,8 @@ def generate_experiment_batch(num_trails,
                               training_parameters,
                               cost_normalization_parameters,
                               batch_id=None,
-                              storage_parameters=None):
+                              storage_parameters=None,
+                              agent_class=SharedMotorAgentHandler):
     if storage_parameters is None:
         storage_parameters = {}
 
@@ -82,6 +84,7 @@ def generate_experiment_batch(num_trails,
                 'nervous_system_parameters': resolve_batches(
                     nervous_system_parameters),
                 'ale_parameters': resolve_batches(ale_parameters),
+                'agent_class': agent_class,
                 'agent_parameters': resolve_batches(agent_parameters),
                 'objective_parameters': resolve_batches(objective_parameters),
                 'trainer': trainer,

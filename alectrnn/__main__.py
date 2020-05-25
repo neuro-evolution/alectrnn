@@ -41,6 +41,7 @@ if __name__ == "__main__":
             nervous_system_class=parameter_batch['nervous_system_class'],
             nervous_system_class_parameters=parameter_batch['nervous_system_parameters'],
             agent_class_parameters=parameter_batch['agent_parameters'],
+            agent_class=parameter_batch['agent_class'],
             objective_parameters=parameter_batch['objective_parameters']
         )
         print("Number trials:", len(batch['batch']))

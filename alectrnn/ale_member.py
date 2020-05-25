@@ -28,6 +28,7 @@ class ALEAddon:
             ale_parameters=self._parameters['ale_parameters'],
             nervous_system_class=self._parameters['nervous_system_class'],
             nervous_system_class_parameters=self._parameters['nervous_system_parameters'],
+            agent_class=self._parameters['agent_class'],
             agent_class_parameters=self._parameters['agent_parameters'],
             objective_parameters=self._parameters['objective_parameters']
         )
