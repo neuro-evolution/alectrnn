@@ -271,6 +271,22 @@ class SharedMotorAgentHandler(AgentHandler, LoggingAndHistoryMixin):
                                                'logging': int(logging)})
 
 
+class FeedbackAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of SharedMotor
+    agents, which allow a single neural network to be used across games by
+    using the legal action set size for the motor layer. Minimal action sets
+    are still used to play the game.
+    """
+    def __init__(self, ale, nervous_system, update_rate, logging=False,
+                 motor_index, feedback_index):
+        super().__init__(ale, "shared_motor", {'nervous_system': nervous_system,
+                                               'update_rate': update_rate,
+                                               'logging': int(logging),
+                                               'motor_index': int(motor_index),
+                                               'feedback_index': int(feedback_index)})
+
+
 class RewardModulatedAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     """
     Subclass of AgentHandler for easy creation and handling of Rewardmod
