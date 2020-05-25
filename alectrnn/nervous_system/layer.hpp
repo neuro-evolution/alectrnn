@@ -294,6 +294,7 @@ public:
     super_type::self_integrator_->Configure(
       parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount(),
                        super_type::self_integrator_->GetParameterCount()));
+
     feedback_integrator_->Configure(
       parameters.slice(parameters.stride() * super_type::back_integrator_->GetParameterCount()
                        + parameters.stride() * super_type::self_integrator_->GetParameterCount(),
@@ -367,10 +368,10 @@ public:
     {
       feedback_state_[i] = motor_state[i];
     }
-    // we are using this for spiking, and all the spikes are 0 or 1.
+    // Temporary hack to set the reward [0,1] at same scale as inputs (255)
     if (reward > 0.00001)
     {
-      feedback_state_[feedback_state_.size() - 1] = 1.0;
+      feedback_state_[feedback_state_.size() - 1] = 255.0;
     }
     else
     {
