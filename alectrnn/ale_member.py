@@ -58,7 +58,7 @@ class OperatorMixin:
 
     @property
     def parameters(self):
-        return self._modify_parameters(self._x_mod)
+        return self._modify_parameters(self._x)
 
     @parameters.setter
     def parameters(self, value):
@@ -70,7 +70,7 @@ class AbsMixin(OperatorMixin):
         super().__init__(*args, **kwargs)
 
     def _modify_parameters(self, x):
-        return super()._modify_parameters(np.fabs(x, out=x))
+        return super()._modify_parameters(np.fabs(x, out=self._x_mod))
 
 
 class SpikeMember(AbsMixin, AleMember):
@@ -100,7 +100,8 @@ class RescalingMixin(OperatorMixin):
                 self._layer_indices[i] - 1]
 
     def _modify_parameters(self, x):
-        return super()._modify_parameters(np.multiply(x, self._scalings, out=x))
+        return super()._modify_parameters(np.multiply(x, self._scalings,
+                                                      out=self._x_mod))
 
 
 class RescaledSpikeMember(RescalingMixin, SpikeMember):
@@ -116,9 +117,9 @@ class NormalizationMixin(OperatorMixin):
 
     def _modify_parameters(self, x):
         weight_sum = np.sum(x, where=self._weight_mask)
-        np.divide(x, weight_sum / self._weight_scale,
-                  where=self._weight_mask, out=x)
-        return super()._modify_parameters(np.fabs(x, out=x))
+        return super()._modify_parameters(
+            np.divide(x, weight_sum / self._weight_scale,
+                      where=self._weight_mask, out=self._x_mod))
 
 
 class NormalizedSpikeMember(AbsMixin, NormalizationMixin, AleMember):
