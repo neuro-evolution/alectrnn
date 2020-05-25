@@ -259,11 +259,11 @@ public:
   typedef const Eigen::Map<ConstColVector> ConstColVectorView;
 
   FeedbackLayer(const std::vector<Index>& shape,
-        Integrator<TReal>* back_integrator,
-        Integrator<TReal>* self_integrator,
-        Activator<TReal>* activation_function,
-        Index motor_size,
-        Integrator<TReal>* feedback_integrator)
+                Integrator<TReal>* back_integrator,
+                Integrator<TReal>* self_integrator,
+                Activator<TReal>* activation_function,
+                Index motor_size,
+                Integrator<TReal>* feedback_integrator)
    : super_type(shape, back_integrator, self_integrator, activation_function),
      feedback_state_({motor_size + 1}), // 1 added for reward
      feedback_integrator_(feedback_integrator)
@@ -361,9 +361,11 @@ public:
 
   virtual void update_feedback(TReal reward, const Layer<TReal>* motor_layer)
   {
-    for (Index i = 0; i < (motor_layer->state()->size() - 1); ++i)
+    auto motor_state = motor_layer->state();
+    Index state_size(motor_state.size());
+    for (Index i = 0; i < (state_size - 1); ++i)
     {
-      feedback_state_[i] = motor_layer->state()[i];
+      feedback_state_[i] = motor_state[i];
     }
     // we are using this for spiking, and all the spikes are 0 or 1.
     if (reward > 0.00001)
