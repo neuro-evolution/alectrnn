@@ -83,7 +83,8 @@ class ALEExperimentBase(ABC):
         :return: a NervousSystem object
         """
 
-        if isinstance(agent_class, handlers.SharedMotorAgentHandler):
+        if isinstance(agent_class, handlers.SharedMotorAgentHandler)\
+                or isinstance(agent_class, handlers.FeedbackAgentHandler):
             # SharedMotorAgents require the legal rather than minimal action
             # set size to be used for the motor layer
             nervous_system_parameters['num_outputs'] = \
