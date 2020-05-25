@@ -32,7 +32,7 @@
 #include "soft_max_agent.hpp"
 #include "shared_motor_agent.hpp"
 #include "reward_mod_agent.hpp"
-#include "feedback_agent.hpp
+#include "feedback_agent.hpp"
 
 /*
  * DeleteAgent can be shared among the agents as a destructor

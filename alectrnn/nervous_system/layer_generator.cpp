@@ -142,7 +142,7 @@ static PyObject *CreateFeedbackLayer(PyObject *self, PyObject *args, PyObject *k
   PyObject* back_integrator_args;
   int self_integrator_type;
   PyObject* self_integrator_args;
-  int feedback_integrator;
+  int feedback_integrator_type;
   PyObject* feedback_integrator_args;
   int motor_size;
   int activator_type;
@@ -151,7 +151,7 @@ static PyObject *CreateFeedbackLayer(PyObject *self, PyObject *args, PyObject *k
 
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iOiOiOiiOO", keyword_list,
       &back_integrator_type, &back_integrator_args, &self_integrator_type,
-      &self_integrator_args, &feedback_integrator, &feedback_integrator_args,
+      &self_integrator_args, &feedback_integrator_type, &feedback_integrator_args,
       &motor_size, &activator_type, &activator_args,
       &shape)) {
     std::cerr << "Error parsing CreateFeedbackLayer arguments" << std::endl;
@@ -1123,6 +1123,9 @@ static PyMethodDef LayerMethods[] = {
   { "CreateRecurrentLayer", (PyCFunction) CreateRecurrentLayer,
          METH_VARARGS | METH_KEYWORDS,
          "Returns a handle to a RecurrentLayer"},
+  { "CreateFeedbackLayer", (PyCFunction) CreateFeedbackLayer,
+    METH_VARARGS | METH_KEYWORDS,
+    "Returns a handle to a FeedbackLayer"},
   { "CreateRewardModulatedLayer", (PyCFunction) CreateRewardModulatedLayer,
         METH_VARARGS | METH_KEYWORDS,
         "Returns a handle to a RewardModulatedLayer"},

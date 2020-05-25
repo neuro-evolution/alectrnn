@@ -274,17 +274,17 @@ public:
   virtual ~FeedbackLayer()=default;
 
   virtual void Reset() {
-    super::layer_state_.Fill(0.0);
-    super::input_buffer_.Fill(0.0);
+    super_type::layer_state_.Fill(0.0);
+    super_type::input_buffer_.Fill(0.0);
     feedback_state_.Fill(0.0);
-    super::activation_function_->Reset();
+    super_type::activation_function_->Reset();
   }
 
   virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
 
-    if (parameters.size() != parameter_count_) {
+    if (parameters.size() != super_type::parameter_count_) {
       std::cerr << "parameter size: " << parameters.size() << std::endl;
-      std::cerr << "parameter count: " << parameter_count_ << std::endl;
+      std::cerr << "parameter count: " << super_type::parameter_count_ << std::endl;
       throw std::invalid_argument("Wrong number of parameters given.");
     }
 
