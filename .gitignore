@@ -19,6 +19,7 @@ CMakeLists.txt
 
 # remove cache files
 /*__pycache__
+build/
 
 # remove misc folders
 /alectrnn/alelib/
