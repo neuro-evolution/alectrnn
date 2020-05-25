@@ -49,7 +49,7 @@ class AleMember(ALEAddon, asyncevo.Member):
 
 
 class OperatorMixin:
-    def __int__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._x_mod = np.copy(self._x)
     
@@ -98,7 +98,7 @@ class RescalingMixin(OperatorMixin):
             self._scalings[i] = self._parameter_rescalings[
                 PARAMETER_TYPE(self._parameter_layout[i])][
                 self._layer_indices[i] - 1]
-    
+
     def _modify_parameters(self, x):
         return super()._modify_parameters(np.multiply(x, self._scalings, out=x))
 
