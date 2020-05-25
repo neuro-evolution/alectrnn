@@ -280,10 +280,10 @@ class FeedbackAgentHandler(AgentHandler, LoggingAndHistoryMixin):
     def __init__(self, ale, nervous_system, update_rate, logging,
                  motor_index, feedback_index):
         super().__init__(ale, "feedback", {'nervous_system': nervous_system,
-                                               'update_rate': update_rate,
-                                               'logging': int(logging),
-                                               'motor_index': int(motor_index),
-                                               'feedback_index': int(feedback_index)})
+                                           'update_rate': update_rate,
+                                           'logging': int(logging),
+                                           'motor_index': int(motor_index),
+                                           'feedback_index': int(feedback_index)})
 
 
 class RewardModulatedAgentHandler(AgentHandler, LoggingAndHistoryMixin):
