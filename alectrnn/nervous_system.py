@@ -489,7 +489,7 @@ class NervousSystem:
                     layer_pars['num_internal_nodes'],
                     layer_pars['internal_graph'],
                     layer_pars['feedback_graph'],
-                    len(nn_parameters),
+                    layer_pars['num_motor_neurons'],
                     layer_act_types[i],
                     layer_act_args[i],
                     layer_shapes[i+1],
@@ -998,7 +998,7 @@ class NervousSystem:
 
     def _create_feedback_layer(self, bipartite_input_edge_array,
                                num_internal_nodes, internal_edge_array,
-                               feedback_edge_array, num_motor,
+                               feedback_edge_array, num_motor_neurons,
                                act_type, act_args, layer_shape,
                                prev_layer_shape):
         """
@@ -1026,11 +1026,12 @@ class NervousSystem:
         self_args = (internal_edge_array, num_internal_nodes, num_internal_nodes)
         feed_type = INTEGRATOR_TYPE.RECURRENT_EIGEN.value
         feed_args = (feedback_edge_array, num_internal_nodes,
-                     int(num_motor + 1))
+                     int(num_motor_neurons + 1))
         assert(act_args[0] == num_internal_nodes)
         return layer_generator.CreateFeedbackLayer(back_type, back_args,
                                                    self_type, self_args,
-                                                   feed_type, feed_args, num_motor,
+                                                   feed_type, feed_args,
+                                                   num_motor_neurons,
                                                    act_type, act_args, layer_shape)
 
     def _create_truncated_recurrent_layer(self, bipartite_input_edge_array,

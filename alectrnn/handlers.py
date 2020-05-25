@@ -161,6 +161,8 @@ class AgentHandler(Handler):
 
             For "shared_motor": (nervous_system, update_rate, logging)
 
+            For "feedback": (nervous_system, update_rate, logging, motor_index, feedback_index)
+
             For "rm" : (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
@@ -188,6 +190,9 @@ class AgentHandler(Handler):
         elif self._handle_type == "shared_motor":
             self._handle = agent_generator.CreateSharedMotorAgent(self._ale,
                                                                   **self._handle_parameters)
+        elif self._handle_type == "feedback":
+            self._handle = agent_generator.CreateFeedbackAgent(self._ale,
+                                                               **self._handle_parameters)
         elif self._handle_type == "rm":
             self._handle = agent_generator.CreateRewardModulatedAgent(self._ale,
                                                                       **self._handle_parameters)
