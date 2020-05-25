@@ -18,7 +18,8 @@ def execute_experiment(parameter_batch, index, batch_id):
         nervous_system_class=parameter_batch['nervous_system_class'],
         nervous_system_class_parameters=parameter_batch['nervous_system_parameters'],
         agent_class_parameters=parameter_batch['agent_parameters'],
-        objective_parameters=parameter_batch['objective_parameters']
+        objective_parameters=parameter_batch['objective_parameters'],
+        agent_class=parameter_batch['agent_class']
     )
 
     initial_state_rng = np.random.RandomState(
@@ -54,7 +55,8 @@ def execute_async_experiment(parameter_batch, index, batch_id):
             nervous_system_class=working_parameters['nervous_system_class'],
             nervous_system_class_parameters=working_parameters['nervous_system_parameters'],
             agent_class_parameters=working_parameters['agent_parameters'],
-            objective_parameters=working_parameters['objective_parameters']
+            objective_parameters=working_parameters['objective_parameters'],
+            agent_class=working_parameters['agent_class']
         )
 
         initial_state_rng = np.random.RandomState(
@@ -100,7 +102,8 @@ def execute_async_batch(batch):
                 nervous_system_class=working_parameters['nervous_system_class'],
                 nervous_system_class_parameters=working_parameters['nervous_system_parameters'],
                 agent_class_parameters=working_parameters['agent_parameters'],
-                objective_parameters=working_parameters['objective_parameters']
+                objective_parameters=working_parameters['objective_parameters'],
+                agent_class=working_parameters['agent_class']
             )
 
             initial_state_rng = np.random.RandomState(

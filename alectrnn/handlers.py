@@ -161,6 +161,8 @@ class AgentHandler(Handler):
 
             For "shared_motor": (nervous_system, update_rate, logging)
 
+            For "feedback": (nervous_system, update_rate, logging, motor_index, feedback_index)
+
             For "rm" : (nervous_system, update_rate, logging)
         """
         if agent_parameters is None:
@@ -188,6 +190,9 @@ class AgentHandler(Handler):
         elif self._handle_type == "shared_motor":
             self._handle = agent_generator.CreateSharedMotorAgent(self._ale,
                                                                   **self._handle_parameters)
+        elif self._handle_type == "feedback":
+            self._handle = agent_generator.CreateFeedbackAgent(self._ale,
+                                                               **self._handle_parameters)
         elif self._handle_type == "rm":
             self._handle = agent_generator.CreateRewardModulatedAgent(self._ale,
                                                                       **self._handle_parameters)
@@ -269,6 +274,21 @@ class SharedMotorAgentHandler(AgentHandler, LoggingAndHistoryMixin):
         super().__init__(ale, "shared_motor", {'nervous_system': nervous_system,
                                                'update_rate': update_rate,
                                                'logging': int(logging)})
+
+
+class FeedbackAgentHandler(AgentHandler, LoggingAndHistoryMixin):
+    """
+    Subclass of AgentHandler for easy creation and handling of Feedback
+    agents, which allows feedback from the game reward and motor layer
+    back into a layer in the NN.
+    """
+    def __init__(self, ale, nervous_system, update_rate, logging,
+                 motor_index, feedback_index):
+        super().__init__(ale, "feedback", {'nervous_system': nervous_system,
+                                           'update_rate': update_rate,
+                                           'logging': int(logging),
+                                           'motor_index': int(motor_index),
+                                           'feedback_index': int(feedback_index)})
 
 
 class RewardModulatedAgentHandler(AgentHandler, LoggingAndHistoryMixin):

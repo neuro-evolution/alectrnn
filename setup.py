@@ -128,7 +128,8 @@ agent_sources = [
     "alectrnn/common/screen_preprocessing.cpp",
     "alectrnn/agents/soft_max_agent.cpp",
     "alectrnn/agents/shared_motor_agent.cpp",
-    "alectrnn/agents/reward_mod_agent.cpp"
+    "alectrnn/agents/reward_mod_agent.cpp",
+    "alectrnn/agents/feedback_agent.cpp"
 ]
 
 objective_sources = [
@@ -249,7 +250,7 @@ agent_handler = Extension('agent_handler',
                         + ['-Wl,-rpath,$ORIGIN/alelib/lib'])
 
 setup(name=PACKAGE_NAME,
-      version='1.9',
+      version='1.10',
       author='Nathaniel Rodriguez',
       cmdclass={'build_ext': build_ext,
                 'install': install,
