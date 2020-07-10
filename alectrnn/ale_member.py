@@ -108,6 +108,10 @@ class RescaledSpikeMember(RescalingMixin, SpikeMember):
     pass
 
 
+class RescalingMember(RescalingMixin, AleMember):
+    pass
+
+
 class NormalizationMixin(OperatorMixin):
     def __init__(self, weight_scale: float = 1.0, *args, **kwargs):
         super().__init__(*args, **kwargs)
