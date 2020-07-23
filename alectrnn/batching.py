@@ -22,6 +22,16 @@ def load(filename):
     return obj
 
 
+class StorageInjector:
+    def __init__(self):
+        self._batch_index_hack = 0
+        self.stored = {}
+
+    def __call__(self, store_object):
+        self.stored[self._batch_index_hack] = store_object
+        self._batch_index_hack += 1
+
+
 class Batch(ABC):
     @abstractmethod
     def __call__(self):
