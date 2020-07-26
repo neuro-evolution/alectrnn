@@ -249,7 +249,7 @@ public:
                               super_type::input_buffer_.size());
     state_vector += buffer;
     (*super_type::activation_function_)(super_type::input_buffer_,
-                                        super_type::layer_state_);
+                                        recurrent_state_buffer_);
     std::swap(super_type::layer_state_, super_type::input_buffer_);
   }
 
@@ -370,7 +370,7 @@ public:
     state_vector += buffer;
     state_vector += recurrent_state;
     (*super_type::activation_function_)(super_type::input_buffer_,
-                                        super_type::layer_state_);
+                                        super_type::recurrent_state_buffer_);
     std::swap(super_type::layer_state_, super_type::input_buffer_);
   }
 
