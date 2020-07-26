@@ -243,8 +243,8 @@ public:
                                     super_type::input_buffer_);
     (*super_type::self_integrator_)(super_type::layer_state_,
                                     recurrent_state_buffer_);
-    ColVectorView state_vector(super_type::recurrent_state_buffer_.data(),
-                               super_type::recurrent_state_buffer_.size());
+    ColVectorView state_vector(recurrent_state_buffer_.data(),
+                               recurrent_state_buffer_.size());
     ConstColVectorView buffer(super_type::input_buffer_.data(),
                               super_type::input_buffer_.size());
     state_vector += buffer;
