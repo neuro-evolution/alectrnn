@@ -281,7 +281,10 @@ public:
      super_type::parameter_count_ += feedback_integrator_->GetParameterCount();
    }
 
-  virtual ~FeedbackLayer()=default;
+  virtual ~FeedbackLayer()
+  {
+    delete feedback_integrator_;
+  }
 
   virtual void Reset() {
     super_type::Reset();
