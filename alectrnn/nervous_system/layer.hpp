@@ -224,10 +224,17 @@ public:
         Integrator<TReal>* back_integrator,
         Integrator<TReal>* self_integrator,
         Activator<TReal>* activation_function)
-   : super_type(shape, back_integrator, self_integrator, activation_function)
+   : super_type(shape, back_integrator, self_integrator, activation_function),
+     recurrent_state_buffer_(shape)
    {}
 
   virtual ~RecurrentLayer()=default;
+
+  virtual void Reset()
+  {
+    super_type::Reset();
+    recurrent_state_buffer_.Fill(0.0);
+  }
 
   virtual void operator()(const Layer<TReal>* prev_layer) override
   {
@@ -235,9 +242,9 @@ public:
     (*super_type::back_integrator_)(prev_layer->state(),
                                     super_type::input_buffer_);
     (*super_type::self_integrator_)(super_type::layer_state_,
-                                    super_type::layer_state_);
-    ColVectorView state_vector(super_type::layer_state_.data(),
-                               super_type::layer_state_.size());
+                                    recurrent_state_buffer_);
+    ColVectorView state_vector(super_type::recurrent_state_buffer_.data(),
+                               super_type::recurrent_state_buffer_.size());
     ConstColVectorView buffer(super_type::input_buffer_.data(),
                               super_type::input_buffer_.size());
     state_vector += buffer;
@@ -245,6 +252,9 @@ public:
                                         super_type::layer_state_);
     std::swap(super_type::layer_state_, super_type::input_buffer_);
   }
+
+protected:
+  multi_array::Tensor<TReal> recurrent_state_buffer_;
 };
 
 template <typename TReal>
@@ -274,10 +284,8 @@ public:
   virtual ~FeedbackLayer()=default;
 
   virtual void Reset() {
-    super_type::layer_state_.Fill(0.0);
-    super_type::input_buffer_.Fill(0.0);
+    super_type::Reset();
     feedback_state_.Fill(0.0);
-    super_type::activation_function_->Reset();
   }
 
   virtual void Configure(const multi_array::ConstArraySlice<TReal>& parameters) {
@@ -347,14 +355,17 @@ public:
     (*super_type::back_integrator_)(prev_layer->state(),
                                     super_type::input_buffer_);
     (*super_type::self_integrator_)(super_type::layer_state_,
-                                    super_type::layer_state_);
+                                    super_type::recurrent_state_buffer_);
     (*feedback_integrator_)(feedback_state_,
                             super_type::layer_state_);
     ColVectorView state_vector(super_type::layer_state_.data(),
                                super_type::layer_state_.size());
+    ColVectorView recurrent_state(super_type::recurrent_state_buffer_.data(),
+                                  super_type::recurrent_state_buffer_.size());
     ConstColVectorView buffer(super_type::input_buffer_.data(),
                               super_type::input_buffer_.size());
     state_vector += buffer;
+    state_vector += recurrent_state;
     (*super_type::activation_function_)(super_type::input_buffer_,
                                         super_type::layer_state_);
     std::swap(super_type::layer_state_, super_type::input_buffer_);
