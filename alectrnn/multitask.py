@@ -236,6 +236,7 @@ class RandomRomObjective:
         """
         Selects a random rom from the roms list, updates the handlers, and
         then runs the objective.
+
         :param parameters: parameters for objective function
         :return: cost
         """

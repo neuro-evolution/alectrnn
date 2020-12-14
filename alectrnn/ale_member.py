@@ -82,8 +82,9 @@ class RescalingMixin(OperatorMixin):
                  *args, **kwargs):
         """
         Excluding the input layer.
+
         :param parameter_rescalings: a dictionary keyed by parameter type and
-        valued by a list of scalars that will be used to rescale the parameters.
+            valued by a list of scalars that will be used to rescale the parameters.
         :param args: arguments for SpikeMember
         :param kwargs: keyword arguments for SpikeMember
         """

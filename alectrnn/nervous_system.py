@@ -30,6 +30,7 @@ def draw_uniform_initial_guess(boundary_array, rng):
     """
     Uses a numpy RandomState to draw a uniform set of initial values between
     the specified bounds.
+
     :param boundary_array: Nx2 np.float32 array
     :param rng: numpy RandomState object
     :return: 1-D array of size N and dtype np.float32
@@ -120,6 +121,7 @@ def layerwise_initial_guess(layer_bounds, nervous_system, rng):
 def boundary_array_for_parameter_layout(parameter_layout, type_bounds):
     """
     Creates a np array with the bounds for a given parameter layout.
+
     :param parameter_layout: 1D array with # parameter elements coded as PARAMETER_TYPE (int)
     :param type_bounds: key is PARAMETER_TYPE, value is (low, high)
     :return: a Nx2 np.float32 array
@@ -711,6 +713,7 @@ class NervousSystem:
         the input graph and all-to-all connections with the previous layer.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param internal_edge_array: array for self-connections
@@ -734,6 +737,7 @@ class NervousSystem:
         Creates a layer with all-to-all internal and back connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param act_type: ACTIVATOR_TYPE
@@ -758,6 +762,7 @@ class NervousSystem:
         connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param act_type: ACTIVATOR_TYPE
@@ -781,6 +786,7 @@ class NervousSystem:
         connections. Uses Eigen integrators.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param act_type: ACTIVATOR_TYPE
@@ -808,6 +814,7 @@ class NervousSystem:
         Uses Eigen integrators.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param reward_smoothing_factor: memory time constant for exponential averaging.
@@ -845,6 +852,7 @@ class NervousSystem:
         Uses Eigen integrators.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the function.
+
         :param prev_layer_shape: shape of the previous layer
         :param num_internal_nodes: number of neurons in layer
         :param reward_smoothing_factor: memory time constant for exponential averaging.
@@ -881,6 +889,7 @@ class NervousSystem:
         defined by the input graph.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -914,6 +923,7 @@ class NervousSystem:
         connected and weight internal connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -947,6 +957,7 @@ class NervousSystem:
         connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: array for back-connections (Nx2)
             dtype=np.uint64
         :param num_internal_nodes: number of neurons in layer
@@ -975,6 +986,7 @@ class NervousSystem:
         connections. Uses Eigen integrators
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: array for back-connections (Nx2)
             dtype=np.uint64
         :param num_internal_nodes: number of neurons in layer
@@ -1006,6 +1018,7 @@ class NervousSystem:
         connections. Uses Eigen integrators
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: array for back-connections (Nx2)
             dtype=np.uint64
         :param num_internal_nodes: number of neurons in layer
@@ -1044,6 +1057,7 @@ class NervousSystem:
         connections.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: array for back-connections (Nx2)
             dtype=np.uint64
         :param num_internal_nodes: number of neurons in layer
@@ -1072,6 +1086,7 @@ class NervousSystem:
         the input graphs.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: Nx2 dtype=np.uint64 graph
         :param input_weights: N dtype=np.float32 array
         :param num_internal_nodes: number of neurons in layer
@@ -1104,6 +1119,7 @@ class NervousSystem:
         the input graphs. Input weights are trained.
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param bipartite_input_edge_array: Nx2 dtype=np.uint64 graph
         :param num_internal_nodes: number of neurons in layer
         :param internal_edge_array: array for self-connections Nx2 np.uint64
@@ -1135,6 +1151,7 @@ class NervousSystem:
         Final shape, which includes depth, depends on shape of prev layer
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -1167,6 +1184,7 @@ class NervousSystem:
         Final shape, which includes depth, depends on shape of prev layer
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -1285,6 +1303,7 @@ class NervousSystem:
         Final shape, which includes depth, depends on shape of prev layer
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -1328,6 +1347,7 @@ class NervousSystem:
         Final shape, which includes depth, depends on shape of prev layer
         Restructures input parameters into the correct format for the
         C++ function call, then calls the CreateLayer function.
+
         :param prev_layer_shape: shape of the previous layer
         :param interpreted_shape: shape the convolution will take
         :param filter_shape: shape of the filter
@@ -1643,6 +1663,7 @@ class NoisyRewardModulatedAtariCNN(NervousSystem):
                  learning_rate, noise_strength, seeds, *args, **kwargs):
         """
         Initialize RewardModulatedAtariCNN
+
         :param reward_smoothing_factor: float, time constant of exp avg.
         :param activation_smoothing_factor: float, time constant of exp avg.
         :param learning_rate: float, determines size of weight change in hebb update.

@@ -21,6 +21,7 @@ from pkg_resources import resource_filename
 def generate_rom_dictionary():
     """
     Determines what roms are available
+
     :return: A dictionary keyed by rom name and valued by path
     """
     roms_list = resource_listdir("alectrnn", "roms")
@@ -53,6 +54,7 @@ class Handler:
         """
         Should create the handle by calling the appropriate c-function and
         return nothing. Should also set the self._handle_exists flag to True
+
         :return: None
         """
         raise NotImplementedError
@@ -107,6 +109,7 @@ class ObjectiveHandler(Handler):
         """
         If either ale or agent change in-place, the handler needs to be
         re-created in order to update the partial function.
+
         :return: None
         """
         if self._handle_type == "totalcost":
@@ -243,6 +246,7 @@ class LoggingAndHistoryMixin:
         """
         Toggles the logging of the agent. Requires that the agent get re-made
         if the value changes
+
         :param is_logging: a boolean
         :return: None
         """
@@ -373,6 +377,7 @@ class ALEHandler(Handler):
         """
         This function destroys the current handle object and makes a new ALE
         instance using updated parameter settings
+
         :param kwargs: any ale key word value pairs
         :return: None
         """
@@ -398,6 +403,7 @@ class ALEHandler(Handler):
         """
         This function destroys the current handle object and makes a new ALE
         instance using the new seed.
+
         :param integer: an integer value
         :return: None
         """

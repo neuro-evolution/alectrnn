@@ -108,6 +108,7 @@ class ALEExperimentBase(ABC):
                                nervous_system, ale_handle):
         """
         Builds and initializes the agent handle and creates the c++-object
+
         :param agent_class: class used for making the agent
         :param partial_class_parameters: dictionary that includes everything
             but the nervous system, since that will be built locally
@@ -156,6 +157,7 @@ class ALEExperimentBase(ABC):
     def print_layer_shapes(self):
         """
         Prints the shapes calculated for each layer
+
         :note: not to be confused with interpreted shapes
         """
 
@@ -258,6 +260,7 @@ class ALEExperiment(ALEExperimentBase):
     def set_objective_function(self, objective_parameters):
         """
         Re-makes the objective handle based on given objective parameters
+
         :param objective_parameters: dictionary with objective parameters and
             objective type
         :return: None
@@ -290,6 +293,7 @@ class ALEExperiment(ALEExperimentBase):
         """
         Changes the logging state of the experiment. Requires remaking the agent
         and objective handles.
+
         :param is_logging: True/False
         :return: None
         """
@@ -432,6 +436,7 @@ class ALEMultiRomExperiment(ALEExperimentBase):
     def _initialize_objective(self):
         """
         Called on construction
+        
         :return: an objective object
         """
         pass

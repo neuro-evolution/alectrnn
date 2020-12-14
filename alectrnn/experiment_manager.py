@@ -22,6 +22,7 @@ class ALESimpleManager:
     def run_single_game(self, nn_parameters, logging=True, **kwargs):
         """
         Evaluates a single game.
+
         :param nn_parameters: parameters for the nn, if not provided best is chosen.
         :param logging: whether to record the game history (default: True)
         :param rom: game name
@@ -82,6 +83,7 @@ class ALEExperimentManager:
         """
         Assumes optimization class has a plot_cost_over_time method for plotting.
         Assumes a signature of f(prefix, ..., savefile, ...)
+
         :param kwargs: any addition arguments for the plotting function.
         :return: None
         """
@@ -93,6 +95,7 @@ class ALEExperimentManager:
     def run_single_game(self, nn_parameters=None, **kwargs):
         """
         Evaluates a single game.
+
         :param nn_parameters: parameters for the nn, if not provided best is chosen.
         :param rom: game name
         :param seed: seed for generating seeds for the games
@@ -124,6 +127,7 @@ class ALEExperimentManager:
     def evaluate_single_game_cost(self, rom, seed, **kwargs):
         """
         Prints results. Runs 1 game for each rank.
+
         :param rom: game name
         :param seed: seed for generating seeds for the games
         :param kwargs: other arguments for atari game

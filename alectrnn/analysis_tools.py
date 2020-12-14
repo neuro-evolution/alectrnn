@@ -14,6 +14,7 @@ from alectrnn import nervous_system
 def ecdf(data):
     """
     Generates an empirical cumulative distribution function from data
+
     :param data: a 1D array of data
     :return: sorted data, cdf
     """
@@ -34,6 +35,7 @@ def ecdf(data):
 def eccdf(data):
     """
     Generates an empirical complementary cumulative distribution function
+
     :param data: a 1D array of data
     :return: sorted data, ccdf
     """
@@ -46,6 +48,7 @@ def plot_ccdf(data, xlabel='', x_log=False, y_log=False, savefile=True,
               **kwargs):
     """
     Plots the CCDF of a given 1D array of data
+
     :param data: 1D array of data
     :param xlabel: label for x-axis
     :param x_log: True/false log x-axes
@@ -81,6 +84,7 @@ def generate_color(index, loop_size=12, colormap=cm.Set1):
 def animate_screen(screen_history, prefix="test"):
     """
     Animates the ALE screen. Requires ffmpeg.
+
     :param screen_history: A HxWx3 numpy array (float or unint)
     :param prefix: prefix for output file name
     :return: None
@@ -99,6 +103,7 @@ def animate_screen(screen_history, prefix="test"):
 def animate_input(first_layer_state, input_shape, prefix="test"):
     """
     Animates the input frame for the neural network. Requires ffmpeg.
+
     :param first_layer_state: numpy array of states for the input layer
     :param input_shape: shape of layer (currently only supports 1xHxW)
     :param prefix: prefix for output file name
@@ -124,6 +129,7 @@ def animate_input(first_layer_state, input_shape, prefix="test"):
 def plot_internal_state(layer_state, index, neuron_ids, prefix="test"):
     """
     Makes a time series plot of all the neurons in a given layer
+
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling)
     :param neuron_ids: the indices location of neurons in the flattened state
@@ -143,6 +149,7 @@ def plot_internal_spike_train(layer_state, index, neuron_ids, prefix="test",
                               **kwargs):
     """
     Makes a spike train plot of all the neurons in a given layer
+
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling)
     :param neuron_ids: the indices location of neurons in the flattened state
@@ -173,6 +180,7 @@ def convert_state_to_spiketimes(state_array):
     """
     Takes an array of state values and returns an array of spike times in units
     of the len of the state array
+
     :return: numpy array
     """
 
@@ -183,6 +191,7 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
               **kwargs):
     """
     Plots the Peristimulus time histogram (PSTH) for single or multiple (average) neurons
+
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling). Default: None (averages over
         all neurons)
@@ -229,6 +238,7 @@ def plot_psth(layer_state, index, bin_width=1, neuron_ids=None, prefix="test",
 def plot_internal_state_distribution(layer_state, index, prefix="test"):
     """
     Makes a time series plot of the max/min/median/90%/10% quartile ranges
+
     :param layer_state: a Tx(L) matrix, where L is the shape of the layer
     :param index: the layer index (for labelling)
     :param prefix: prefix for output file name
@@ -266,6 +276,7 @@ def plot_internal_state_distribution(layer_state, index, prefix="test"):
 def plot_output(last_layer_state, prefix="test"):
     """
     Time series plot of the trajectory of output states.
+
     :param last_layer_state: matrix of output layer
     :param prefix: prefix for output file name
     :return: None
@@ -285,6 +296,7 @@ def plot_parameter_distributions(parameters, parameter_layout, prefix="test",
                                  linestyle='-', color='b', **kwargs):
     """
     Makes plots for the distributions of the parameters from the model.
+
     :param parameters: the parameter array (size N).
     :param parameter_layout: the int code for what type the parameters
         are (size N).
